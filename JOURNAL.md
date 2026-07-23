@@ -68,3 +68,32 @@ Ran `08_setup.md` §1–§5. Deployment (§6) deferred to day 2.
 - `main` pushed to `github.com/harshiltewari2004/pr-review-assistant`.
 - Deferred: §6 skeleton deploy (day 2), which frees nothing — day 2 already
   holds the GitHub API spike and the 7 fixture diffs.
+
+### Locked decision invalidated — HF Spaces Docker now requires PRO
+
+`04_architecture.md` §9 and `08_setup.md` §6 assume free Docker Spaces. As of
+~July 2026 HF requires a paid plan (PRO, $9/mo) to create Gradio or Docker
+Spaces; Static Spaces remain free. No changelog or docs update — surfaced only
+as a "Paid" badge in the New Space form.
+
+§6's real purpose was met locally anyway: image builds on python:3.11-slim
+(torch in 143s), container binds 7860, /health returns. Image 1.6 GB.
+
+**Decision: retarget to Google Cloud Run** (option C). Free tier is 180k
+vCPU-seconds / 360k GiB-seconds / 2M requests per month, scale-to-zero, memory
+configurable — the last point is what disqualifies Render, Koyeb, and Railway,
+all capped at 512 MB against an estimated 700 MB–1.2 GB footprint with MiniLM
+loaded. Requires a linked billing account even within Always Free; budget alert
+set at $1.
+
+Frontend splits off to a static host. `05_frontend.md` §5's seeded results were
+already designed to render with zero network calls, so the recruiter path now
+never touches compute at all — better than the HF design, not a concession.
+
+Open risk, unmeasured: Cloud Run cold start with torch + MiniLM. Decides
+whether --min-instances=1 (and therefore money) is needed. Measure in Phase 3
+when embedding.py actually loads the model.
+
+Also: added DATABASE_URL and API_KEY as HF *public Variables* rather than
+Secrets. Rotated both. Second rotation today — the pattern is that credentials
+keep landing somewhere that displays them.
