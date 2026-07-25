@@ -97,3 +97,5 @@ when embedding.py actually loads the model.
 Also: added DATABASE_URL and API_KEY as HF *public Variables* rather than
 Secrets. Rotated both. Second rotation today — the pattern is that credentials
 keep landing somewhere that displays them.
+
+CPU-only torch can't be pinned in requirements.txt: +cpu wheels are Linux/Windows only and macOS torch is already CPU-only. Moved to a separate Dockerfile RUN against the PyTorch CPU index, keeping requirements.txt portable. Also: building --platform linux/amd64 on Apple Silicon runs under emulation — minutes, not seconds.

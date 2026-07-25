@@ -1,0 +1,4 @@
+diff --git a/tests/test_old_module.py b/tests/test_new_module.py
+similarity index 100%
+rename from tests/test_old_module.py
+rename to tests/test_new_module.py

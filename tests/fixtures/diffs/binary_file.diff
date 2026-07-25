@@ -1,0 +1,39 @@
+diff --git a/README.md b/README.md
+index 42f26ecde1f1d..36d262983b26b 100644
+--- a/README.md
++++ b/README.md
+@@ -67,6 +67,7 @@ The key features are:
+ <a href="https://www.permit.io/blog/implement-authorization-in-fastapi?utm_source=github&utm_medium=referral&utm_campaign=fastapi" target="_blank" title="Fine-Grained Authorization for FastAPI"><img src="https://fastapi.tiangolo.com/img/sponsors/permit.png"></a>
+ <a href="https://dribia.com/en/" target="_blank" title="Dribia - Data Science within your reach"><img src="https://fastapi.tiangolo.com/img/sponsors/dribia.png"></a>
+ <a href="https://www.bairesdev.com/" target="_blank" title="BairesDev | Nearshore Software Development & Staff Augmentation Company"><img src="https://fastapi.tiangolo.com/img/sponsors/bairesdev.svg"></a>
++<a href="https://tutorcruncher.com/?utm_source=fastapi" target="_blank" title="TutorCruncher"><img src="https://fastapi.tiangolo.com/img/sponsors/tutorcruncher.png"></a>
+ 
+ <!-- /sponsors -->
+ 
+diff --git a/docs/en/data/sponsors.yml b/docs/en/data/sponsors.yml
+index 12b812c2a478c..f2e5df57170b0 100644
+--- a/docs/en/data/sponsors.yml
++++ b/docs/en/data/sponsors.yml
+@@ -54,6 +54,9 @@ silver:
+   - url: https://www.bairesdev.com/
+     title: "BairesDev | Nearshore Software Development & Staff Augmentation Company"
+     img: /img/sponsors/bairesdev.svg
++  - url: https://tutorcruncher.com/?utm_source=fastapi
++    title: TutorCruncher
++    img: /img/sponsors/tutorcruncher.png
+ bronze:
+   # - url: https://testdriven.io/courses/tdd-fastapi/
+   #   title: Learn to build high-quality web apps with best practices
+diff --git a/docs/en/data/sponsors_badge.yml b/docs/en/data/sponsors_badge.yml
+index d35a4b19f7777..d2fd7029f3f8c 100644
+--- a/docs/en/data/sponsors_badge.yml
++++ b/docs/en/data/sponsors_badge.yml
+@@ -49,3 +49,4 @@ logins:
+   - requestly
+   - greptileai
+   - talorelowen
++  - tutorcruncher
+diff --git a/docs/en/docs/img/sponsors/tutorcruncher.png b/docs/en/docs/img/sponsors/tutorcruncher.png
+new file mode 100644
+index 0000000000000..aae58b2f5e78d
+Binary files /dev/null and b/docs/en/docs/img/sponsors/tutorcruncher.png differ
