@@ -99,3 +99,14 @@ Secrets. Rotated both. Second rotation today — the pattern is that credentials
 keep landing somewhere that displays them.
 
 CPU-only torch can't be pinned in requirements.txt: +cpu wheels are Linux/Windows only and macOS torch is already CPU-only. Moved to a separate Dockerfile RUN against the PyTorch CPU index, keeping requirements.txt portable. Also: building --platform linux/amd64 on Apple Silicon runs under emulation — minutes, not seconds.
+
+## 2026-07-25 — Day 2
+GitHub API spike done. Pagination + X-RateLimit-* handling + backoff all work;
+quota behaved as expected (5000/hr). Auto-classifier harvested 5/7 fixtures from
+real fastapi PRs; rename_only and at_marker_in_content didn't appear in 600
+recent PRs — hand-built both (07 §5 permits it).
+Two things not on the plan, both worth keeping:
+- The .diff media type 406s on very large PRs (#15519, #15392). Spike logs-and-
+  skips; Phase 2's client needs a real decision (D-P2-2). Good to know now.
+- DECISIONS.md and HANDOFF.md were never tracked after day 1 (missed in the git
+  add). Caught via git status at close. Now committed.
