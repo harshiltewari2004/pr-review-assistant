@@ -110,3 +110,19 @@ Two things not on the plan, both worth keeping:
   skips; Phase 2's client needs a real decision (D-P2-2). Good to know now.
 - DECISIONS.md and HANDOFF.md were never tracked after day 1 (missed in the git
   add). Caught via git status at close. Now committed.
+
+
+## 2026-07-26 — Day 3
+pgvector spike passed on all four targets. Predicted all four cosines
+correctly, including 2a → 1.0, which confirms <=> is magnitude-invariant
+and makes 03 §3's stated reason for normalize_embeddings=True wrong. Keep
+the flag, fix the reason.
+
+Two process misses, both silent. The Neon gate check errored — I passed
+the .env path as a connection string and psql read it as a database name,
+so I never verified Neon was empty going in. And HANDOFF.MD was untracked
+since day 2 despite the day-2 handoff claiming otherwise; the filename had
+drifted from HANDOFF.md and macOS's case-insensitive filesystem hid it.
+That is the second naming-drift bug in three days after delete_file vs
+deleted_file. Both times: no error, wrong outcome, found by reading output
+instead of trusting it.

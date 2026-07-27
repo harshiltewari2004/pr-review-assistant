@@ -1,0 +1,78 @@
+Token indices sequence length is longer than the specified maximum sequence length for this model (3698 > 256). Running this sequence through the model will result in indexing errors
+preflight — cached diffs
+  .cache/diffs/15994.diff  622 bytes
+  .cache/diffs/15992.diff  607 bytes
+  .cache/diffs/15937.diff  21,967 bytes
+  .cache/diffs/15813.diff  3,417 bytes
+  .cache/diffs/15515.diff  2,567 bytes
+  .cache/diffs/p5_8829.diff  1,535 bytes
+  .cache/diffs/p5_8933.diff  566 bytes
+  .cache/diffs/p5_8823.diff  10,261 bytes
+  .cache/diffs/p5_8862.diff  4,917 bytes
+  .cache/diffs/p5_8964.diff  1,808 bytes
+  all 10 diffs present
+
+loading sentence-transformers/all-MiniLM-L6-v2 ...
+
+parsing + embedding
+  #15994 [default]: 1 hunks / 1 files · tokens 117–117 (med 117) · truncated 0/1
+  #15992 [default]: 1 hunks / 1 files · tokens 106–106 (med 106) · truncated 0/1
+  #15937 [source_only]: 2 hunks / 1 files · tokens 141–165 (med 153) · truncated 0/2
+  #15813 [source_only]: 1 hunks / 1 files · tokens 177–177 (med 177) · truncated 0/1
+  #15937 [default]: 3 hunks / 2 files · tokens 141–3698 (med 165) · truncated 1/3
+  #15813 [default]: 2 hunks / 2 files · tokens 177–278 (med 227) · truncated 1/2
+  #15515 [default]: 4 hunks / 2 files · tokens 83–471 (med 142) · truncated 1/4
+  #8829 [default]: 3 hunks / 1 files · tokens 105–168 (med 128) · truncated 0/3
+  #8933 [default]: 1 hunks / 1 files · tokens 123–123 (med 123) · truncated 0/1
+  #8823 [source_only]: 6 hunks / 4 files · tokens 143–208 (med 172) · truncated 0/6
+  #8862 [source_only]: 3 hunks / 1 files · tokens 64–614 (med 387) · truncated 2/3
+  #8823 [default]: 10 hunks / 6 files · tokens 76–771 (med 175) · truncated 3/10
+  #8862 [default]: 4 hunks / 2 files · tokens 64–614 (med 372) · truncated 3/4
+  #8964 [default]: 3 hunks / 2 files · tokens 89–190 (med 118) · truncated 0/3
+
+==============================================================================
+repo     pair                 MAX   mean3  n_pairs   winning hunk
+==============================================================================
+fastapi  similar_a         0.4976  0.4976        1   #15994 fastapi/encoders.py ↔ #15992 fastapi/routing.py
+                                                     A: 'def jsonable_encoder('
+                                                     B: 'async def serialize_response('
+fastapi  similar_b_src     0.8376  0.7900        2   #15937 fastapi/routing.py ↔ #15813 fastapi/routing.py
+                                                     A: 'def _sync_stream_jsonl() -> Iterator[bytes]:'
+                                                     B: 'def _sync_stream_jsonl() -> Iterator[bytes]:'
+fastapi  similar_b_full    0.8376  0.7399        6   #15937 fastapi/routing.py ↔ #15813 fastapi/routing.py
+                                                     A: 'def _sync_stream_jsonl() -> Iterator[bytes]:'
+                                                     B: 'def _sync_stream_jsonl() -> Iterator[bytes]:'
+fastapi  control           0.3094  0.2675        4   #15992 fastapi/routing.py ↔ #15515 tests/test_sse.py
+                                                     A: 'async def serialize_response('
+                                                     B: 'def test_no_keepalive_when_fast(client: TestClient):'
+p5js     similar_a         0.5629  0.5161        3   #8829 src/math/patch-vector.js ↔ #8933 src/math/p5.Vector.js
+                                                     A: "import { Vector } from './p5.Vector.js';"
+                                                     B: 'function vector(p5, fn) {'
+p5js     similar_b_src     0.6788  0.6523       18   #8823 src/strands/strands_api.js ↔ #8862 src/strands/strands_api.js
+                                                     A: 'function createHookArguments(strandsContext, parameters){'
+                                                     B: 'export function createShaderHooksFunctions(strandsContext, f'
+p5js     similar_b_full    0.7074  0.6857       40   #8823 test/unit/webgl/p5.Shader.js ↔ #8862 test/unit/webgl/p5.Shader.js
+                                                     A: "test('returns numbers for builtin globals outside hooks and "
+                                                     B: "test('returns numbers for builtin globals outside hooks and "
+p5js     control           0.2236  0.2087        9   #8829 src/math/patch-vector.js ↔ #8964 src/webgl/p5.Framebuffer.js
+                                                     A: "import { Vector } from './p5.Vector.js';"
+                                                     B: 'class Framebuffer {'
+
+similar_b test-hunk effect: MAX 0.8376 (src) vs 0.8376 (full) · n_pairs 2 vs 6
+
+SEPARATION (similar − control) — the number that decides D-P1-2
+  fastapi  similar_a        MAX +0.1882   mean3 +0.2301
+  fastapi  similar_b_src    MAX +0.5282   mean3 +0.5225
+  fastapi  similar_b_full   MAX +0.5282   mean3 +0.4725
+  p5js     similar_a        MAX +0.3394   mean3 +0.3073
+  p5js     similar_b_src    MAX +0.4552   mean3 +0.4436
+  p5js     similar_b_full   MAX +0.4839   mean3 +0.4769
+
+HEADLINE GAP (09 §5 bands, fixed before the run)
+  fastapi  +0.1882   > 0.15  — vector signal discriminates, proceed as 03 specifies
+  p5js     +0.3394   > 0.15  — vector signal discriminates, proceed as 03 specifies
+
+D-P1-2 — like-for-like by pair type (the structure the pairs were built for)
+  A  zero file overlap, single hunk  fastapi +0.1882   p5js +0.3394   delta +0.1512
+  B  shared files, multi-hunk        fastapi +0.5282   p5js +0.4552   delta -0.0730
+  → deltas disagreeing in sign = inconclusive, D-P1-2 stays OPEN
