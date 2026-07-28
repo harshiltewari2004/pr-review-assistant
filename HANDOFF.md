@@ -1,48 +1,70 @@
-# Handoff — 2026-07-26, end of Phase 1 Day 3 (pgvector spike)
+# Handoff — 2026-07-28, end of Phase 1 Day 5 (doc revision pass)
 
 ## Done and committed
-- spikes/day3_pgvector.py — asyncpg round-trip through the real chunks
-  table inside a rolled-back transaction. Ran against 4 targets: local
-  docker, Neon direct, Neon pooled (default cache), Neon pooled
-  (statement_cache_size=0). All 4 PASS.
-- Verified on all targets: 6 tables, chunks.embedding = vector(384),
-  cosine {identical +1.0, 2a +1.0, orthogonal 0.0, opposite -1.0},
-  float4 round-trip delta 9.359e-09, wrong-dimension rejected (DataError),
-  0 rows left behind after rollback.
-- Fixed HANDOFF filename casing (was HANDOFF.MD, untracked since day 2).
+- Doc revision batch CLOSED. Eight docs retargeted to processing/p5.js.
+  01 §2 rewritten: four metadata exclusion rules (bots + explicit account
+  list, housekeeping title prefixes, duplicate resubmissions, no lang-*,
+  no release), plus the content-based zero-hunk rule pointing at 04 §5 4b.
+  No Documentation label row — p5.js uses it as a facet, not a type.
+- 04 §5 gained step 4b: zero hunks after file exclusions ⇒ in_corpus =
+  FALSE, exclusion_reason = 'no_source_content'. Costs no extra requests.
+- 03 §2 excludes translations/*/translation.json, NOT translations/ —
+  dev.js and index.js are the i18next loader and are real source.
+- 03 §3 and 02 §5's normalize_embeddings reason corrected: <=> is already
+  magnitude-invariant. Normalization buys agreement OUTSIDE Postgres.
+- 02 §7: judgments.self_authored column added while the table is empty.
+- 01 §12: re-test sample is stratified, not random — every self_authored
+  pair enters, kappa computed twice, no kappa published under n=10.
+- 08 §8a caveats converted from instruction to measured result.
+- D-P1-2 reconciled, D-P5-1 CONFIRMED, D-P2-3 CONFIRMED.
 
 ## Deployed state
 - Service: not deployed (Cloud Run is Phase 7 per 04 §9). Skeleton builds
   locally, 433 MB.
-- Neon: schema v001, 6 tables, empty — no corpus indexed yet. pgvector
-  0.8.0. Local docker: pgvector 0.8.5 (see D-P1-3).
+- Neon: schema v001, 6 tables, empty. Needs judgments.self_authored — the
+  02 §7 column is in the doc, NOT in the database. Migration 002 required
+  before Phase 5, free to write any time.
+- pgvector 0.8.0 Neon / 0.8.5 local docker (D-P1-3).
 
 ## Open decisions carried forward
-- D-P2-2 OPEN: production github_client.py handling of 406 on large diffs —
-  /pulls/{n}/files fallback vs log-and-skip.
-- D-P3-1 OPEN: manual ::vector cast vs pgvector asyncpg codec in app/db.py.
-  Decide with a measurement at Phase 3 bulk insert.
-- D-P3-2 OPEN: Neon pooled + asyncpg pool untested. Single connection
-  passed; create_pool() under Cloud Run churn is the real test, Phase 7.
-  statement_cache_size=0 is the known fallback.
+- D-P2-2 OPEN: 406 on large diffs — /pulls/{n}/files fallback vs
+  log-and-skip. Decide when writing github_client.py. The Documentation
+  sample spike exercises that endpoint incidentally.
+- D-P3-1 OPEN: manual ::vector cast vs pgvector asyncpg codec. Measure at
+  Phase 3 bulk insert.
+- D-P3-2 OPEN: Neon pooled + asyncpg create_pool() under Cloud Run churn.
+  Phase 7. statement_cache_size=0 is the known fallback.
+- D-P5-2 OPEN: 01 §7 anchors and §8 subsystems. Both now carry STALE
+  markers rather than being silently wrong. Rewrite before Day 25.
 
 ## Carried-over obligations
-- Phase 2 github_client.py inherits the spike's rate-limit/backoff pattern
-  and the 406 decision.
-- huge_hunk.diff is a char-heuristic candidate — confirm it actually trips
-  was_truncated with MiniLM's tokenizer in Phase 3.
-- Doc revision batch (now 7 items): six from the Cloud Run pivot across
-  04/05/08, plus 03 §3's claim that normalize_embeddings=True is what makes
-  <=> behave as cosine. Measured false — <=> is magnitude-invariant. Keep
-  the flag, fix the stated reason. Do these in one pass, not piecemeal.
+- 01 §7 anchor rewrite needs: diffs for #8862, #8964, #8823 (~15 min with
+  the Day-2 spike script), and p5.js /labels confirmed against the actual
+  page rather than list-view sampling. NOT gated on D-P5-1 — anchors are
+  open rubric examples, not blind judgments.
+- #8862 truncates hard: 2 of 3 source hunks over 256 tokens, range 64–614,
+  median 387. Any anchor written against it says so.
+- spikes/day5_doc_label_sample.py — confirmatory only, 11 requests.
+  Pre-registered: ≥3/10 with source changes ⇒ Documentation is a facet and
+  4b was the right mechanism; ≤2/10 ⇒ the two rules would have agreed.
+- Migration 002 for judgments.self_authored.
+- Reserved (CodeDay) is an event-claim marker, NOT an exclusion. Process
+  labels describe workflow state; workflow state does not correlate with
+  diff similarity. Same for Good First Issue and Help Wanted.
+- MAX vs mean-of-top-3: real evidence exists as of day 4 (p5.js Similar B
+  full-diff winner was shared test scaffolding, 0.6788 → 0.7074).
+  Re-examine at Milestone A, not before.
 
 ## Decisions log watermark
-- Current through D-P3-2, committed. Numbering convention now documented
-  at the top of DECISIONS.md.
+- Current through D-P5-2, committed.
 
 ## Next session starts with
-- Day 4: embedding sanity spike, BOTH repos (08 §8, 09 §5). Two
-  known-similar PR pairs from fastapi/fastapi and two from processing/p5.js.
-  Pick pairs whose similarity is IN THE CODE, not the title. Resolves
-  D-P1-2 (primary evaluation repo). This is the only assumption that could
-  reshape the project — hard deadline, cannot slip.
+- Day 6: ingest/corpus_filter.py. Unblocked — every rule is either list
+  metadata at 04 §5 step 2 or the zero-hunk check at 4b.
+  Type the classify() logic by hand (06 §? logic-vs-plumbing); paste the
+  pagination loop from spikes/day2_github_api.py.
+  The three exclusion_reason literals go in ingest/constants.py, not
+  inline — a typo splits the 02 §4 audit count silently.
+  Golden assertion at build time (11 §8): a fixture PR set of one bot PR,
+  one housekeeping PR, one duplicate triple, one docs-only PR, one mixed
+  docs+code PR. Print the exclusion_reason breakdown and read it.

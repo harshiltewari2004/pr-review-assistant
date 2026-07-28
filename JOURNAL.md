@@ -126,3 +126,81 @@ drifted from HANDOFF.md and macOS's case-insensitive filesystem hid it.
 That is the second naming-drift bug in three days after delete_file vs
 deleted_file. Both times: no error, wrong outcome, found by reading output
 instead of trusting it.
+
+## 2026-07-27 — Day 4
+Vector signal discriminates on BOTH repos. Separation (min across pair
+types): fastapi +0.1882, p5js +0.3394, both in 09 §5's top band. 03's
+starting weights stand.
+
+Prediction miss, and the useful kind. I predicted direction only — "p5.js
+will win" — with no cosines and no threshold, which 01 §14 says cannot be
+surprised. It wasn't. p5.js won pair type A (+0.1512) and LOST pair type B
+(-0.0730), and both deltas are smaller than the within-repo spread across
+pair types (fastapi 0.34). So the design can't separate repo from pair at
+one pair per cell. D-P1-2 resolves to p5.js on domain expertise via 09 §5's
+"comparable" branch, not on embedding quality. The embedding arm is a wash.
+Next time write the six numbers, not the direction — I bet on the outcome
+I wanted and got a result I can't call a win.
+
+Two silent-ish catches. First run compared fastapi similar_b in the
+source_only variant against p5js similar_b in default — my spec gap, not a
+typo, and it made the B delta meaningless. The winning-hunk print is what
+exposed it: p5.js's best match was two copies of the same test assertion.
+Third instance now of "plausible output, no error" (after delete_file and
+the .env-as-connstring). The countermeasure that has worked all three
+times is printing the intermediate, not the result.
+
+Truncation measured at 28% of hunks (9/32) on the production parse,
+consistent across both languages — 27% fastapi, 29% p5js. 06 §12's worked
+example used 18% illustratively; the real number is materially higher and
+goes in the README per 02 §5. One hunk hit 3,698 tokens against a 256
+limit. huge_hunk.diff's char-heuristic doubt is now closed.
+
+Two transcription errors in the session — a semicolon for a colon in the
+pair_score dict, and a dropped space in the winning-hunk f-string. Both
+one-token, both caught. That's the 11 §4 fatigue bell, and the session was
+already at its close.
+
+## 2026-07-28 — Day 5, doc revision pass
+
+- Wrote a verdict line into day4_embedding.py that was stricter than the
+  criterion I'd fixed in advance. The script printed "inconclusive, D-P1-2
+  stays OPEN" off a per-pair-type breakdown; 09 §5 pre-registered only two
+  branches and the headline gaps (+0.1882 / +0.3394) land squarely in
+  "comparable → p5.js primary". Caught a day later reading the output back,
+  not at run time. Pre-registration only works if I also decide by the rule
+  I wrote — post-hoc caution is still post-hoc. Reconciled in DECISIONS.md;
+  the output file is a run record and stays as printed.
+
+- Truncation across the day-4 spike: 9/32 hunks (28%), FastAPI 3/11, p5.js
+  6/21. PREDICTION for the Phase 3 full index, not a corpus figure — n=32
+  across ten size-matched PRs, one of which (#15937) was picked because it
+  truncates. #15937's test file measured 3,698 tokens in one hunk, 14× the
+  limit. Compare against the real rate at Day 19 and record the gap.
+
+- The p5.js Similar-B full-diff winner was test/unit/webgl/p5.Shader.js on
+  BOTH sides, opening with the identical test() string. MAX went 0.6788 →
+  0.7074 on shared test scaffolding, not shared change semantics. That is
+  03 §5's named MAX weakness showing up on real data at day 4, three phases
+  before the aggregation question is due. First concrete argument for
+  mean-of-top-3. Re-examine at Milestone A.
+
+- My "p5.js handles translations through the contributor bot" claim was
+  wrong, and my own evidence contradicted it — five "docs: add <user> as a
+  contributor for translation" entries are the bot crediting a HUMAN whose
+  PR is upstream and invisible to the bot rule. git ls-files confirmed
+  translations/{en,es,hi,ja,ko,zh}/translation.json in the current tree.
+  I had the disconfirming data on screen and drew the opposite conclusion.
+
+- Chunk-level exclusion of locale JSON would have killed only the vector
+  signal. File overlap would still fire at Jaccard ≈ 1.0 and BM25 on
+  translation.json across every translation PR — two of three signals at
+  ceiling on content that means nothing. Needed in_corpus = FALSE, which
+  is 04 §5 step 4b. Nearly shipped the one-signal fix.
+
+- Audit of the applied edits found 14 residuals, 4 of them contradictions
+  between docs rather than typos — 01 §2 still claimed the corpus filter
+  was metadata-only after 4b made it not, and 07 §4 still asserted that a
+  docs+code PR gets excluded. A find-and-replace pass does not catch a
+  claim that became false. Read the paragraphs around every edit, not the
+  edit.
