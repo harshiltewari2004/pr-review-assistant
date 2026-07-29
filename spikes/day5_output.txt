@@ -1,1 +1,48 @@
-zsh: command not found: python
+sampled 10 PRs labeled 'Documentation'
+
+#8031   MIXED        2 files,  2 source,   753 src lines
+        labels: Documentation
+        src: src/shape/curves.js  +143/-74
+        src: src/shape/custom_shapes.js  +260/-276
+
+#7694   MIXED        1 files,  1 source,    45 src lines
+        labels: Documentation
+        src: src/io/files.js  +44/-1
+
+#7692   MIXED        4 files,  3 source,   136 src lines
+        labels: Documentation
+        src: src/shape/custom_shapes.js  +2/-2
+        src: src/shape/vertex.js  +9/-15
+        src: src/type/p5.Font.js  +108/-0
+
+#7691   MIXED        2 files,  2 source,    36 src lines
+        labels: Documentation
+        src: src/image/loading_displaying.js  +5/-5
+        src: src/webgl/loading.js  +13/-13
+
+#7690   MIXED        1 files,  1 source,    65 src lines
+        labels: Documentation
+        src: src/color/setting.js  +57/-8
+
+#7689   MIXED        1 files,  1 source,    64 src lines
+        labels: Documentation
+        src: src/events/keyboard.js  +34/-30
+
+#7666   MIXED        1 files,  1 source,    17 src lines
+        labels: Documentation, p5.js 2.0+
+        src: src/math/trigonometry.js  +10/-7
+
+#7658   MIXED        1 files,  1 source,  1362 src lines
+        labels: Documentation, p5.js 2.0+
+        src: src/type/textCore.js  +1233/-129
+
+#7654   MIXED        1 files,  1 source,   162 src lines
+        labels: Documentation, p5.js 2.0+
+        src: src/color/setting.js  +160/-2
+
+#7649   MIXED        2 files,  2 source,    28 src lines
+        labels: Documentation, p5.js 2.0+
+        src: src/webgl/material.js  +1/-1
+        src: src/webgl/p5.Shader.js  +14/-12
+
+VERDICT: 10/10 carry source changes
