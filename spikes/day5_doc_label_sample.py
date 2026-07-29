@@ -21,6 +21,10 @@ LABEL = "Documentation"
 SAMPLE = 10
 SRC_EXT = (".js", ".mjs", ".ts")
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 HEADERS = {
     "Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}",
     "Accept": "application/vnd.github+json",

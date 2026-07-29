@@ -1,70 +1,80 @@
-# Handoff — 2026-07-28, end of Phase 1 Day 5 (doc revision pass)
+# Handoff — 2026-07-29, end of Phase 1 Day 6 (Phase 2 pulled forward)
 
 ## Done and committed
-- Doc revision batch CLOSED. Eight docs retargeted to processing/p5.js.
-  01 §2 rewritten: four metadata exclusion rules (bots + explicit account
-  list, housekeeping title prefixes, duplicate resubmissions, no lang-*,
-  no release), plus the content-based zero-hunk rule pointing at 04 §5 4b.
-  No Documentation label row — p5.js uses it as a facet, not a type.
-- 04 §5 gained step 4b: zero hunks after file exclusions ⇒ in_corpus =
-  FALSE, exclusion_reason = 'no_source_content'. Costs no extra requests.
-- 03 §2 excludes translations/*/translation.json, NOT translations/ —
-  dev.js and index.js are the i18next loader and are real source.
-- 03 §3 and 02 §5's normalize_embeddings reason corrected: <=> is already
-  magnitude-invariant. Normalization buys agreement OUTSIDE Postgres.
-- 02 §7: judgments.self_authored column added while the table is empty.
-- 01 §12: re-test sample is stratified, not random — every self_authored
-  pair enters, kappa computed twice, no kappa published under n=10.
-- 08 §8a caveats converted from instruction to measured result.
-- D-P1-2 reconciled, D-P5-1 CONFIRMED, D-P2-3 CONFIRMED.
+- ingest/constants.py: four exclusion_reason literals named
+  (bot_author, housekeeping, duplicate_resubmission, no_source_content),
+  BOT_ACCOUNTS, HOUSEKEEPING_TITLE_PATTERNS, DUPLICATE_WINDOW_DAYS=7,
+  TITLE_SIMILARITY_THRESHOLD=0.95. no_source_content is defined here but
+  APPLIED at 04 §5 step 4b in the parser, not in corpus_filter.
+- ingest/corpus_filter.py: PRMeta, Verdict, classify(), normalize_title(),
+  titles_match(), group_duplicates(), pick_keeper(), apply_corpus_filter(),
+  report_housekeeping_near_misses().
+- Duplicate pass runs on SURVIVORS of classify() only — bots must not land
+  in the duplicate bucket or the 02 §4 audit reports the wrong reason.
+- tests/test_corpus_filter.py: 8-PR golden fixture. Counter printed and read:
+  {None: 3, bot_author: 2, duplicate_resubmission: 2, housekeeping: 1}.
+- Invariant asserted: exclusion_reason IS NULL exactly when in_corpus.
 
 ## Deployed state
-- Service: not deployed (Cloud Run is Phase 7 per 04 §9). Skeleton builds
+- Unchanged. Not deployed (Cloud Run is Phase 7 per 04 §9). Skeleton builds
   locally, 433 MB.
-- Neon: schema v001, 6 tables, empty. Needs judgments.self_authored — the
-  02 §7 column is in the doc, NOT in the database. Migration 002 required
-  before Phase 5, free to write any time.
+- Neon: schema v001, 6 tables, empty. Migration 002 (judgments.self_authored)
+  still unwritten — free any time, needed before Phase 5.
 - pgvector 0.8.0 Neon / 0.8.5 local docker (D-P1-3).
 
+## Sequencing note — read before writing github_client.py
+corpus_filter.py was built at Day 6, ahead of github_client.py (09 §3 puts
+the client at days 8-9 and the filter at day 10). The contract therefore
+flows filter -> client: github_client.py MUST produce ingest.corpus_filter
+.PRMeta (number, title, author, author_type, created_at, merged_at) from the
+/pulls list payload. from_list_item() belongs in github_client.py, NOT in
+corpus_filter.py — the filter must not know GitHub's JSON key names.
+Filter has NOT yet been run against real cached list pages.
+
 ## Open decisions carried forward
-- D-P2-2 OPEN: 406 on large diffs — /pulls/{n}/files fallback vs
-  log-and-skip. Decide when writing github_client.py. The Documentation
-  sample spike exercises that endpoint incidentally.
-- D-P3-1 OPEN: manual ::vector cast vs pgvector asyncpg codec. Measure at
-  Phase 3 bulk insert.
+- D-P2-2 OPEN: 406 on large diffs — /pulls/{n}/files fallback vs log-and-skip.
+  Decide when writing github_client.py. NOW THE NEXT THING DUE.
+- D-P2-4 OPEN: "near-identical title" operationalized (normalized-exact OR
+  ratio >= 0.95; 7-day window anchored to group's first member). Resolve by
+  reading the logged duplicate groups after the first full list fetch.
+- D-P2-5 OPEN: housekeeping patterns case-sensitive as written in 01 §2;
+  case-only near-misses logged, not matched. Resolve from the same log.
+- D-P3-1 OPEN: manual ::vector cast vs pgvector asyncpg codec. Phase 3.
 - D-P3-2 OPEN: Neon pooled + asyncpg create_pool() under Cloud Run churn.
   Phase 7. statement_cache_size=0 is the known fallback.
-- D-P5-2 OPEN: 01 §7 anchors and §8 subsystems. Both now carry STALE
-  markers rather than being silently wrong. Rewrite before Day 25.
+- D-P5-2 OPEN: 01 §7 anchors and §8 subsystems carry STALE markers.
+  Rewrite before Day 25.
 
 ## Carried-over obligations
-- 01 §7 anchor rewrite needs: diffs for #8862, #8964, #8823 (~15 min with
-  the Day-2 spike script), and p5.js /labels confirmed against the actual
-  page rather than list-view sampling. NOT gated on D-P5-1 — anchors are
-  open rubric examples, not blind judgments.
-- #8862 truncates hard: 2 of 3 source hunks over 256 tokens, range 64–614,
+- 01 §7 anchor rewrite: diffs for #8862, #8964, #8823 (~15 min with the
+  Day-2 spike script) + p5.js /labels confirmed against the actual page.
+  Not gated on D-P5-1.
+- #8862 truncates hard: 2 of 3 source hunks over 256 tokens, range 64-614,
   median 387. Any anchor written against it says so.
-- spikes/day5_doc_label_sample.py — confirmatory only, 11 requests.
-  Pre-registered: ≥3/10 with source changes ⇒ Documentation is a facet and
-  4b was the right mechanism; ≤2/10 ⇒ the two rules would have agreed.
+- spikes/day5_doc_label_sample.py + day5_output.txt committed at 821ff17
+  (before this session; I misremembered it as unrun). 10/10 sampled PRs
+  carry substantive source changes against the >=3 pre-registration =>
+  Documentation is a [facet | type] on p5.js. 01 §2 keeps no Documentation
+  row either way; corpus_filter.py unchanged. The number is the one that
+  explains the no_source_content count in the README at Phase 9.
 - Migration 002 for judgments.self_authored.
-- Reserved (CodeDay) is an event-claim marker, NOT an exclusion. Process
-  labels describe workflow state; workflow state does not correlate with
-  diff similarity. Same for Good First Issue and Help Wanted.
-- MAX vs mean-of-top-3: real evidence exists as of day 4 (p5.js Similar B
-  full-diff winner was shared test scaffolding, 0.6788 → 0.7074).
+- Reserved (CodeDay), Good First Issue, Help Wanted: process labels,
+  NOT exclusions. Workflow state does not correlate with diff similarity.
+- MAX vs mean-of-top-3: evidence exists as of Day 4 (p5.js Similar B
+  full-diff winner was shared test scaffolding, 0.6788 -> 0.7074).
   Re-examine at Milestone A, not before.
 
 ## Decisions log watermark
-- Current through D-P5-2, committed.
+- Current through D-P5-5... no: current through D-P2-5, committed.
+  (D-P5-2 remains the highest-numbered Phase 5 entry.)
 
 ## Next session starts with
-- Day 6: ingest/corpus_filter.py. Unblocked — every rule is either list
-  metadata at 04 §5 step 2 or the zero-hunk check at 4b.
-  Type the classify() logic by hand (06 §? logic-vs-plumbing); paste the
-  pagination loop from spikes/day2_github_api.py.
-  The three exclusion_reason literals go in ingest/constants.py, not
-  inline — a typo splits the 02 §4 audit count silently.
-  Golden assertion at build time (11 §8): a fixture PR set of one bot PR,
-  one housekeeping PR, one duplicate triple, one docs-only PR, one mixed
-  docs+code PR. Print the exclusion_reason breakdown and read it.
+- Day 7: ingest/github_client.py (09 §3 days 8-9, also pulled forward).
+  Paste the pagination + rate-limit + backoff loop from
+  spikes/day2_github_api.py — that is plumbing, 11 §3.
+  Type by hand: from_list_item() -> PRMeta, and the resumability logic.
+  MUST cache raw responses to .cache/prs/ BEFORE parsing (04 §5, hot
+  invariant 19). Cache write precedes parse so a parser crash loses nothing.
+  Resolve D-P2-2 in this session — it is due when this file is written.
+  Golden assertion: fetch one page, assert 100 items, assert every item
+  maps to a PRMeta without KeyError, print the first record and read it.

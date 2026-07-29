@@ -204,3 +204,35 @@ already at its close.
   docs+code PR gets excluded. A find-and-replace pass does not catch a
   claim that became false. Read the paragraphs around every edit, not the
   edit.
+
+- Two of my own edits interacted: deleting the Documentation row left the
+  paragraph above it pointing at a rule that no longer existed. Neither edit
+  was wrong alone. Also missed 09 entirely on three passes because I'd only
+  ever grepped it for the §5 gap bands. Audit the files, not the edit list.
+
+- day5_doc_label_sample.py prints the count and leaves the verdict to the
+  pre-registered rule in its docstring. Deliberate reversal of day4's
+  pattern, made the same day I found the day4 bug. Scripts report numbers;
+  criteria decide.
+
+## 2026-07-29 — Day 6
+Corpus filter. The surprise was that 01 §2 is not executable as written:
+"near-identical title" and "within 7 days" both needed operationalizing, and
+the 7-day window turned out to be genuinely ambiguous — pairwise-transitive
+grouping would let a chain of similar titles collapse across a whole month.
+Anchored the window to each group's first member. Logged both gaps as D-P2-4
+and D-P2-5 rather than picking silently.
+
+Second thing: built day 10's module before day 8-9's, which means the filter's
+input shape was defined against GitHub's list payload rather than against real
+code. Pinned it as PRMeta so github_client.py inherits the contract instead of
+the reverse. 11 §10 is exactly about this and it nearly bit.
+
+- Committed a spike with a message claiming the result was recorded, before
+  running it. Third time the record has asserted something reality didn't
+  back. The other two were caught by reading output and by git status; this
+  one was caught by a commit message not matching what I said out loud.
+
+  - .gitignore never had .cache/, despite 04 §5 specifying it. Invisible for
+  five days because the directory didn't exist yet. Caught by reading a
+  git status I'd only opened to ask a different question.

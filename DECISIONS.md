@@ -149,3 +149,30 @@ PR with zero resulting hunks as in_corpus = FALSE,
 exclusion_reason = 'no_source_content'. Chunk-level exclusion alone would
 leave file overlap at ~1.0 and BM25 at ceiling across all translation PRs.
 Costs no extra API requests.
+
+### D-P2-4 — OPEN (2026-07-29)
+"Near-identical title" in 01 §2 is not operational. Implemented as: normalized
+(lowercase, collapsed whitespace, trailing punctuation stripped) exact match,
+OR difflib.SequenceMatcher ratio >= 0.95. The 7-day window is anchored to the
+group's first member, not the previous one, bounding every group's span at 7
+days and preventing transitive collapse across a month.
+
+0.95 not 0.90: a false positive silently removes a real PR from the corpus,
+and same-author-within-7-days already makes the conjunction tight. All four
+observed p5.js cases have literally identical titles, so exact match alone
+would have covered them; the ratio is headroom, not the load-bearing rule.
+
+RESOLVE: after the first full list fetch, read the logged duplicate groups.
+If any group contains PRs that are not the same change, lower the threshold
+or drop the ratio branch entirely.
+
+### D-P2-5 — OPEN (2026-07-29)
+Housekeeping title patterns transcribed from 01 §2 case-sensitively, exactly
+as written — including the deliberate (update|Update) alternation on the third,
+which implies case matters and excludes "UPDATE". Widening to IGNORECASE would
+change a locked rule on no evidence. Instead report_housekeeping_near_misses()
+logs any title that matches only under IGNORECASE.
+
+RESOLVE: read the near-miss log after the first full list fetch. If real
+housekeeping PRs are slipping through on case alone, that is evidence, and
+01 §2 gets amended rather than the code quietly widening.
