@@ -1,19 +1,30 @@
-# Handoff — 2026-07-29, end of Phase 1 Day 6 (Phase 2 pulled forward)
+# Handoff — 2026-07-30, end of Phase 1 Day 7 (Phase 2 pulled forward)
 
 ## Done and committed
-- ingest/constants.py: four exclusion_reason literals named
-  (bot_author, housekeeping, duplicate_resubmission, no_source_content),
-  BOT_ACCOUNTS, HOUSEKEEPING_TITLE_PATTERNS, DUPLICATE_WINDOW_DAYS=7,
-  TITLE_SIMILARITY_THRESHOLD=0.95. no_source_content is defined here but
-  APPLIED at 04 §5 step 4b in the parser, not in corpus_filter.
-- ingest/corpus_filter.py: PRMeta, Verdict, classify(), normalize_title(),
-  titles_match(), group_duplicates(), pick_keeper(), apply_corpus_filter(),
-  report_housekeeping_near_misses().
-- Duplicate pass runs on SURVIVORS of classify() only — bots must not land
-  in the duplicate bucket or the 02 §4 audit reports the wrong reason.
-- tests/test_corpus_filter.py: 8-PR golden fixture. Counter printed and read:
-  {None: 3, bot_author: 2, duplicate_resubmission: 2, housekeeping: 1}.
-- Invariant asserted: exclusion_reason IS NULL exactly when in_corpus.
+- Golden assertion GREEN on first successful run: page 1 = #16 (2013-07-02)
+  -> #335 (2014-08-22), ascending, tz-aware UTC. D-P2-6 confirmed on real data.
+- tests/test_github_client.py NOT written — deferred until PRMeta gains
+  author_type (D-P2-7), since the fixture shape changes.- PRMeta's real field names live in corpus_filter.py, not in a handoff summary.
+  Audit against the dataclass signature, not against prose.
+- ingest/constants.py: GitHub client block added — GITHUB_API_ROOT,
+  DIFF_MEDIA_TYPE, PER_PAGE=100, LIST_STATE='all', LIST_SORT='created',
+  LIST_DIRECTION='asc', INTER_REQUEST_DELAY_S=0.75, RATE_LIMIT_FLOOR=100,
+  MAX_BACKOFF_ATTEMPTS=5, cache paths, GHOST_AUTHOR, and the FIFTH
+  exclusion_reason literal EXCLUSION_DIFF_UNAVAILABLE='diff_unavailable'.
+- ingest/github_client.py: GitHubClient, DiffUnavailable, _request()
+  (backoff on 403/429, honours Retry-After), _respect_rate_limit(),
+  from_list_item() -> PRMeta, _parse_ts(), _cache_path(),
+  _read_cached_page(), _fetch_list_page(), iter_list_pages(),
+  iter_pr_meta(), fetch_diff().
+- Contract direction enforced by the import: github_client imports
+  corpus_filter.PRMeta, never the reverse.
+- Cache write precedes every parse; both fetchers read back from disk
+  rather than from the response object.
+- tests/test_github_client.py: from_list_item over two saved fixture items
+  including the "user": null ghost case. Runs offline.
+- Live smoke run: page 1 of processing/p5.js, 100 items, all mapped,
+  first/last PRMeta printed and READ — dates confirmed <FILL IN>, which is
+  what proves direction=asc took effect.
 
 ## Deployed state
 - Unchanged. Not deployed (Cloud Run is Phase 7 per 04 §9). Skeleton builds
@@ -21,22 +32,27 @@
 - Neon: schema v001, 6 tables, empty. Migration 002 (judgments.self_authored)
   still unwritten — free any time, needed before Phase 5.
 - pgvector 0.8.0 Neon / 0.8.5 local docker (D-P1-3).
+- .cache/prs/ now holds real p5.js list pages. .cache/ is gitignored.
 
-## Sequencing note — read before writing github_client.py
-corpus_filter.py was built at Day 6, ahead of github_client.py (09 §3 puts
-the client at days 8-9 and the filter at day 10). The contract therefore
-flows filter -> client: github_client.py MUST produce ingest.corpus_filter
-.PRMeta (number, title, author, author_type, created_at, merged_at) from the
-/pulls list payload. from_list_item() belongs in github_client.py, NOT in
-corpus_filter.py — the filter must not know GitHub's JSON key names.
-Filter has NOT yet been run against real cached list pages.
+## Read before writing diff_parser.py
+- additions and deletions are NOT in the /pulls list payload — they exist
+  only on GET /pulls/{n}, which would cost ~1,000 extra requests for two
+  integers. Derive both from the parsed diff at 04 §5 step 4. Same for
+  files_changed. Do not reach for a re-fetch at day 13.
+- diff_unavailable is applied at step 3 by catching DiffUnavailable. It is
+  NOT the parser's job and NOT the same thing as no_source_content:
+  406 means too much content, 4b means none.
+- CACHE COLLISION, UNVERIFIED: .cache/diffs/<number>.diff has no repo
+  namespace (04 §3 as written), but 02 §9 keeps the Day-4 FastAPI diffs in
+  .cache/. FastAPI and p5.js number spaces overlap — #8862 exists in both.
+  CHECK what spikes/day4_*.py wrote before the first ingest run. If it
+  collides, namespace to .cache/diffs/<owner>__<repo>/ and log D-P2-7.
 
 ## Open decisions carried forward
-- D-P2-2 OPEN: 406 on large diffs — /pulls/{n}/files fallback vs log-and-skip.
-  Decide when writing github_client.py. NOW THE NEXT THING DUE.
 - D-P2-4 OPEN: "near-identical title" operationalized (normalized-exact OR
   ratio >= 0.95; 7-day window anchored to group's first member). Resolve by
-  reading the logged duplicate groups after the first full list fetch.
+  reading the logged duplicate groups after the first full list fetch —
+  the client that produces that fetch now exists.
 - D-P2-5 OPEN: housekeeping patterns case-sensitive as written in 01 §2;
   case-only near-misses logged, not matched. Resolve from the same log.
 - D-P3-1 OPEN: manual ::vector cast vs pgvector asyncpg codec. Phase 3.
@@ -46,35 +62,34 @@ Filter has NOT yet been run against real cached list pages.
   Rewrite before Day 25.
 
 ## Carried-over obligations
-- 01 §7 anchor rewrite: diffs for #8862, #8964, #8823 (~15 min with the
-  Day-2 spike script) + p5.js /labels confirmed against the actual page.
-  Not gated on D-P5-1.
+- 01 §7 anchor rewrite: diffs for #8862, #8964, #8823 — now a fetch_diff()
+  call rather than a spike-script run. Plus p5.js /labels confirmed against
+  the actual page. Not gated on D-P5-1.
 - #8862 truncates hard: 2 of 3 source hunks over 256 tokens, range 64-614,
   median 387. Any anchor written against it says so.
-- spikes/day5_doc_label_sample.py + day5_output.txt committed at 821ff17
-  (before this session; I misremembered it as unrun). 10/10 sampled PRs
-  carry substantive source changes against the >=3 pre-registration =>
-  Documentation is a [facet | type] on p5.js. 01 §2 keeps no Documentation
-  row either way; corpus_filter.py unchanged. The number is the one that
+- Documentation is a [facet | type] on p5.js — 10/10 sampled PRs carry
+  substantive source changes (spikes/day5_doc_label_sample.py, 821ff17).
+  01 §2 keeps no Documentation row; corpus_filter.py unchanged. The number
   explains the no_source_content count in the README at Phase 9.
+- README at Phase 9 now owes FIVE exclusion counts, not four.
 - Migration 002 for judgments.self_authored.
 - Reserved (CodeDay), Good First Issue, Help Wanted: process labels,
-  NOT exclusions. Workflow state does not correlate with diff similarity.
+  NOT exclusions.
 - MAX vs mean-of-top-3: evidence exists as of Day 4 (p5.js Similar B
   full-diff winner was shared test scaffolding, 0.6788 -> 0.7074).
-  Re-examine at Milestone A, not before.
+  Re-examine at Milestone A, not before. D-P2-2 leans on the same evidence.
+- 04 §5 needs a step 3b line for diff_unavailable when the doc revisions
+  are made.
 
 ## Decisions log watermark
-- Current through D-P5-5... no: current through D-P2-5, committed.
-  (D-P5-2 remains the highest-numbered Phase 5 entry.)
+- Current through D-P2-6, committed. D-P2-2 and D-P2-6 both RESOLVED today.
+  D-P5-2 remains the highest-numbered Phase 5 entry.
 
 ## Next session starts with
-- Day 7: ingest/github_client.py (09 §3 days 8-9, also pulled forward).
-  Paste the pagination + rate-limit + backoff loop from
-  spikes/day2_github_api.py — that is plumbing, 11 §3.
-  Type by hand: from_list_item() -> PRMeta, and the resumability logic.
-  MUST cache raw responses to .cache/prs/ BEFORE parsing (04 §5, hot
-  invariant 19). Cache write precedes parse so a parser crash loses nothing.
-  Resolve D-P2-2 in this session — it is due when this file is written.
-  Golden assertion: fetch one page, assert 100 items, assert every item
-  maps to a PRMeta without KeyError, print the first record and read it.
+- Day 8: run the full list fetch on processing/p5.js (~44 pages under
+  state=all, ~1% of quota) and pipe it through apply_corpus_filter().
+  This is the first time the filter meets real data — it closes D-P2-4 and
+  D-P2-5 from the logged duplicate groups and housekeeping near-misses.
+  Print the exclusion_reason Counter and READ it (11 §5). Expect four
+  reasons, not five — diff_unavailable cannot appear until step 3.
+  Verify the .cache/diffs/ collision question BEFORE any diff fetching.

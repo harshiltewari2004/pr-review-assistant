@@ -176,3 +176,44 @@ logs any title that matches only under IGNORECASE.
 RESOLVE: read the near-miss log after the first full list fetch. If real
 housekeeping PRs are slipping through on case alone, that is evidence, and
 01 §2 gets amended rather than the code quietly widening.
+
+
+## D-P2-2 — RESOLVED 2026-07-30: 406 on large diffs
+Exclude, do not fall back to /pulls/{n}/files. Mark in_corpus = FALSE with
+a fifth exclusion_reason literal, 'diff_unavailable', applied at 04 §5 step 3
+(new location; step 2 is metadata, 4b is content).
+Reasons, in order of weight: (1) a 400-hunk PR is a false-positive machine
+under MAX aggregation — 03 §5's named weakness, already observed at Day 4;
+(2) the /files payload is a second input shape into the highest
+edge-case-density parser in the project (07 §2); (3) exclusion is reversible
+per 02 §4, a bad parser path is not.
+Obligations: count printed and read at ingest; count published in the README
+at Phase 9; 406 only — 403/429 back off, other statuses log with their code.
+The /files fallback remains a documented upgrade path.
+
+## D-P2-6 — RESOLVED 2026-07-30: /pulls list query string
+state=all, sort=created, direction=asc, per_page=100.
+direction=asc is load-bearing: page numbers over GitHub's default descending
+order are not a stable cache key, because PRs opened between an interrupted
+run and its resume shift the pagination window and cause silent skips and
+duplicates. Under asc, a full page is immutable; a short page is the tail
+and is always re-fetched.
+state=all rather than closed: 02 §4's CHECK admits outcome='open', and an
+open PR predating the query is legitimate reviewer context. Excluding it
+would be an unevidenced filter, which 01 §2 rejects on its own terms.
+
+## D-P2-7 — OPEN 2026-07-30: PRMeta lacks author_type, but classify() reads it
+corpus_filter.classify() line 61 implements 07 §4's PRIMARY bot rule
+(author_type == 'Bot'). corpus_filter.PRMeta declares five fields and
+author_type is not among them. Both are committed and passing.
+That is only possible if tests/test_corpus_filter.py builds its 8-PR fixture
+as something other than a PRMeta, so the Day-6 counter
+{None:3, bot_author:2, duplicate_resubmission:2, housekeeping:1} was read
+correctly and validated a shape the pipeline cannot produce.
+Found by grepping the dataclass after a TypeError from from_list_item(), not
+by a failing test.
+Fix: add author_type to PRMeta; add it to from_list_item() (the TODO is
+already in place); rebuild the fixture on real PRMeta objects; keep 07 §4's
+two bot rules tested separately. Field-order change breaks positional
+construction in the fixture — do it with that file open.
+Due Day 8, BEFORE apply_corpus_filter() meets real client output.

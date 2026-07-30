@@ -236,3 +236,11 @@ the reverse. 11 §10 is exactly about this and it nearly bit.
   - .gitignore never had .cache/, despite 04 §5 specifying it. Invisible for
   five days because the directory didn't exist yet. Caught by reading a
   git status I'd only opened to ask a different question.
+
+  2026-07-30 (Day 7) — client works, assertion green, D-P2-6 confirmed on real
+data. Five one-token typos, two silent: `mereged_at` (every PR reads unmerged)
+and `directions` (GitHub ignores the unknown param and serves descending order).
+The bigger find came free from a TypeError: classify() reads pr.author_type and
+PRMeta has no such field, so yesterday's passing fixture was built on a shape
+the pipeline cannot produce. A prose contract in HANDOFF.md does not typecheck.
+Stopped at the rule, several typos late.
