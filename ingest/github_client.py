@@ -3,14 +3,16 @@
 Every raw response is written to .cache/ BEFORE any parsing (hot invariant 19).
 Imported only by scripts/ — never by app/ (04 §3).
 """
+
 from __future__ import annotations
 
 import json
 import logging
 import time
+from collections.abc import Iterator
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
 import httpx
 
@@ -31,7 +33,7 @@ from ingest.constants import (
     RATE_LIMIT_FLOOR,
     RATE_LIMIT_SLEEP_BUFFER_S,
 )
-from ingest.corpus_filter import PRMeta     # contract direction: client -> filter
+from ingest.corpus_filter import PRMeta  # contract direction: client -> filter
 
 log = logging.getLogger(__name__)
 
@@ -45,8 +47,7 @@ class DiffUnavailable(Exception):
         self.status = status
 
 
-
-def _parse_ts(value:str|None)->datetime|None:
+def _parse_ts(value: str | None) -> datetime | None:
     """GitHub sends '2026-07-29T14:02:11Z'.
 
     fromisoformat accepts the trailing Z from 3.11 onward (06 §1 pins 3.11)
@@ -57,7 +58,8 @@ def _parse_ts(value:str|None)->datetime|None:
         return None
     return datetime.fromisoformat(value)
 
-def from_list_item(item:dict[str,Any])->PRMeta:
+
+def from_list_item(item: dict[str, Any]) -> PRMeta:
     """One /pulls list item -> PRMeta.
 
     Lives here and not in corpus_filter: the filter must not know GitHub's
@@ -67,27 +69,24 @@ def from_list_item(item:dict[str,Any])->PRMeta:
     # them, and the failure is a NoneType attribute error rather than a
     # KeyError — `item["user"]["login"]` would not have raised the error the
     # golden assertion was written to catch.
-    user = item.get("user") or{}
+    user = item.get("user") or {}
     return PRMeta(
-        number = item["number"],
-        title = item["title"],
-        author = user.get("login",GHOST_AUTHOR),
+        number=item["number"],
+        title=item["title"],
+        author=user.get("login") or GHOST_AUTHOR,
         # 'Organization' is a third real value alongside User and Bot. It is
         # not a bot; 07 §4's account list and step 4b handle the rest.
-        author_type=user.get("type", "User"),
-        created_at = _parse_ts(item["created_at"]),
-        merged_at = _parse_ts(item.get("merged_at")),
+        author_type=user.get("type") or "User",
+        created_at=_parse_ts(item["created_at"]),
+        merged_at=_parse_ts(item.get("merged_at")),
     )
-
-
-
-
 
 
 class GitHubClient:
     def __init__(self, token: str, repo: str, refresh: bool = False) -> None:
         self.repo = repo
         self.refresh = refresh
+        self._slug = repo.replace("/", "__")
         self._client = httpx.Client(
             base_url=GITHUB_API_ROOT,
             headers={
@@ -98,14 +97,15 @@ class GitHubClient:
             timeout=30.0,
         )
 
-    def __enter__(self) -> "GitHubClient":
+    def __enter__(self) -> GitHubClient:
         return self
 
     def __exit__(self, *exc: object) -> None:
         self._client.close()
 
-    def _request(self, path: str, *, accept: str | None = None,
-                 params: dict[str, Any] | None = None) -> httpx.Response:
+    def _request(
+        self, path: str, *, accept: str | None = None, params: dict[str, Any] | None = None
+    ) -> httpx.Response:
         """One request, with rate-limit respect and backoff on 403/429.
 
         Returns the response for every non-retryable status, 406 included.
@@ -119,9 +119,10 @@ class GitHubClient:
             if resp.status_code in (403, 429):
                 # GitHub returns 403, not 429, on secondary rate limits, and
                 # sometimes supplies Retry-After. Honour it when present.
-                wait = float(resp.headers.get("Retry-After", BACKOFF_BASE_S ** attempt))
-                log.warning("retryable status %s on %s; sleeping %.1fs",
-                            resp.status_code, path, wait)
+                wait = float(resp.headers.get("Retry-After", BACKOFF_BASE_S**attempt))
+                log.warning(
+                    "retryable status %s on %s; sleeping %.1fs", resp.status_code, path, wait
+                )
                 time.sleep(wait)
                 continue
             time.sleep(INTER_REQUEST_DELAY_S)
@@ -136,44 +137,44 @@ class GitHubClient:
             return
         reset_at = int(resp.headers["X-RateLimit-Reset"])
         sleep_for = max(0.0, reset_at - time.time() + RATE_LIMIT_SLEEP_BUFFER_S)
-        log.warning("rate-limit floor reached (%s left); sleeping %.0fs",
-                    remaining, sleep_for)
+        log.warning("rate-limit floor reached (%s left); sleeping %.0fs", remaining, sleep_for)
         time.sleep(sleep_for)
 
-    def _cache_path(self,page:int)->Path:
-        slug = self.repo.replace("/","__")
-        return PR_LIST_CACHE/f"{slug}_page_{page:04d}.json"
-    
+    def _list_cache_path(self, page: int) -> Path:
+        return PR_LIST_CACHE / f"{self._slug}_page_{page:04d}.json"
 
-    def _read_cached_page(self,page:int)->list[dict[str,Any]]|None:
+    def _read_cached_page(self, page: int) -> list[dict[str, Any]] | None:
         if self.refresh:
             return None
-        path = self._cache_path(page)
+        path = self._list_cache_path(page)
         if not path.exists():
             return None
         items = json.loads(path.read_text())
         # Only a FULL page is immutable under direction=asc. A short page is
         # the tail and may have been partial when cached, so it is never
         # trusted (D-P2-6).
-        return items if len(items)==PER_PAGE else None
+        return items if len(items) == PER_PAGE else None
 
-    
-    def _fetch_list_page(self,page:int)->list[dict[str,Any]]:
+    def _fetch_list_page(self, page: int) -> list[dict[str, Any]]:
         resp = self._request(
             f"/repos/{self.repo}/pulls",
-            params={"state":LIST_STATE,"sort":LIST_SORT,
-            "direction":LIST_DIRECTION,"per_page":PER_PAGE,"page":page
+            params={
+                "state": LIST_STATE,
+                "sort": LIST_SORT,
+                "direction": LIST_DIRECTION,
+                "per_page": PER_PAGE,
+                "page": page,
             },
         )
         resp.raise_for_status()
-        path = self._cache_path(page)
+        path = self._list_cache_path(page)
         path.write_text(resp.text)
         # Read back from disk rather than using resp.json(): the cache is the
         # source of truth downstream (04 §5), so a failed write must surface
         # here and not three stages later.
         return json.loads(path.read_text())
 
-    def iter_list_pages(self)->Iterator[tuple[int,list[dict[str,Any]]]]:
+    def iter_list_pages(self) -> Iterator[tuple[int, list[dict[str, Any]]]]:
         """Yield (page_number, raw_items) for every /pulls page, cache-first.
 
         Resumability is page-level and rests on direction=asc: under GitHub's
@@ -183,7 +184,7 @@ class GitHubClient:
         order makes a full page's contents permanent; new PRs land on the tail.
         """
 
-        PR_LIST_CACHE.mkdir(parents=True,exist_ok=True)
+        PR_LIST_CACHE.mkdir(parents=True, exist_ok=True)
         page = 1
         while True:
             items = self._read_cached_page(page)
@@ -191,17 +192,23 @@ class GitHubClient:
                 items = self._fetch_list_page(page)
             if not items:
                 return
-            yield page,items
-            if len(items)<PER_PAGE:
+            yield page, items
+            if len(items) < PER_PAGE:
                 return
-            page+=1
-    
-    def iter_pr_meta(self)->Iterator[PRMeta]:
-        for _page,items in self.iter_list_pages():
+            page += 1
+
+    def iter_pr_meta(self) -> Iterator[PRMeta]:
+        for _page, items in self.iter_list_pages():
             for item in items:
                 yield from_list_item(item)
 
-    
+    def _diff_cache_path(self, number: int) -> Path:
+        """Namespaced by repo: the Day-4 spike left bare-number FastAPI diffs
+        in .cache/diffs/, and p5.js PR numbers will eventually reach them.
+        A wrong cache hit returns another repo's diff and does not raise.
+        """
+        return DIFF_CACHE / f"{self._slug}_{number}.diff"
+
     def fetch_diff(self, number: int) -> str:
         """Raw unified diff for one PR, cache-first.
 
@@ -210,31 +217,31 @@ class GitHubClient:
         exclusion_reason = 'diff_unavailable' and continues (D-P2-2).
         """
         DIFF_CACHE.mkdir(parents=True, exist_ok=True)
-        path = DIFF_CACHE / f"{number}.diff"   # see cache-collision check
+        path = DIFF_CACHE / f"{number}.diff"
         if path.exists() and not self.refresh:
             return path.read_text()
 
-        resp = self._request(f"/repos/{self.repo}/pulls/{number}",
-                             accept=DIFF_MEDIA_TYPE)
+        resp = self._request(f"/repos/{self.repo}/pulls/{number}", accept=DIFF_MEDIA_TYPE)
         if resp.status_code == 406:
             raise DiffUnavailable(number, resp.status_code)
         resp.raise_for_status()
-        path.write_text(resp.text)   # write before any parse (invariant 19)
+        path.write_text(resp.text)  # write before any parse (invariant 19)
         return path.read_text()
+
 
 if __name__ == "__main__":
     import os
     import sys
 
     logging.basicConfig(level=logging.INFO)
-    repo = sys.argv[1] if len (sys.argv)>1 else "processing/p5.js"
-    with GitHubClient (os.environ["GITHUB_TOKEN"],repo) as gh:
+    repo = sys.argv[1] if len(sys.argv) > 1 else "processing/p5.js"
+    with GitHubClient(os.environ["GITHUB_TOKEN"], repo) as gh:
         page, items = next(gh.iter_list_pages())
-        assert len(items)==PER_PAGE,f"expected {PER_PAGE} items,got {len(items)}"
+        assert len(items) == PER_PAGE, f"expected {PER_PAGE} items,got {len(items)}"
         metas = [from_list_item(i) for i in items]
 
-        #The premise of page-level resumability, asserted rather than assumed.
-        assert metas[0].created_at<metas[-1].created_at,"direction = asc not applied"
+        # The premise of page-level resumability, asserted rather than assumed.
+        assert metas[0].created_at < metas[-1].created_at, "direction = asc not applied"
         print(f"page{page}:{len(metas)}items")
         print(metas[0])
         print(metas[-1])
