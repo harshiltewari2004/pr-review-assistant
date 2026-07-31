@@ -41,6 +41,7 @@ class PRMeta:
     number:int
     title:str 
     author: str 
+    author_type:str
     created_at: datetime
     merged_at: datetime | None 
 
@@ -104,7 +105,7 @@ def group_duplicates(prs:list[PRMeta]) -> list[list[PRMeta]]:
 
 
     for author_prs in by_author.values():
-        author_prs.sort(key=lambda p:created_at)
+        author_prs.sort(key=lambda p:p.created_at)
         open_groups:list[list[PRMeta]]=[]
 
 
@@ -154,7 +155,7 @@ def apply_corpus_filter(prs:list[PRMeta])->list[Verdict]:
     # the wrong reason for a large share of the corpus.
     for group in group_duplicates(survivors):
         keeper = pick_keeper(group)
-        excluded = sorted(p.number for p in group if p.number!=keep.number)
+        excluded = sorted(p.number for p in group if p.number!=keeper.number)
 
         for number in excluded:
             verdicts[number]=Verdict(number,False,REASON_DUPLICATE_RESUBMISSION)

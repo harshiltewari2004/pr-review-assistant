@@ -72,9 +72,9 @@ def from_list_item(item:dict[str,Any])->PRMeta:
         number = item["number"],
         title = item["title"],
         author = user.get("login",GHOST_AUTHOR),
-        # TODO(harshil, 2026-07-31): PRMeta has no author_type field, so 07 §4's
-        # PRIMARY bot rule cannot be running. Restore the field and the rule
-        # before the first full list fetch — see D-P2-7.
+        # 'Organization' is a third real value alongside User and Bot. It is
+        # not a bot; 07 §4's account list and step 4b handle the rest.
+        author_type=user.get("type", "User"),
         created_at = _parse_ts(item["created_at"]),
         merged_at = _parse_ts(item.get("merged_at")),
     )
