@@ -73,7 +73,7 @@ def get(client: httpx.Client, url: str, headers: dict, *, max_retries: int = 5) 
         # a bad token returns 401. Honour Retry-After if present, else backoff.
         if resp.status_code in (403, 429):
             retry_after = resp.headers.get("Retry-After")
-            wait = int(retry_after) if retry_after else 2 ** attempt
+            wait = int(retry_after) if retry_after else 2**attempt
             print(f"  {resp.status_code} — backing off {wait}s (attempt {attempt + 1})")
             time.sleep(wait)
             continue
@@ -90,14 +90,18 @@ def list_prs(client: httpx.Client, pages: int, per_page: int = 100) -> list[dict
     the outcome mix matters for the corpus (01_evaluation_protocol.md §2)."""
     prs: list[dict] = []
     for page in range(1, pages + 1):
-        url = (f"{API}/repos/{OWNER}/{REPO}/pulls"
-               f"?state=all&per_page={per_page}&page={page}&sort=created&direction=desc")
+        url = (
+            f"{API}/repos/{OWNER}/{REPO}/pulls"
+            f"?state=all&per_page={per_page}&page={page}&sort=created&direction=desc"
+        )
         resp = get(client, url, JSON_HEADERS)
         batch = resp.json()
         if not batch:
             break
-        print(f"page {page}: {len(batch):>3} PRs  "
-              f"quota {resp.headers['X-RateLimit-Remaining']}/{resp.headers['X-RateLimit-Limit']}")
+        print(
+            f"page {page}: {len(batch):>3} PRs  "
+            f"quota {resp.headers['X-RateLimit-Remaining']}/{resp.headers['X-RateLimit-Limit']}"
+        )
         prs.extend(batch)
     return prs
 
@@ -106,10 +110,13 @@ def fetch_diff(client: httpx.Client, number: int) -> str:
     return get(client, f"{API}/repos/{OWNER}/{REPO}/pulls/{number}", DIFF_HEADERS).text
 
 
-def _largest_hunk_chars(diff:str) -> int:
-    """Char size of the biggest @@hunk. A ROUGH proxy for token count - real trunication is measured with MiniLM'S tokenizer in Phase 3.This only nominates candidates."""
-    hunks:list[list[str]]=[]
-    current:list[str]=[]
+def _largest_hunk_chars(diff: str) -> int:
+    """Char size of the biggest @@hunk. A ROUGH proxy for token count -
+    real truncation is measured with MiniLM'S tokenizer in
+     Phase 3.This only nominates candidates.
+    """
+    hunks: list[list[str]] = []
+    current: list[str] = []
     for line in diff.splitlines():
         if line.startswith("@@"):
             if current:
@@ -119,37 +126,43 @@ def _largest_hunk_chars(diff:str) -> int:
             current.append(line)
     if current:
         hunks.append(current)
-    return max((sum(len(x)for x in h)for h in hunks),default=0)
+    return max((sum(len(x) for x in h) for h in hunks), default=0)
 
 
-def classify(diff:str)->str|None:
-    """Bucket a raw diff into one of the 7 fixtures categories . Order matters:Structural specials first, generic single/multi last -a binary diff is ALSO a single file-diff and we want the speicific label."""
+def classify(diff: str) -> str | None:
+    """Bucket a raw diff into one of the 7 fixtures categories .
+    Order matters:Structural specials first,
+    generic single/multi last -a binary diff is
+    ALSO a single file-diff and we want the specific label.
+    """
     file_blocks = diff.count("diff --git")
 
     if "Binary files" in diff or "GIT binary patch" in diff:
         return "binary_file"
-    if "+++ /dev/null"in diff or "deleted file mode" in diff:
+    if "+++ /dev/null" in diff or "deleted file mode" in diff:
         return "deleted_file"
     if "rename from" in diff and "rename to " in diff and "@@" not in diff:
         return "rename_only"
-    
+
     # @@-in-CONTENT: an @@ inside a body line, not a hunk header. Skip the
-    #structural lines first (+++/---/index start with +/-/i), then flag any
-    #content line ( , +, - prefix) that still contains @@. A naive splitter
-    #breaks on exactly this (07_testing.md §5).
+    # structural lines first (+++/---/index start with +/-/i), then flag any
+    # content line ( , +, - prefix) that still contains @@. A naive splitter
+    # breaks on exactly this (07_testing.md §5).
 
     for line in diff.splitlines():
-        if line.startswith(("+++","---","diff","index","@@","new file","deleted file","rename")):
+        if line.startswith(
+            ("+++", "---", "diff", "index", "@@", "new file", "deleted file", "rename")
+        ):
             continue
-        if line [:1] in (" ","+","-") and "@@" in line:
+        if line[:1] in (" ", "+", "-") and "@@" in line:
             return "at_marker_in_content"
 
-    if _largest_hunk_chars(diff)>1500:
+    if _largest_hunk_chars(diff) > 1500:
         return "huge_hunk"
-    
-    if file_blocks==1 and "@@" in diff:
+
+    if file_blocks == 1 and "@@" in diff:
         return "simple_single_file"
-    if file_blocks>1:
+    if file_blocks > 1:
         return "multi_file"
     return None
 
@@ -157,8 +170,13 @@ def classify(diff:str)->str|None:
 # --- harvest -------------------------------------------------------------------
 
 WANTED = {
-    "simple_single_file", "multi_file", "binary_file", "deleted_file",
-    "rename_only", "at_marker_in_content", "huge_hunk",
+    "simple_single_file",
+    "multi_file",
+    "binary_file",
+    "deleted_file",
+    "rename_only",
+    "at_marker_in_content",
+    "huge_hunk",
 }
 
 
@@ -184,8 +202,10 @@ def harvest(client: httpx.Client, prs: list[dict]) -> dict[str, int]:
     missing = WANTED - found.keys()
     if missing:
         print(f"\n  STILL MISSING: {sorted(missing)}")
-        print("  → widen pages (arg 1), or hand-build from a real diff — the "
-              "content is what the parser test cares about, not the provenance.")
+        print(
+            "  → widen pages (arg 1), or hand-build from a real diff — the "
+            "content is what the parser test cares about, not the provenance."
+        )
     return found
 
 

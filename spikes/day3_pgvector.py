@@ -32,7 +32,7 @@ def build_vectors() -> dict[str, np.ndarray]:
     a /= np.linalg.norm(a)
 
     b = rng.normal(size=EMBEDDING_DIM)
-    b -= (b @ a) * a          # Gram-Schmidt: strip the component along a
+    b -= (b @ a) * a  # Gram-Schmidt: strip the component along a
     b /= np.linalg.norm(b)
 
     return {"identical": a, "double_magnitude": 2 * a, "orthogonal": b, "opposite": -a}
@@ -83,7 +83,12 @@ async def round_trip(conn: asyncpg.Connection, vecs: dict[str, np.ndarray]) -> N
                 """INSERT INTO chunks
                      (pr_id, repo_id, file_path, hunk_index, content, token_count, embedding)
                    VALUES ($1, $2, $3, $4, $5, 0, $6::vector)""",
-                pr_id, repo_id, f"spike/{label}.py", idx, label, to_literal(v),
+                pr_id,
+                repo_id,
+                f"spike/{label}.py",
+                idx,
+                label,
+                to_literal(v),
             )
 
         rows = await conn.fetch(
@@ -91,7 +96,8 @@ async def round_trip(conn: asyncpg.Connection, vecs: dict[str, np.ndarray]) -> N
                       1 - (embedding <=> $1::vector) AS cos_sim
                FROM chunks WHERE pr_id = $2
                ORDER BY embedding <=> $1::vector""",
-            to_literal(query_vec), pr_id,
+            to_literal(query_vec),
+            pr_id,
         )
 
         print("  cosine similarity vs 'identical':")
@@ -106,7 +112,7 @@ async def round_trip(conn: asyncpg.Connection, vecs: dict[str, np.ndarray]) -> N
         raw = await conn.fetchval(
             "SELECT embedding::text FROM chunks WHERE pr_id=$1 AND hunk_index=0", pr_id
         )
-       # was: back = np.fromstring(raw.strip("[]"), sep=",")
+        # was: back = np.fromstring(raw.strip("[]"), sep=",")
         back = np.array(raw.strip("[]").split(","), dtype=float)
         print(f"  max abs delta after round trip: {np.abs(back - query_vec).max():.3e}")
     finally:

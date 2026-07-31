@@ -11,17 +11,18 @@ Pre-registered before the run (09 §5 / 01 §14):
        simply the more robust of the two.
 "substantive" = >=1 non-test .js/.mjs/.ts file outside translations/.
 """
+
 import os
 import time
 
 import requests
+from dotenv import load_dotenv
 
 REPO = "processing/p5.js"
 LABEL = "Documentation"
 SAMPLE = 10
 SRC_EXT = (".js", ".mjs", ".ts")
 
-from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -50,7 +51,11 @@ def is_source(path: str) -> bool:
 # PRs appear in the issues endpoint; label filtering is native there.
 items = get(
     f"https://api.github.com/repos/{REPO}/issues",
-    labels=LABEL, state="all", per_page=50, sort="created", direction="desc",
+    labels=LABEL,
+    state="all",
+    per_page=50,
+    sort="created",
+    direction="desc",
 )
 prs = [i for i in items if "pull_request" in i][:SAMPLE]
 print(f"sampled {len(prs)} PRs labeled {LABEL!r}\n")
@@ -63,8 +68,10 @@ for pr in prs:
     src = [f for f in files if is_source(f["filename"])]
     churn = sum(f["additions"] + f["deletions"] for f in src)
     facet += bool(src)
-    print(f"#{n:<6} {'MIXED' if src else 'DOCS-ONLY':<10} "
-          f"{len(files):>3} files, {len(src):>2} source, {churn:>5} src lines")
+    print(
+        f"#{n:<6} {'MIXED' if src else 'DOCS-ONLY':<10} "
+        f"{len(files):>3} files, {len(src):>2} source, {churn:>5} src lines"
+    )
     print(f"        labels: {labels}")
     for f in src[:3]:
         print(f"        src: {f['filename']}  +{f['additions']}/-{f['deletions']}")
