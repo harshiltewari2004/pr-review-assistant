@@ -244,3 +244,19 @@ The bigger find came free from a TypeError: classify() reads pr.author_type and
 PRMeta has no such field, so yesterday's passing fixture was built on a shape
 the pipeline cannot produce. A prose contract in HANDOFF.md does not typecheck.
 Stopped at the rule, several typos late.
+## 2026-07-31 (Day 7 close) — 
+five defects in code committed green on Day 6:
+lowercase `counter`, missing pythonpath, `lambda p: created_at`, `keep` for
+`keeper`, and author_type deleted from PRMeta while classify() and the fixture
+both still used it. Four independently blocked import; the suite had never run
+as committed. Found sideways, via a TypeError in unrelated new code. One cause:
+edits landed after the last green run and before the commit — exactly the
+window 11 §1 names. Also: pytest swallows print() without -s, so the Counter I
+"read and verified" on Day 6 could not have been on screen. Adding pre-commit
+and CI. Separately: nine one-token transcription errors across the session,
+several of them silent (`mereged_at`, `directions=asc`). Pushed well past the
+11 §4 bell and every defect after the second was found by a tired reader.
+Silent naming drift, second occurrence: a field deleted from a dataclass after
+its test passed and before the commit, same shape as delete_file/deleted_file
+on Day 1. Nothing re-ran the suite between the two. Surfaced only because an
+unrelated TypeError in new code sent me grepping the type.

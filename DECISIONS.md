@@ -217,3 +217,28 @@ already in place); rebuild the fixture on real PRMeta objects; keep 07 §4's
 two bot rules tested separately. Field-order change breaks positional
 construction in the fixture — do it with that file open.
 Due Day 8, BEFORE apply_corpus_filter() meets real client output.
+
+## D-P2-7 — AMENDED 2026-07-31: mechanism identified
+Prior entry misattributed this. classify() DOES implement 07 §4's primary
+bot rule, and the fixture DOES construct PRMeta — with six positional args
+against a five-field declaration, so the committed test raises TypeError and
+never reaches line 61. HANDOFF's sequencing note, _pr(), and classify() all
+record six fields; only the dataclass disagrees. author_type was dropped from
+the declaration after the Day-6 counter was printed and before the commit.
+Fix: restore author_type: str in position 4. One line. Fixture unchanged.
+
+## D-P2-7 — RESOLVED 2026-07-31: five defects in committed code, one cause
+tests/test_corpus_filter.py had never executed. Four separate defects each
+blocked it independently: `from collections import counter` (line 1),
+missing pythonpath in pyproject.toml, `lambda p: created_at` in
+group_duplicates, and `keep.number` for `keeper.number` in
+apply_corpus_filter. A fifth — author_type deleted from the PRMeta
+declaration while classify() and the fixture both still used it — is the one
+that surfaced first, via an unrelated TypeError in github_client.py.
+Root cause is single: the Day-6 session edited the file after its last green
+run and committed without re-running. 11 §1's "end the session at the commit"
+names exactly that window.
+All five fixed. Suite green, Counter printed and READ, cache-read path
+exercised with no network call.
+Standing consequence: the golden assertion for a stage is not satisfied by
+having been green once. It is satisfied by being green in the commit.
