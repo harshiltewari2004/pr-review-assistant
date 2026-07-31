@@ -260,3 +260,19 @@ Silent naming drift, second occurrence: a field deleted from a dataclass after
 its test passed and before the commit, same shape as delete_file/deleted_file
 on Day 1. Nothing re-ran the suite between the two. Surfaced only because an
 unrelated TypeError in new code sent me grepping the type.
+
+2026-07-31 (Day 8) — tests only; the fetch never started. Three findings, all
+about verification rather than code.
+tests/fixtures/list_items.json was created holding the extraction SCRIPT
+instead of its output. Fourth instance of one pattern: Day 2's uncommitted
+ledger files, Day 6's spike output that read "command not found: python",
+Day 7's test_corpus_filter.py that had never executed, and now this. Every
+one existed, looked finished, and was wrong until something opened it.
+Predicted one red before running pytest. Got zero — the `or GHOST_AUTHOR`
+fix was already applied, so both null-path tests have only ever been green.
+Teeth-check run afterwards to prove they can fail. A prediction against
+stale code is not a prediction.
+Measured: page 1 has zero null-user items and author_type is uniformly
+'User'. The ghost branch has never executed in this project, so the comment
+in from_list_item claiming the golden assertion catches it was describing
+intent, not coverage.

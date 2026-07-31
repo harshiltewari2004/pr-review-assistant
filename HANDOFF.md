@@ -1,58 +1,62 @@
-# Handoff — 2026-07-31, end of Phase 1 Day 7 (Phase 2 pulled forward)
+# Handoff — 2026-07-31, Day 8 (tests only; the fetch did not run)
 
 ## Done and committed
-- ingest/constants.py: GitHub client block — GITHUB_API_ROOT, DIFF_MEDIA_TYPE,
-  PER_PAGE=100, LIST_STATE='all', LIST_SORT='created', LIST_DIRECTION='asc',
-  INTER_REQUEST_DELAY_S=0.75, RATE_LIMIT_FLOOR=100, MAX_BACKOFF_ATTEMPTS=5,
-  REPO_ROOT-anchored CACHE_ROOT, GHOST_AUTHOR, and the fifth reason literal
-  REASON_DIFF_UNAVAILABLE='diff_unavailable'.
-- ingest/github_client.py: GitHubClient, DiffUnavailable, _request() (backoff
-  on 403/429, honours Retry-After), _respect_rate_limit(), _parse_ts(),
-  from_list_item() -> PRMeta, _cache_path(), _read_cached_page(),
-  _fetch_list_page(), iter_list_pages(), iter_pr_meta(), fetch_diff().
-- Contract enforced by import direction: github_client imports
-  corpus_filter.PRMeta, never the reverse.
-- Cache write precedes every parse; both fetchers read back from disk.
-- ingest/corpus_filter.py: author_type restored to PRMeta position 4;
-  group_duplicates sort key and apply_corpus_filter keeper reference fixed.
-- pyproject.toml: pytest pythonpath = ["."]. Bare `pytest` works.
-- GOLDEN ASSERTION GREEN: page 1 = #16 (2013-07-02) -> #335 (2014-08-22),
-  ascending, tz-aware UTC. D-P2-6 confirmed on real data.
-- CACHE-READ PATH GREEN: second smoke run served 100 items from
-  .cache/prs/ with no httpx request logged.
-- test_corpus_filter.py green, Counter printed and READ:
+- ruff format across the tree; spikes/day2 docstrings wrapped, spikes/day5
+  import block moved and sorted. `ruff check . && ruff format --check .`
+  clean, 31 files.
+- ingest/constants.py: BOT_LOGIN_SUFFIX = "[bot]".
+- ingest/corpus_filter.py: classify() strips the suffix before the
+  BOT_ACCOUNTS lookup (D-P2-9).
+- ingest/github_client.py: self._slug derived once in __init__;
+  _cache_path renamed _list_cache_path; _diff_cache_path added; fetch_diff
+  uses it. from_list_item uses `or GHOST_AUTHOR` / `or "User"` (D-P2-10).
+- tests/ moved to the 07 §5 layout: tests/unit/test_corpus_filter.py,
+  tests/unit/test_github_client.py.
+- tests/fixtures/list_items.json: TWO REAL items from page 1 —
+  #16 lmccart merged 2013-07-02, #74 codeanticode unmerged. Deliberately
+  NOT prs.json, which 07 §5 reserves for the 5-PR integration corpus.
+- pytest tests/unit -q -s: 10 passed. Counter printed and READ:
   {None: 3, bot_author: 2, duplicate_resubmission: 2, housekeeping: 1}.
-  Run it with -s or pytest swallows the print.
 
 ## Deployed state
 - Unchanged. Not deployed (Cloud Run is Phase 7 per 04 §9). Skeleton 433 MB.
 - Neon: schema v001, 6 tables, empty. Migration 002 (judgments.self_authored)
   still unwritten — needed before Phase 5.
-- pgvector 0.8.0 Neon / 0.8.5 local docker (D-P1-3).
-- .cache/prs/ holds page 1 of processing/p5.js. .gitignore confirmed covering
-  it (git status clean with the page on disk).
+- .cache/prs/ holds page 1 of processing/p5.js only. .cache/diffs/ holds
+  Day-4 spike artifacts under the OLD naming; the pipeline will not read
+  them and does not need to.
 
-## Read before writing diff_parser.py
-- additions and deletions are NOT in the /pulls list payload — only on
-  GET /pulls/{n}. Derive both, and files_changed, from the parsed diff at
-  04 §5 step 4. Do not reach for a re-fetch.
-- diff_unavailable is applied at step 3 by catching DiffUnavailable. NOT the
-  parser's job, and NOT no_source_content: 406 means too much content,
-  4b means none.
-- CACHE COLLISION, STILL UNVERIFIED: .cache/diffs/<number>.diff has no repo
-  namespace, but 02 §9 keeps the Day-4 FastAPI diffs in .cache/. #8862 exists
-  in both repos. CHECK what spikes/day4_*.py wrote BEFORE any diff fetching.
-- BOT_ACCOUNTS is matched exactly, but real bot logins carry a '[bot]' suffix.
-  9001 passes only because author_type=='Bot' catches it first. A suffixed
-  login that GitHub reports as 'User' slips both rules. The first full fetch's
-  exclusion counts will show whether this is real — fold into D-P2-5's log.
+## NOT done — Day 8's remaining three quarters
+- Full list fetch on processing/p5.js has NOT run.
+- apply_corpus_filter has never touched real data.
+- D-P2-4 and D-P2-5 remain OPEN; both resolve from that run's logs.
+
+## Read before the fetch
+- Predicted: ~49-50 pages, ~4,900 PRs (from 200 UI pages x 25), ~1% of quota.
+  Exclusion rate predicted 12% corpus-wide.
+- Exclusions will be BACK-LOADED. Page 1 is 2013-2014: no dependabot, no
+  allcontributors. Near-zero on the first 10-15 pages is the repo's history,
+  not a broken classify(). The 12% is a whole-corpus number.
+- Expect FOUR Counter keys: None, bot_author, duplicate_resubmission,
+  housekeeping. Both no_source_content (step 4b) and diff_unavailable
+  (step 3) are unreachable at step 2. Either appearing means the filter ran
+  out of order.
+- Golden assertion for the fetch stage, written BEFORE the run:
+  no duplicate numbers across all pages, strictly ascending end to end,
+  first is #16, last page short, total near 4,900.
+- iter_pr_meta() yields PRMeta and DROPS the raw item. PRMeta carries six
+  fields; the pull_requests row at 04 §5 step 4 needs body, github_id,
+  labels, closed_at, raw. The pipeline script must iterate
+  iter_list_pages(), not iter_pr_meta().
+- group_duplicates never closes a group, so a 400-600 PR author costs ~1e5
+  SequenceMatcher calls. Expect a few SECONDS, not instant. Not a hang.
+- normalize_title strips punctuation after whitespace collapse, so a title
+  ending " ." keeps a trailing space and misses the normalized-exact branch,
+  falling through to the ratio path. Read the D-P2-4 log with that in mind.
 
 ## Open decisions carried forward
-- D-P2-4 OPEN: "near-identical title" (normalized-exact OR ratio >= 0.95;
-  7-day window anchored to the group's first member). Resolve from the logged
-  duplicate groups after the first full list fetch.
-- D-P2-5 OPEN: housekeeping patterns case-sensitive per 01 §2; case-only
-  near-misses logged, not matched. Resolve from the same log.
+- D-P2-4 OPEN: "near-identical title". Resolve from the first full fetch.
+- D-P2-5 OPEN: housekeeping patterns case-sensitive per 01 §2. Same log.
 - D-P3-1 OPEN: manual ::vector cast vs pgvector asyncpg codec. Phase 3.
 - D-P3-2 OPEN: Neon pooled + asyncpg create_pool() under Cloud Run churn.
   Phase 7. statement_cache_size=0 is the known fallback.
@@ -60,11 +64,9 @@
   Rewrite before Day 25.
 
 ## Carried-over obligations
-- tests/test_github_client.py NOT written — deferred yesterday when PRMeta
-  was about to change. PRMeta is now stable. Write it: from_list_item over
-  two saved fixture items, one with "user": null asserting author == 'ghost'.
 - 01 §7 anchor rewrite: diffs for #8862, #8964, #8823 — now a fetch_diff()
-  call. Plus p5.js /labels confirmed against the actual page.
+  call through the NEW namespaced path. Three requests. Plus p5.js /labels
+  confirmed against the actual page.
 - #8862 truncates hard: 2 of 3 source hunks over 256 tokens, range 64-614,
   median 387. Any anchor written against it says so.
 - README at Phase 9 owes FIVE exclusion counts, not four.
@@ -72,21 +74,21 @@
 - 04 §5 needs a step 3b line for diff_unavailable in the doc revision pass.
 - Reserved (CodeDay), Good First Issue, Help Wanted: process labels, NOT
   exclusions.
+- fetch_diff raises httpx.HTTPStatusError on any non-406 4xx/5xx. The Day-9
+  caller must catch that AND DiffUnavailable — 04 §5 forbids hard-failing
+  a run on one PR.
 - MAX vs mean-of-top-3: Day-4 evidence exists (p5.js Similar B full-diff
   winner was shared test scaffolding, 0.6788 -> 0.7074). Re-examine at
-  Milestone A. D-P2-2 leans on the same evidence.
+  Milestone A.
 
 ## Decisions log watermark
-- Current through D-P2-7, committed. D-P2-2, D-P2-6, D-P2-7 all RESOLVED.
-  D-P5-2 remains the highest-numbered Phase 5 entry.
+- Current through D-P2-10, committed. D-P2-8, D-P2-9, D-P2-10 CONFIRMED.
+  D-P2-4 and D-P2-5 are the only OPEN Phase 2 entries.
 
 ## Next session starts with
-- Day 8: write tests/test_github_client.py first (~20 min, PRMeta is stable
-  now, and it is the one thing 07 §3 owes for the stage built yesterday).
-- Then the full list fetch on processing/p5.js: ~44 pages under state=all,
-  ~1% of quota, pages 2+ hit the network, page 1 comes from cache.
-- Pipe it through apply_corpus_filter(). First contact with real data.
-  Print the exclusion_reason Counter and READ it. Expect four reasons, not
-  five — diff_unavailable cannot appear until step 3.
-- Read the logged duplicate groups and housekeeping near-misses: that closes
-  D-P2-4 and D-P2-5, and answers the BOT_ACCOUNTS suffix question.
+- The full list fetch. Everything above under "Read before the fetch" is the
+  pre-registration; write the predicted numbers down before running.
+- Then apply_corpus_filter over the result. Print the Counter and READ it.
+- Then the duplicate groups and housekeeping near-misses: that closes
+  D-P2-4 and D-P2-5, and answers whether the [bot] suffix fix changed
+  anything on real data.

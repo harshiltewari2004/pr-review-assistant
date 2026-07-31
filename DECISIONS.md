@@ -242,3 +242,43 @@ All five fixed. Suite green, Counter printed and READ, cache-read path
 exercised with no network call.
 Standing consequence: the golden assertion for a stage is not satisfied by
 having been green once. It is satisfied by being green in the commit.
+
+## D-P2-8 — CONFIRMED 2026-07-31: both caches namespaced by repo slug
+.cache/diffs/ held bare-number FastAPI diffs from the Day-4 spike alongside
+p5_-prefixed p5.js ones, and fetch_diff() wrote bare `<number>.diff`. No
+collision existed yet — the FastAPI numbers on disk are 15xxx and p5.js is
+at ~9k — but the namespace made one inevitable and a wrong cache hit does
+not raise: it returns another repo's diff and the parser chunks it happily.
+Silent data-shape bug, 11 §5's expensive category.
+Fixed before any pipeline diff was fetched, so the cost was zero. The slug
+is derived once in __init__ as self._slug and used by both helpers;
+_cache_path renamed to _list_cache_path, since "the cache path" stops
+meaning anything once there are two.
+Consequence: the three 01 §7 anchor diffs (#8862, #8964, #8823) will
+re-fetch through the new path. Three requests.
+
+## D-P2-9 — CONFIRMED 2026-07-31: [bot] suffix stripped, not enumerated
+01 §2 lists bot accounts unsuffixed (`dependabot`, `github-actions`);
+GitHub sends them as `dependabot[bot]`. Exact membership therefore never
+matched, and the rule only appeared to work because author_type == 'Bot'
+fires one line earlier — the redundancy 07 §4 explicitly requires to be
+independently testable.
+Two options: add suffixed literals to BOT_ACCOUNTS, or normalize the login
+before the lookup. Chose normalize — enumerating both forms doubles the set
+and a new bot account still needs two entries. BOT_LOGIN_SUFFIX lives in
+constants.py per 06 §6.
+Test asserts the rule with author_type='User', so it cannot pass by way of
+the primary rule.
+
+## D-P2-10 — CONFIRMED 2026-07-31: ghost author guarded on both null shapes
+GitHub sends "user": null for deleted accounts; `item.get("user") or {}`
+already handled that. It has never been observed sending
+{"login": null} — this is defensive, not a bug reproduced from a payload.
+Kept anyway: .get(key, default) fires on a MISSING key only, so a
+present-but-null login returns None and surfaces as an AttributeError on
+.lower() inside classify(), three modules from the cause. `or GHOST_AUTHOR`
+costs nothing and collapses both shapes.
+Stated honestly in interviews as defensive coding, not as an observed bug.
+Measured fact behind it: page 1 of processing/p5.js has ZERO null-user items
+and author_type is uniformly 'User', so the ghost branch has never executed
+in this project. Its only coverage is derived in-test.
