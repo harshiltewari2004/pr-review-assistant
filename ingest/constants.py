@@ -43,6 +43,8 @@ BOT_ACCOUNTS = frozenset(
         "dependabot[bot]",
     }
 )
+BOT_LOGIN_SUFFIX = "[bot]"
+
 
 # --- rule 2: maintainer housekeeping --------------------------------------
 # Transcribed from 01 §2 exactly as written, INCLUDING case. See D-P2-5:
@@ -64,11 +66,11 @@ GITHUB_API_VERSION = "2022-11-28"
 DIFF_MEDIA_TYPE = "application/vnd.github.diff"
 
 PER_PAGE = 100
-LIST_STATE = "all"          # 02 §4's CHECK admits outcome='open' (D-P2-6)
+LIST_STATE = "all"  # 02 §4's CHECK admits outcome='open' (D-P2-6)
 LIST_SORT = "created"
-LIST_DIRECTION = "asc"      # page-level cache resumability depends on this
+LIST_DIRECTION = "asc"  # page-level cache resumability depends on this
 
-INTER_REQUEST_DELAY_S = 0.75    # secondary rate limiter, independent of quota
+INTER_REQUEST_DELAY_S = 0.75  # secondary rate limiter, independent of quota
 RATE_LIMIT_FLOOR = 100
 RATE_LIMIT_SLEEP_BUFFER_S = 5
 MAX_BACKOFF_ATTEMPTS = 5
