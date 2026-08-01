@@ -86,3 +86,7 @@ GHOST_AUTHOR = "ghost"
 # Fifth exclusion_reason literal. Applied at 04 §5 step 3, not step 2 or 4b
 # (D-P2-2, resolved 2026-07-30). Match the naming shape of the other four.
 EXCLUSION_DIFF_UNAVAILABLE = "diff_unavailable"
+
+EXPECTED_FIRST_NUMBER = 16
+EXPECTED_TOTAL_LOW = 4_300
+EXPECTED_TOTAL_HIGH = 4_500

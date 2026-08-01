@@ -217,7 +217,7 @@ class GitHubClient:
         exclusion_reason = 'diff_unavailable' and continues (D-P2-2).
         """
         DIFF_CACHE.mkdir(parents=True, exist_ok=True)
-        path = DIFF_CACHE / f"{number}.diff"
+        path = self._diff_cache_path(number)
         if path.exists() and not self.refresh:
             return path.read_text()
 

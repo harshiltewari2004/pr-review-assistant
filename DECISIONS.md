@@ -282,3 +282,22 @@ Stated honestly in interviews as defensive coding, not as an observed bug.
 Measured fact behind it: page 1 of processing/p5.js has ZERO null-user items
 and author_type is uniformly 'User', so the ghost branch has never executed
 in this project. Its only coverage is derived in-test.
+
+### D-P2-12 — OPEN (2026-08-01)
+LIST_STATE = "all" admits open PRs to the corpus. Legal: 02 §4's CHECK
+permits outcome = 'open' and 01 §2 has no state rule. But it was inherited
+from a constant, not chosen — and 03 §6's reason templates have no branch
+for an open candidate, while invariant 17's outcome language assumes merged
+or closed_unmerged. Resolve at Phase 4 when templates are written. Not
+changing LIST_STATE now: a re-fetch under state=closed discards 44 cached
+pages and the frozen snapshot 01 §15 depends on.
+
+### D-P2-13 — CONFIRMED (2026-08-01)
+The step-1 band (EXPECTED_TOTAL_LOW/HIGH) was pre-registered at 4,400-5,400,
+failed against the measured 4,370, and was then rewritten to 4,300-4,450.
+Recording the change of meaning explicitly: before the run it was a
+prediction and could falsify; after it, it is a regression guard on
+pagination and nothing more. The prediction it replaced is preserved in
+JOURNAL.md, which is where 01 §14 says the record lives. Future bands
+pre-registered for a first run get the same treatment — tightened after,
+never silently.

@@ -276,3 +276,41 @@ Measured: page 1 has zero null-user items and author_type is uniformly
 'User'. The ghost branch has never executed in this project, so the comment
 in from_list_item claiming the golden assertion catches it was describing
 intent, not coverage.
+
+## 2026-08-01 — Day 9
+
+First full list fetch on processing/p5.js. Pre-registration per 01 §14.
+
+| Prediction | Basis | Actual |
+|---|---|---|
+| ~4,900 PRs | 200 UI pages x 25 | **4,370 — miss, 12% high** |
+| ~4,175 closed | 02 §9 | see Counter |
+| ~49-50 pages | 100/page | 44 |
+| first = #16 | cached page 1 | #16 — hit |
+| ~1% of quota | ~50 of 5,000 | 44 req, 0.88% — hit |
+| 12% exclusion, back-loaded | pre-2015 has no dependabot | not run |
+| 4 Counter keys | 4b and step-3 reasons unreachable at step 2 | not run |
+| dup grouping: seconds | ~1e5 SequenceMatcher calls | not run |
+
+The UI-derived estimate lost to the doc. 02 §9's 4,175 came from the API;
+my 4,900 came from multiplying a page count in GitHub's web UI. Counting
+UI pagination is not a measurement.
+
+Cache proven on real data: cold run 96s / 44 requests, warm run 3s /
+1 request. Page 44 held 70 items so D-P2-6 never trusts it — it re-fetches
+every time, by design. 04 §5's "a parser bug costs a re-parse, not a
+re-fetch" now has a number behind it.
+
+Number-space gap is expected: last PR is #9029 but only 4,370 exist.
+GitHub shares one sequence between issues and PRs.
+
+**Three symbol-rewiring misses in one day.** _diff_cache_path defined,
+documented, never called. EXPECTED_* moved to ingest/constants.py while
+scripts/index_repo.py kept local copies that shadowed them — the golden
+assertion printed PASSED against a band I was not editing. Same shape as
+Day 2's delete_file/deleted_file. Every one was "fix written, call site
+not updated," and ruff caught none of the three: all three were legal
+Python. New habit — `grep -rn SYMBOL .` after moving any name.
+
+The teeth-check (11 §7) is what surfaced it. An assertion I had only
+watched pass was indistinguishable from a comment.
