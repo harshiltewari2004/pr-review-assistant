@@ -19,6 +19,7 @@ from ingest.constants import (
     EXPECTED_TOTAL_HIGH,
     EXPECTED_TOTAL_LOW,
     PER_PAGE,
+    STEP2_EXCLUSION_REASONS,
 )
 from ingest.github_client import GitHubClient
 
@@ -72,6 +73,27 @@ def assert_list_is_sound(fetch: ListFetch) -> None:
     assert EXPECTED_TOTAL_LOW <= len(items) <= EXPECTED_TOTAL_HIGH, (
         f"{len(items)}PRs outside the predicted band around 4900"
     )
+
+
+def assert_filter_is_sound(verdicts, expected_total: int) -> None:
+    """Golden assertion for 04 §5 step 2. Written before the first run."""
+    assert len(verdicts) == expected_total, (
+        f"verdict count {len(verdicts)} != fetched {expected_total}"
+    )
+
+    numbers = [v.number for v in verdicts]
+    assert len(set(numbers)) == expected_total, "duplicate or missing PR number in verdicts"
+
+    for v in verdicts:
+        assert (v.exclusion_reason is None) == v.in_corpus, f"broken verdict: {v}"
+
+    reasons = {v.exclusion_reason for v in verdicts if v.exclusion_reason is not None}
+    unreachable = reasons - STEP2_EXCLUSION_REASONS
+    assert not unreachable, f"reason unreachable at step 2: {unreachable}"
+
+    kept = sum(1 for v in verdicts if v.in_corpus)
+    dropped = sum(1 for v in verdicts if not v.in_corpus)
+    assert kept + dropped == expected_total, f"{kept} + {dropped} != {expected_total}"
 
 
 if __name__ == "__main__":

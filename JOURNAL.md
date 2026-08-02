@@ -314,3 +314,19 @@ Python. New habit — `grep -rn SYMBOL .` after moving any name.
 
 The teeth-check (11 §7) is what surfaced it. An assertion I had only
 watched pass was indistinguishable from a comment.
+
+ — processing/p5.js list fetch measured: 4,370 PRs across 44 pages,
+#16 (2013-07-02) → #9029. States closed 4,246 / open 124. Outcomes merged 3,558
+/ closed_unmerged 688 / open 124. Reconciles to 4,370 exactly. 02 §9 estimated
+~4,175 closed; actual 4,246, within 1.7%. That figure is now measured, not inherited.
+
+2026-08-02 — Prediction before the first apply_corpus_filter run (01 §14).
+bot_author: 400              (weekly bot PRs since ~2018, 7.7 yrs x 52)
+duplicate_resubmission: 36   (4 clusters/~600 observed -> 29 clusters at 4,370,
+                              x1.25 exclusions per cluster since the keeper stays)
+housekeeping: 84             (12/yr x 7 yrs of a human typing one of three exact
+                              strings; bot rule runs first so bot-authored ones
+                              never reach this branch)
+Largest: bot_author, by roughly 5x over the next.
+Total 520 vs the handoff's 12% ~= 524. Coincidence at this sample size, not
+confirmation — the three individual numbers are the test.

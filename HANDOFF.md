@@ -15,8 +15,8 @@
 
 ## Measured — the corpus is real now
 - 4,370 PRs, 44 pages, last page 70 items, #16 (2013-07-02) → #9029.
-- state split: <FILL FROM COUNTER>
-- outcome split: <FILL FROM COUNTER>
+- state split: closed 4246/open 124.
+- outcome split: merged 3558/closed_unmerged 688/open 124.Sums to 4370
 - Cold 96s / 44 requests. Warm 3s / 1 request (page 44 only, D-P2-6).
 - .cache/prs/ now holds all 44 pages of processing/p5.js.
 

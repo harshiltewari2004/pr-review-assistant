@@ -18,13 +18,20 @@ REASON_DUPLICATE_RESUBMISSION = "duplicate_resubmission"
 # Step 4b, content-based. Applied in the parser path, NOT in corpus_filter.py.
 # Named here so all four literals live in one place for the §4 audit.
 REASON_NO_SOURCE_CONTENT = "no_source_content"
-
+# Fifth exclusion_reason literal. Applied at 04 §5 step 3, not step 2 or 4b
+# (D-P2-2, resolved 2026-07-30). Match the naming shape of the other four.
+REASON_DIFF_UNAVAILABLE = "diff_unavailable"
+# Reachable at 04 §5 step 2 only. no_source_content fires at 4b, diff_unavailable at step 3.
+STEP2_EXCLUSION_REASONS = frozenset(
+    {REASON_BOT_AUTHOR, REASON_HOUSEKEEPING, REASON_DUPLICATE_RESUBMISSION}
+)
 ALL_EXCLUSION_REASONS = frozenset(
     {
-        REASON_BOT_AUTHOR,
-        REASON_HOUSEKEEPING,
         REASON_DUPLICATE_RESUBMISSION,
         REASON_NO_SOURCE_CONTENT,
+        REASON_DIFF_UNAVAILABLE,
+        REASON_BOT_AUTHOR,
+        REASON_HOUSEKEEPING,
     }
 )
 
@@ -83,9 +90,6 @@ DIFF_CACHE = CACHE_ROOT / "diffs"
 
 GHOST_AUTHOR = "ghost"
 
-# Fifth exclusion_reason literal. Applied at 04 §5 step 3, not step 2 or 4b
-# (D-P2-2, resolved 2026-07-30). Match the naming shape of the other four.
-EXCLUSION_DIFF_UNAVAILABLE = "diff_unavailable"
 
 EXPECTED_FIRST_NUMBER = 16
 EXPECTED_TOTAL_LOW = 4_300

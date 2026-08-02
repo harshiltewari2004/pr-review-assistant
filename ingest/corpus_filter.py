@@ -79,7 +79,7 @@ _WHITESPACE = re.compile(r"\s+")
 
 
 def normalize_title(title: str) -> str:
-    return _WHITESPACE.sub(" ", title.strip().lower()).rstrip(".!?")
+    return _WHITESPACE.sub(" ", title.strip().lower()).rstrip(".!?").strip()
 
 
 def titles_match(a: str, b: str) -> bool:

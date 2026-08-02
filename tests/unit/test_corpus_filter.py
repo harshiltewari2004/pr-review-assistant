@@ -10,6 +10,7 @@ from ingest.corpus_filter import (
     PRMeta,
     apply_corpus_filter,
     classify,
+    normalize_title,
 )
 
 BASE = datetime(2026, 3, 1, tzinfo=UTC)
@@ -66,3 +67,11 @@ def test_account_list_catches_suffixed_login_reported_as_user():
         merged_at=None,
     )
     assert classify(pr) == REASON_BOT_AUTHOR
+
+
+def test_normalize_title_leaves_no_trailing_space_after_punctuation_strip():
+    """Punctuation is stripped after whitespace collapse (D-P2-4), so a title
+    ending ' .' would otherwise keep a trailing space and miss the exact-match
+    branch. Documented failure mode, pinned here."""
+    assert normalize_title("Fix the bug .") == "fix the bug"
+    assert normalize_title("Fix   the   bug .") == normalize_title("Fix the bug")

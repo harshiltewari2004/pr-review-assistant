@@ -301,3 +301,29 @@ pagination and nothing more. The prediction it replaced is preserved in
 JOURNAL.md, which is where 01 §14 says the record lives. Future bands
 pre-registered for a first run get the same treatment — tightened after,
 never silently.
+
+### D-P2-14 — OPEN (2026-08-02)
+Three of seventeen pull_requests columns (02 §4) do not fill from a /pulls list
+item: files_changed, additions, deletions. All three carry DB defaults ('{}', 0, 0),
+so a bad insert raises nothing and looks correct. All three source from the parsed
+diff at 04 §5 step 4 — free, no extra request.
+
+The fork is one question, not three: do they describe EVERY file in the diff, or
+only files surviving 03 §2's exclusions?
+
+- files_changed drives the Jaccard file-overlap signal (03 §1) and is GIN-indexed.
+  Under the "every file" reading, a PR touching p5.Renderer.js + CHANGELOG.md
+  Jaccards against every changelog-touching PR in the corpus. That argues for
+  surviving-files-only.
+- additions/deletions counted over surviving files will NOT match GitHub's own
+  numbers for any PR touching a .md. Defensible — arguably better, since they then
+  describe indexed content — but it must be a decision, not a side effect of where
+  the counter sits in the parse loop.
+
+The two columns must agree with files_changed either way. A row where
+files_changed lists 3 source files but additions counts a 400-line changelog is
+incoherent and nothing would flag it.
+
+RESOLVE: before step 4 is written (days 11-12). Whichever reading wins, the
+README at Phase 9 states which, because "files changed" in a published table
+would otherwise be read as GitHub's number.
