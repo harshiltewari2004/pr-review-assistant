@@ -14,6 +14,8 @@ import time
 from collections import Counter
 from typing import Any, NamedTuple
 
+from dotenv import load_dotenv
+
 from ingest.constants import (
     EXPECTED_FIRST_NUMBER,
     EXPECTED_TOTAL_HIGH,
@@ -21,7 +23,8 @@ from ingest.constants import (
     PER_PAGE,
     STEP2_EXCLUSION_REASONS,
 )
-from ingest.github_client import GitHubClient
+from ingest.corpus_filter import apply_corpus_filter
+from ingest.github_client import GitHubClient, from_list_item
 
 log = logging.getLogger(__name__)
 
@@ -97,6 +100,7 @@ def assert_filter_is_sound(verdicts, expected_total: int) -> None:
 
 
 if __name__ == "__main__":
+    load_dotenv()
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     repo = sys.argv[1] if len(sys.argv) > 1 else "processing/p5.js"
 
@@ -122,3 +126,15 @@ if __name__ == "__main__":
 
     assert_list_is_sound(fetch)
     print("\ngolden assertion PASSED")
+
+    filter_started = time.perf_counter()
+    verdicts = apply_corpus_filter([from_list_item(item) for item in fetch.items])
+    filter_elapsed = time.perf_counter() - filter_started
+    assert_filter_is_sound(verdicts, len(fetch.items))
+
+    counts = Counter(v.exclusion_reason for v in verdicts)
+    print(f"verdicts        {len(verdicts)}")
+    print(f"counter         {dict(counts)}")
+    print(f"in_corpus       {sum(1 for v in verdicts if v.in_corpus)}")
+    print(f"filter elapsed  {filter_elapsed:.1f}s")
+    print("\nfilter golden assertion PASSED")

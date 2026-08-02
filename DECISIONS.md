@@ -327,3 +327,100 @@ incoherent and nothing would flag it.
 RESOLVE: before step 4 is written (days 11-12). Whichever reading wins, the
 README at Phase 9 states which, because "files changed" in a published table
 would otherwise be read as GitHub's number.
+
+### D-P2-15 — OPEN (2026-08-02)
+The .cache/prs/ snapshot is not frozen. D-P2-6 refetches the short last page on
+every warm run, so new upstream PRs enter the corpus silently: 4,370 -> 4,371
+overnight (#9030, #9031), open 124 -> 125.
+
+01 §15 designates the cache AS the frozen snapshot the harness reads. It cannot
+drift once labeling starts (Phase 5) — a judgment made against a corpus of 4,371
+and a metric computed against 4,400 are not the same experiment, and nothing
+currently flags the difference.
+
+Options: a --freeze flag pinning a max PR number; a snapshot manifest recording
+total + last number + fetch date, asserted on every subsequent run; or accept
+drift until Phase 5 and freeze there explicitly.
+
+RESOLVE: before Phase 5 labeling begins. Not blocking today's filter run.
+
+### D-P2-4 — RESOLVED (2026-08-02): drop the ratio branch
+Measured over the full 4,371-PR list. 63 groups, 69 exclusions.
+Branch tally: exact=59, ratio-only=10.
+
+The decision predicted "the ratio is headroom, not the load-bearing rule."
+Confirmed at 63 groups instead of 4 — and the headroom is negative.
+
+Four merged PRs were wrongly excluded, all via the ratio branch, all verified
+on GitHub:
+- #2780/#2781/#2782 "parameter validation tests part 1/2/3" — parts of #2592,
+  ratio 0.970. Different files, different commits. All three merged.
+  Excluded #2780 and #2781.
+- #4409/#4438 "[feat] Improving tests ... dom module - I/II" — ratio 0.992.
+  Author's own words: "first PR towards #4392" / "second PR towards #4392".
+  Branches feat-tests-dom-I and -II. Both merged. Excluded #4409.
+- #4369/#4388 "[feat] Updated inline documentation of color/core module" —
+  ratio 0.970. Different modules, 4 files vs 9, both address #4368,
+  branches templating-modules-color and -core. Both merged. Excluded #4369.
+
+The failure has an exact shape: SHORT TITLES DIFFERING BY ONE CHARACTER, WHERE
+THAT CHARACTER CARRIES THE MEANING. SequenceMatcher scores 1/2/3 and I/II and
+color/core at ~0.97 because 60 of 62 characters agree. Semantically they are
+maximally different — the digit IS the content. No threshold fixes this:
+raising it to 0.995 still admits I/II at 0.992, and by then the branch matches
+almost nothing the exact branch missed.
+
+The exact branch produced 59 exclusions with zero observed false positives.
+Dropping the ratio branch costs 5 plausible true positives (p5.sound
+update/updates, Revise/Revised, the "(main)" suffix, loadPixels()/loadPixels,
+textTomodel/text to model). That trade is correct under 01 §2's own logic: a
+wrongly-excluded PR is silently gone from the corpus and invisible in every
+metric, while a missed duplicate is one extra near-identical candidate that
+retrieval handles.
+
+CHANGE: titles_match() returns normalized-exact only. TITLE_SIMILARITY_THRESHOLD
+and the SequenceMatcher import are removed, not left dead.
+01 §2's "near-identical title" stands unamended — normalized exact match
+(lowercase, whitespace-collapsed, trailing punctuation stripped) is a valid
+reading of it. No doc unlock required.
+
+PREDICTED after the change: 8 groups dissolve entirely (every non-anchor member
+in them matched on ratio), so 63 -> 55 groups, 69 -> 59 exclusions, in_corpus
+3,666 -> 3,676, total exclusions 705 -> 695 (15.9%). Registered before re-running.
+
+NOTED, NOT IMPLEMENTED: every member of all three false-positive groups was
+MERGED. A genuine resubmission has exactly one merged member — the others are
+force-push casualties. ">1 merged member in a group" is therefore a mechanical
+proof the group is wrong, and a candidate guard if duplicates ever need
+tightening again. Not added now: the exact branch needs no rescuing, and an
+unevidenced extra rule is what 01 §2 warns against.
+
+### D-P2-5 — RESOLVED (2026-08-02): case-sensitive patterns stand
+report_housekeeping_near_misses() over all 4,371 PRs printed ZERO near-misses.
+No title in the corpus matches the three 01 §2 patterns under IGNORECASE while
+failing as written. The deliberate (update|Update) alternation loses nothing.
+01 §2 needs no amendment; the case-sensitive transcription is correct as locked.
+
+housekeeping came in at 11 against a predicted 84. Case sensitivity is NOT the
+explanation — the near-miss report rules it out. Either p5.js maintainers rarely
+type those three exact strings, or bot-authored ones were absorbed first
+(classify() checks bots before housekeeping, and 625 PRs went to bot_author).
+The model of maintainer behaviour was wrong; the filter is not.
+
+### D-P2-15 — OPEN (2026-08-02)
+The .cache/prs/ snapshot is not frozen. D-P2-6 refetches the short last page on
+every warm run, so upstream PRs enter the corpus silently: 4,370 -> 4,371
+overnight (#9030, #9031 appeared between the Day-9 and Day-10 runs;
+open 124 -> 125).
+
+01 §15 designates the cache AS the frozen snapshot the harness reads. It cannot
+drift once labeling starts — a judgment made against 4,371 PRs and a metric
+computed against 4,400 are not the same experiment, and nothing flags the gap.
+EXPECTED_TOTAL_HIGH = 4_500 absorbed the change without comment; a band wide
+enough to hide daily growth will not catch the day something goes actually wrong.
+
+Options: a --freeze flag pinning a max PR number; a snapshot manifest recording
+total + last number + fetch date, asserted on every subsequent run; or accept
+drift and freeze explicitly at Phase 5.
+
+RESOLVE: before Phase 5 labeling begins.

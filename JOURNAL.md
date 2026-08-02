@@ -330,3 +330,47 @@ housekeeping: 84             (12/yr x 7 yrs of a human typing one of three exact
 Largest: bot_author, by roughly 5x over the next.
 Total 520 vs the handoff's 12% ~= 524. Coincidence at this sample size, not
 confirmation — the three individual numbers are the test.
+
+2026-08-02 — Day 10. apply_corpus_filter over 4,371 real PRs. Counter printed
+and read: {None: 3666, bot_author: 625, duplicate_resubmission: 69,
+housekeeping: 11}. Predicted 400/36/84.
+
+Two misses worth keeping. bot_author +56%: the weekly-since-2018 model was too
+conservative on both rate and start year. duplicate_resubmission ~2x: the
+CONVERSION was nearly right (predicted 1.25 exclusions per cluster, actual 1.10)
+but the base rate was half what it should have been — I extrapolated from 4
+clusters found in ~600 recent PRs and reasoned that force-pushing is a beginner
+pattern so the recent rate would be inflated. Wrong: the groups run right across
+the corpus, #283/#310 and #444/#445 are 2014. Reasoning about a base rate from a
+non-random sample, then adjusting in the wrong direction on a plausible story.
+
+The largest-category call was right, which is the part that mattered.
+
+FIVE reference-location errors in one session, all the same class: the name was
+right, the location was wrong. _diff_cache_path (carried from Day 9),
+REASON_DIFF_UNAVAILABLE defined 60 lines BELOW the frozenset that reads it,
+apply_corpus_filter never imported, the filter block pasted ABOVE the fetch that
+produces its input, from_list_item looked for on PRMeta when it is a
+module-level function in github_client.py. No typos, no logic errors — all
+reference resolution. Day 9's habit (grep -rn SYMBOL after moving a name) proves
+a name is referenced consistently; it says NOTHING about definition order.
+Importing the module and printing is the check that covers that, and it caught
+REASON_DIFF_UNAVAILABLE in five seconds.
+
+KeyError: GITHUB_TOKEN again — third occurrence, first in a non-spike script.
+Day 6 journalled it as "day5 spike was missing load_dotenv()", which is why it
+did not generalise. The transferable version: ANY script reading .env needs
+load_dotenv(), and an exported shell variable will silently paper over its
+absence until a fresh terminal. Also: python-dotenv resolves relative to the
+CALLING FILE, so load_dotenv() in a /tmp scratch script finds nothing and needs
+an explicit path.
+
+The .strip() fix to normalize_title changed no outcome — title.strip() already
+ran first, so no real p5.js title reached the trailing-space branch. It was still
+required: without it the exact-vs-ratio branch attribution would not have been
+trustworthy, and that attribution is the entire evidence base for D-P2-4.
+
+Teeth-check pattern that worked: the golden assertion was exercised from a
+throwaway /tmp script rather than by editing scripts/index_repo.py and reverting.
+Four breaks, four failures, zero risk of leaving one behind. Same for the
+duplicate-evidence dump. Production files stayed untouched.

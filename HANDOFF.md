@@ -1,104 +1,92 @@
-# Handoff — 2026-08-01, Day 9 (step 1 done; the filter did not run)
+# Handoff — 2026-08-02, Day 10 (the filter ran; the fix from it has NOT landed)
 
 ## Done and committed
-- scripts/index_repo.py created — 04 §5 step 1 only. fetch_all() drives
-  iter_list_pages() and keeps RAW items (iter_pr_meta drops body,
-  github_id, labels, closed_at, raw — 02 §4 needs all five).
-- assert_list_is_sound(): no duplicate numbers, strictly ascending,
-  first == #16, last page short, total within band. Teeth-checked —
-  watched it FAIL at 4,400-5,400, then pass at 4,300-4,450.
-- ingest/constants.py: EXPECTED_FIRST_NUMBER / _TOTAL_LOW / _TOTAL_HIGH.
-  scripts/index_repo.py imports them; local copies deleted (they shadowed).
-- ingest/github_client.py: fetch_diff now calls _diff_cache_path(number).
-  It was defined and never called — bare-number path would have returned
-  a Day-4 FastAPI diff for a colliding p5.js number, silently.
+- scripts/index_repo.py: assert_filter_is_sound() — four independent checks
+  (count vs fetch total, unique numbers, paired invariant, reasons subset of
+  STEP2_EXCLUSION_REASONS). Teeth-checked from /tmp, all four watched failing.
+- ingest/constants.py: STEP2_EXCLUSION_REASONS (three literals).
+  EXCLUSION_DIFF_UNAVAILABLE renamed REASON_DIFF_UNAVAILABLE and MOVED UP into
+  the literals block — it was defined 60 lines below the frozenset reading it.
+- ingest/corpus_filter.py: normalize_title() ends in .strip().
+- load_dotenv() at the top of __main__. Third GITHUB_TOKEN KeyError of the project.
+- Step 2 wired into __main__ AFTER step 1's assertion, per 04 §5 ordering.
 
-## Measured — the corpus is real now
-- 4,370 PRs, 44 pages, last page 70 items, #16 (2013-07-02) → #9029.
-- state split: closed 4246/open 124.
-- outcome split: merged 3558/closed_unmerged 688/open 124.Sums to 4370
-- Cold 96s / 44 requests. Warm 3s / 1 request (page 44 only, D-P2-6).
-- .cache/prs/ now holds all 44 pages of processing/p5.js.
+## Measured — step 2 has touched real data
+- 4,371 PRs (up from 4,370 — see D-P2-15). 44 pages, last 71, #16 -> #9031.
+- Counter: {None: 3666, bot_author: 625, duplicate_resubmission: 69, housekeeping: 11}
+- in_corpus 3,666. Exclusions 705 = 16.1%. Four keys only; no step-3 or step-4b
+  reason appeared, so the ordering held.
+- Predictions were 400 / 36 / 84. Largest-category call correct.
+- 63 duplicate groups, branch tally exact=59 ratio-only=10.
+- Housekeeping near-misses: ZERO across the whole corpus.
 
 ## Deployed state
 - Unchanged. Not deployed (Cloud Run is Phase 7 per 04 §9). Skeleton 433 MB.
-- Neon: schema v001, 6 tables, EMPTY. Nothing has been written to Postgres.
+- Neon: schema v001, 6 tables, EMPTY. Nothing written to Postgres.
 - Migration 002 (judgments.self_authored) still unwritten — before Phase 5.
 
-## NOT done
-- apply_corpus_filter has still never touched real data.
-- D-P2-4 and D-P2-5 remain OPEN. Both resolve from that run, which needs
-  ZERO network — everything is on disk.
-- Nothing has been written to pull_requests. Phase 2's deliverable is
-  "pull_requests populated for the full repo" and the table is empty.
+## NEXT SESSION STARTS HERE — the D-P2-4 fix
+The filter currently excludes FOUR MERGED PRs (#2780, #2781, #4409, #4369) as
+duplicate resubmissions. Verified on GitHub; all are distinct work. Nothing
+downstream consumes this yet (pull_requests is empty), so it is not urgent —
+but it must land before any insert.
 
-## Read before the filter run
-- Expect FOUR Counter keys: None, bot_author, duplicate_resubmission,
-  housekeeping. no_source_content (4b) and diff_unavailable (step 3) are
-  unreachable at step 2 — either appearing means the filter ran out of order.
-- Exclusions are BACK-LOADED. Pages 1-15 are 2013-2015: no dependabot, no
-  allcontributors. Near-zero there is the repo's history, not a broken
-  classify(). The 12% prediction is whole-corpus.
-- group_duplicates never closes a group: a 400-600 PR author costs ~1e5
-  SequenceMatcher calls. Seconds, not a hang. Time it — the 7-day window
-  is the cheapest of the three predicates and currently runs last.
-- normalize_title strips punctuation after whitespace collapse, so a title
-  ending " ." keeps a trailing space and misses the normalized-exact branch.
-  Read the D-P2-4 log with that in mind.
-- Golden assertion for the filter stage, to write BEFORE the run:
-  in_corpus count + sum of exclusion counts == 4,370 exactly; every excluded
-  row has a non-null exclusion_reason; no reason outside the four literals.
+1. titles_match(): delete the SequenceMatcher branch, return na == nb only.
+   Remove TITLE_SIMILARITY_THRESHOLD from constants.py and the difflib import —
+   dead, not commented out. grep both names after.
+2. Update tests/unit/test_corpus_filter.py — any test asserting a ratio match
+   should now assert the pair does NOT group.
+3. Re-run. PREDICTED: 55 groups, 59 exclusions, in_corpus 3,676, total 695.
+   That prediction is registered in DECISIONS.md — read the actual against it.
+4. Then step 4 field-fill decision (D-P2-14) before any insert.
+
+## Read before the next run
+- assert_filter_is_sound RUNS but PRINTS NOTHING on success. Two lines are still
+  missing from __main__: `filter elapsed` and `print("\nfilter golden assertion
+  PASSED")`. Silence standing in for success is what invariant 20 exists to stop.
+- The evidence scripts are gone (/tmp, deliberately). To regenerate the branch
+  attribution, rebuild: classify() -> survivors -> group_duplicates() ->
+  per member compare normalize_title(anchor) vs normalize_title(member).
+  Compare to group[0], NOT the keeper — the window is anchored to the first
+  member.
+- python-dotenv resolves relative to the CALLING FILE. A scratch script outside
+  the repo needs load_dotenv("/Users/harshiltewari/pr-review-assistant/.env").
 
 ## Field audit carried forward — 02 §4
 Fourteen of seventeen columns fill from a list item. THREE DO NOT:
 files_changed, additions, deletions. All have DB defaults, so a bad insert
-raises nothing. files_changed carries the file-overlap signal (03 §1) and
-is GIN-indexed — defaulting it to '{}' would zero one of three signals
-corpus-wide and still look fine. Source is the parsed diff at step 4, free.
-Open sub-question: does files_changed record every file in the diff, or
-only files surviving 03 §2's exclusions? Not equivalent — a PR touching
-p5.Renderer.js + CHANGELOG.md would Jaccard against every changelog PR
-under the first reading. Log as D-P2-14 before step 4 is written.
+raises nothing. All three source from the parsed diff at step 4. One question,
+not three: every file in the diff, or only files surviving 03 §2? Logged as
+D-P2-14; resolve before step 4 is written.
 
 ## Open decisions carried forward
-- D-P2-4 OPEN: "near-identical title". Resolves from the filter run.
-- D-P2-5 OPEN: housekeeping patterns case-sensitive per 01 §2. Same run.
-- D-P2-12 OPEN: LIST_STATE = "all" admits open PRs. Phase 4.
+- D-P2-12 OPEN: LIST_STATE = "all" admits open PRs (125 of them). Phase 4.
+- D-P2-14 OPEN: files_changed / additions / deletions fill rule. Days 11-12.
+- D-P2-15 OPEN: .cache/prs/ snapshot drifts silently. Before Phase 5.
 - D-P3-1 OPEN: manual ::vector cast vs pgvector asyncpg codec. Phase 3.
 - D-P3-2 OPEN: Neon pooled + create_pool() under Cloud Run churn. Phase 7.
-  statement_cache_size=0 is the known fallback.
-- D-P5-2 OPEN: 01 §7 anchors and §8 subsystems carry STALE markers.
-  Rewrite before Day 25.
+- D-P5-2 OPEN: 01 §7 anchors and §8 subsystems carry STALE markers. Before Day 25.
 
 ## Carried-over obligations
-- 01 §7 anchor rewrite: diffs for #8862, #8964, #8823 through the NEW
-  namespaced fetch_diff path. Three requests. Plus p5.js /labels confirmed.
+- 01 §7 anchor rewrite: diffs for #8862, #8964, #8823 through the namespaced
+  fetch_diff path. Three requests. Plus p5.js /labels confirmed.
 - #8862 truncates hard: 2 of 3 source hunks over 256 tokens, range 64-614,
   median 387. Any anchor written against it says so.
-- README at Phase 9 owes FIVE exclusion counts, not four.
+- README at Phase 9 owes FIVE exclusion counts, not four — and must state which
+  files_changed reading won (D-P2-14).
 - Migration 002 for judgments.self_authored.
 - 04 §5 needs a step 3b line for diff_unavailable in the doc revision pass.
-- Reserved (CodeDay), Good First Issue, Help Wanted: process labels, NOT
-  exclusions.
-- fetch_diff raises httpx.HTTPStatusError on any non-406 4xx/5xx. The
-  step-3 caller must catch that AND DiffUnavailable — 04 §5 forbids
-  hard-failing a run on one PR.
-- MAX vs mean-of-top-3: Day-4 evidence exists (p5.js Similar B full-diff
-  winner was shared test scaffolding, 0.6788 -> 0.7074). Milestone A.
+- Reserved (CodeDay), Good First Issue, Help Wanted: process labels, NOT exclusions.
+- fetch_diff raises httpx.HTTPStatusError on any non-406 4xx/5xx. The step-3
+  caller must catch that AND DiffUnavailable — 04 §5 forbids hard-failing on one PR.
+- MAX vs mean-of-top-3: Day-4 evidence exists (0.6788 -> 0.7074). Milestone A.
 - Six doc revisions for the Cloud Run pivot: 04, 05, 08.
 
 ## Decisions log watermark
-- Current through D-P2-13, committed. OPEN: D-P2-4, D-P2-5, D-P2-12.
-
-## Next session starts with
-- apply_corpus_filter over all 4,370 cached items. Zero network.
-- Write the filter stage's golden assertion BEFORE running it.
-- Print the Counter and READ it. Then duplicate groups and housekeeping
-  near-misses — that closes D-P2-4 and D-P2-5, and answers whether the
-  [bot] suffix fix changed anything on real data.
-- Then step 4 field-fill decision (D-P2-14) before any insert.
+- Current through D-P2-15. RESOLVED today: D-P2-4, D-P2-5. OPEN: D-P2-12,
+  D-P2-14, D-P2-15, D-P3-1, D-P3-2, D-P5-2.
 
 ## Schedule
-- Day 9 of 50. 09 §3 puts diff_parser.py at 11-12 and index_repo wiring
-  at 13. Phase 2's deliverable is a populated pull_requests table; it is
-  still empty. Do not let the filter run slide into the parser days.
+- Day 10 of 50. 09 §3 puts diff_parser.py at 11-12 and index_repo wiring at 13.
+- Phase 2's deliverable is a populated pull_requests table. Still EMPTY.
+  Steps 1 and 2 are done and verified; steps 3-7 are not started.
