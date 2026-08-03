@@ -395,6 +395,19 @@ proof the group is wrong, and a candidate guard if duplicates ever need
 tightening again. Not added now: the exact branch needs no rescuing, and an
 unevidenced extra rule is what 01 §2 warns against.
 
+RESULT 2026-08-03. Registered prediction: 55 groups / 59 duplicate_resubmission
+/ in_corpus 3,676 / 695 total exclusions, on 4,371 PRs.
+Actual on 4,372 PRs: 56 / 60 / 3,676 / 696.
+in_corpus hit exactly. The uniform +1 on the other three is one drifted PR
+forming a new duplicate group — bot_author (625) and housekeeping (11) are
+unchanged, so the drift is neither. Attribution inferred from the counters;
+not yet confirmed against the group log. CONFIRM BEFORE THIS NUMBER SHIPS.
+D-P2-4 CLOSED.
+
+Note against D-P2-15: the cache has now drifted twice (4,370 → 4,371 → 4,372)
+and the second drift moved a measured number. Severity raised from "before
+Phase 5" to next session.
+
 ### D-P2-5 — RESOLVED (2026-08-02): case-sensitive patterns stand
 report_housekeeping_near_misses() over all 4,371 PRs printed ZERO near-misses.
 No title in the corpus matches the three 01 §2 patterns under IGNORECASE while

@@ -130,11 +130,11 @@ if __name__ == "__main__":
     filter_started = time.perf_counter()
     verdicts = apply_corpus_filter([from_list_item(item) for item in fetch.items])
     filter_elapsed = time.perf_counter() - filter_started
-    assert_filter_is_sound(verdicts, len(fetch.items))
-
     counts = Counter(v.exclusion_reason for v in verdicts)
     print(f"verdicts        {len(verdicts)}")
     print(f"counter         {dict(counts)}")
     print(f"in_corpus       {sum(1 for v in verdicts if v.in_corpus)}")
     print(f"filter elapsed  {filter_elapsed:.1f}s")
+
+    assert_filter_is_sound(verdicts, len(fetch.items))
     print("\nfilter golden assertion PASSED")

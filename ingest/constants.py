@@ -65,7 +65,11 @@ HOUSEKEEPING_TITLE_PATTERNS = (
 
 # --- rule 3: duplicate resubmissions --------------------------------------
 DUPLICATE_WINDOW_DAYS = 7
-TITLE_SIMILARITY_THRESHOLD = 0.95  # D-P2-4 — operationalizes "near-identical"
+# No title-similarity threshold. D-P2-4 REVERSED 2026-08-02: a 0.95
+# SequenceMatcher ratio grouped four merged, distinct PRs (#2780, #2781,
+# #4409,#4369)as resubmissions - verified on github. "Near-identical"
+# in 01 §2 means normalized-exact. Do not reintroduce a ratio branch
+# without evidence that exact matching misses real resubmissions
 
 # --- GitHub client (04 §5 steps 1 and 3) ---
 GITHUB_API_ROOT = "https://api.github.com"

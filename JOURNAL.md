@@ -374,3 +374,22 @@ Teeth-check pattern that worked: the golden assertion was exercised from a
 throwaway /tmp script rather than by editing scripts/index_repo.py and reverting.
 Four breaks, four failures, zero risk of leaving one behind. Same for the
 duplicate-evidence dump. Production files stayed untouched.
+
+## 2026-08-03, Day 11
+- Handoff was written from memory, not from the diff: it claimed two print lines
+  were missing from index_repo.py that were already present. Cost a wasted step 0.
+  Rule: write the handoff FROM `git diff`, with the diff open.
+- Claude's revert-verification grep ("SequenceMatcher\|0.95" in ingest/) reported
+  "revert incomplete" against comment and docstring text that is supposed to be
+  there. Grep on prose cannot verify code state. The passing pinning test — which
+  had just been watched failing — was the actual verification and was already green.
+  Same reference-location failure class logged on Days 9 and 10.
+- Prediction ritual paid: 4/4 numbers explained, and only because the fetch total
+  was read first. The cache drifted a second time (4,371 → 4,372) and the drift
+  landed inside a duplicate group. Without checking the total, this would have
+  read as a prediction miss on three counters.
+- Teeth check half-run. `assert` short-circuits; the two in_corpus assertions in
+  test_high_ratio_titles_do_not_group have never been watched failing.
+- Eight one-token slips, all dropped-space-after-punctuation, across four files
+  including two inside a comment that ruff cannot reach. Threshold was hit early
+  and the session ran on anyway. Fourth session with this pattern.

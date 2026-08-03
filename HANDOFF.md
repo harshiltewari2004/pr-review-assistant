@@ -1,68 +1,57 @@
-# Handoff — 2026-08-02, Day 10 (the filter ran; the fix from it has NOT landed)
+# Handoff — 2026-08-03, Day 11 (D-P2-4 landed and validated; cache still drifting)
 
 ## Done and committed
-- scripts/index_repo.py: assert_filter_is_sound() — four independent checks
-  (count vs fetch total, unique numbers, paired invariant, reasons subset of
-  STEP2_EXCLUSION_REASONS). Teeth-checked from /tmp, all four watched failing.
-- ingest/constants.py: STEP2_EXCLUSION_REASONS (three literals).
-  EXCLUSION_DIFF_UNAVAILABLE renamed REASON_DIFF_UNAVAILABLE and MOVED UP into
-  the literals block — it was defined 60 lines below the frozenset reading it.
-- ingest/corpus_filter.py: normalize_title() ends in .strip().
-- load_dotenv() at the top of __main__. Third GITHUB_TOKEN KeyError of the project.
-- Step 2 wired into __main__ AFTER step 1's assertion, per 04 §5 ordering.
+- ingest/corpus_filter.py: titles_match() is `normalize_title(a) == normalize_title(b)`.
+  SequenceMatcher branch and difflib import deleted, not commented out.
+  Docstring carries the reversal and the four PR numbers.
+- ingest/constants.py: TITLE_SIMILARITY_THRESHOLD deleted, replaced by a comment
+  stating why no threshold exists. Greps clean (only prose hits remain, by design).
+- scripts/index_repo.py: step-2 diagnostics now print BEFORE assert_filter_is_sound,
+  matching step 1's order. A failing filter assertion is now debuggable.
+- tests/unit/test_corpus_filter.py: test_high_ratio_titles_do_not_group added.
+  Pair scores 0.9688 — over the deleted threshold. 12 tests passing.
+- Teeth check run: watched `assert not titles_match(...)` fail with the branch
+  restored. NOT watched: the two in_corpus assertions (assert short-circuits).
 
-## Measured — step 2 has touched real data
-- 4,371 PRs (up from 4,370 — see D-P2-15). 44 pages, last 71, #16 -> #9031.
-- Counter: {None: 3666, bot_author: 625, duplicate_resubmission: 69, housekeeping: 11}
-- in_corpus 3,666. Exclusions 705 = 16.1%. Four keys only; no step-3 or step-4b
-  reason appeared, so the ordering held.
-- Predictions were 400 / 36 / 84. Largest-category call correct.
-- 63 duplicate groups, branch tally exact=59 ratio-only=10.
-- Housekeeping near-misses: ZERO across the whole corpus.
+## Measured — the prediction held
+- 4,372 PRs (was 4,371 yesterday, 4,370 the day before). Last #9032, 2026-08-02T20:16Z.
+- Counter: {None: 3676, duplicate_resubmission: 60, bot_author: 625, housekeeping: 11}
+- 56 duplicate groups (grep -c on the run log).
+- PREDICTED 55 / 59 / 3,676 / 695 on 4,371. in_corpus exact; others +1.
+- Explanation: the drifted PR formed a new duplicate group. bot_author and
+  housekeeping unchanged, so it is neither. NOT YET CONFIRMED against the log.
+
+## NEXT SESSION STARTS HERE
+1. Confirm the drift attribution:
+   `grep "duplicate group:" /tmp/day11_filter.log | grep -E "90[23][0-9]"`
+   If nothing returns, three numbers moved for a reason not yet understood.
+2. D-P2-15: freeze the cache. Two drifts, second one moved a measured number.
+   Every README exclusion count is computed against a moving snapshot.
+3. THEN D-P2-14 — files_changed / additions / deletions fill rule. Untouched today.
 
 ## Deployed state
 - Unchanged. Not deployed (Cloud Run is Phase 7 per 04 §9). Skeleton 433 MB.
 - Neon: schema v001, 6 tables, EMPTY. Nothing written to Postgres.
 - Migration 002 (judgments.self_authored) still unwritten — before Phase 5.
 
-## NEXT SESSION STARTS HERE — the D-P2-4 fix
-The filter currently excludes FOUR MERGED PRs (#2780, #2781, #4409, #4369) as
-duplicate resubmissions. Verified on GitHub; all are distinct work. Nothing
-downstream consumes this yet (pull_requests is empty), so it is not urgent —
-but it must land before any insert.
-
-1. titles_match(): delete the SequenceMatcher branch, return na == nb only.
-   Remove TITLE_SIMILARITY_THRESHOLD from constants.py and the difflib import —
-   dead, not commented out. grep both names after.
-2. Update tests/unit/test_corpus_filter.py — any test asserting a ratio match
-   should now assert the pair does NOT group.
-3. Re-run. PREDICTED: 55 groups, 59 exclusions, in_corpus 3,676, total 695.
-   That prediction is registered in DECISIONS.md — read the actual against it.
-4. Then step 4 field-fill decision (D-P2-14) before any insert.
-
-## Read before the next run
-- assert_filter_is_sound RUNS but PRINTS NOTHING on success. Two lines are still
-  missing from __main__: `filter elapsed` and `print("\nfilter golden assertion
-  PASSED")`. Silence standing in for success is what invariant 20 exists to stop.
-- The evidence scripts are gone (/tmp, deliberately). To regenerate the branch
-  attribution, rebuild: classify() -> survivors -> group_duplicates() ->
-  per member compare normalize_title(anchor) vs normalize_title(member).
-  Compare to group[0], NOT the keeper — the window is anchored to the first
-  member.
-- python-dotenv resolves relative to the CALLING FILE. A scratch script outside
-  the repo needs load_dotenv("/Users/harshiltewari/pr-review-assistant/.env").
+## Open loops from today
+- Teeth check half-run: the two in_corpus assertions in the new test were never
+  watched failing. Either finish it or accept them as unverified.
+- Real duplicate group `kept #8947, excluded [8945, 8946]` — 07 §4 says the
+  survivor is the merged one and the fixture marks #8946 merged. Not a bug
+  (pick_keeper is deterministic), but confirm on GitHub which of the three is
+  merged; 07 §4 names this exact triple.
 
 ## Field audit carried forward — 02 §4
 Fourteen of seventeen columns fill from a list item. THREE DO NOT:
 files_changed, additions, deletions. All have DB defaults, so a bad insert
 raises nothing. All three source from the parsed diff at step 4. One question,
-not three: every file in the diff, or only files surviving 03 §2? Logged as
-D-P2-14; resolve before step 4 is written.
+not three: every file in the diff, or only files surviving 03 §2? D-P2-14.
 
 ## Open decisions carried forward
-- D-P2-12 OPEN: LIST_STATE = "all" admits open PRs (125 of them). Phase 4.
-- D-P2-14 OPEN: files_changed / additions / deletions fill rule. Days 11-12.
-- D-P2-15 OPEN: .cache/prs/ snapshot drifts silently. Before Phase 5.
+- D-P2-12 OPEN: LIST_STATE = "all" admits open PRs (126 now, was 125). Phase 4.
+- D-P2-14 OPEN: files_changed / additions / deletions fill rule. Next session.
+- D-P2-15 OPEN: cache drift. ESCALATED — moved a measured number. Next session.
 - D-P3-1 OPEN: manual ::vector cast vs pgvector asyncpg codec. Phase 3.
 - D-P3-2 OPEN: Neon pooled + create_pool() under Cloud Run churn. Phase 7.
 - D-P5-2 OPEN: 01 §7 anchors and §8 subsystems carry STALE markers. Before Day 25.
@@ -70,9 +59,8 @@ D-P2-14; resolve before step 4 is written.
 ## Carried-over obligations
 - 01 §7 anchor rewrite: diffs for #8862, #8964, #8823 through the namespaced
   fetch_diff path. Three requests. Plus p5.js /labels confirmed.
-- #8862 truncates hard: 2 of 3 source hunks over 256 tokens, range 64-614,
-  median 387. Any anchor written against it says so.
-- README at Phase 9 owes FIVE exclusion counts, not four — and must state which
+- #8862 truncates hard: 2 of 3 source hunks over 256 tokens, range 64-614, median 387.
+- README at Phase 9 owes FIVE exclusion counts, and must state which
   files_changed reading won (D-P2-14).
 - Migration 002 for judgments.self_authored.
 - 04 §5 needs a step 3b line for diff_unavailable in the doc revision pass.
@@ -83,10 +71,11 @@ D-P2-14; resolve before step 4 is written.
 - Six doc revisions for the Cloud Run pivot: 04, 05, 08.
 
 ## Decisions log watermark
-- Current through D-P2-15. RESOLVED today: D-P2-4, D-P2-5. OPEN: D-P2-12,
+- Current through D-P2-15. CLOSED today: D-P2-4 (with result). OPEN: D-P2-12,
   D-P2-14, D-P2-15, D-P3-1, D-P3-2, D-P5-2.
 
 ## Schedule
-- Day 10 of 50. 09 §3 puts diff_parser.py at 11-12 and index_repo wiring at 13.
+- Day 11 of 50. 09 §3 puts diff_parser.py at 11-12 and index_repo wiring at 13.
+  diff_parser.py exists as a file but is not started. Half a day behind.
 - Phase 2's deliverable is a populated pull_requests table. Still EMPTY.
-  Steps 1 and 2 are done and verified; steps 3-7 are not started.
+  Steps 1 and 2 done and verified; steps 3-7 not started.

@@ -11,6 +11,7 @@ from ingest.corpus_filter import (
     apply_corpus_filter,
     classify,
     normalize_title,
+    titles_match,
 )
 
 BASE = datetime(2026, 3, 1, tzinfo=UTC)
@@ -69,9 +70,28 @@ def test_account_list_catches_suffixed_login_reported_as_user():
     assert classify(pr) == REASON_BOT_AUTHOR
 
 
+def test_high_ratio_titles_do_not_group():
+    """D-P2-4, reversed 2026-08-02. These two differ by one character and
+    score 0.9688 on SequenceMatcher — over the 0.95 threshold that used to
+    live in constants.py. They are separate issues and separate work. The
+    ratio branch grouped four merged p5.js PRs this way (#2780/#2781,
+    #4409/#4369); nothing in the suite caught it. This is that test.
+    """
+    a = _pr(9101, "Fix #8901:stroke weight ignored", "contrib-d", day=0)
+    b = _pr(9102, "Fix #8902:stroke weight ignored", "contrib-d", day=1)
+
+    assert not titles_match(a.title, b.title)
+
+    verdicts = {v.number: v for v in apply_corpus_filter([a, b])}
+    assert verdicts[9101].in_corpus is True
+    assert verdicts[9102].in_corpus is True
+
+
 def test_normalize_title_leaves_no_trailing_space_after_punctuation_strip():
     """Punctuation is stripped after whitespace collapse (D-P2-4), so a title
-    ending ' .' would otherwise keep a trailing space and miss the exact-match
-    branch. Documented failure mode, pinned here."""
+    ending ' .' would otherwise keep a trailing space and fail the comparison.
+    Since D-P2-4 was reversed, exact match is the ONLY branch — normalization
+    is now the whole of duplicate detection, not a fast path before a ratio
+    fallback. Documented failure mode, pinned here."""
     assert normalize_title("Fix the bug .") == "fix the bug"
     assert normalize_title("Fix   the   bug .") == normalize_title("Fix the bug")

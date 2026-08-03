@@ -16,7 +16,6 @@ import logging
 import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from difflib import SequenceMatcher
 
 from ingest.constants import (
     BOT_ACCOUNTS,
@@ -26,7 +25,6 @@ from ingest.constants import (
     REASON_BOT_AUTHOR,
     REASON_DUPLICATE_RESUBMISSION,
     REASON_HOUSEKEEPING,
-    TITLE_SIMILARITY_THRESHOLD,
 )
 
 log = logging.getLogger(__name__)
@@ -83,12 +81,15 @@ def normalize_title(title: str) -> str:
 
 
 def titles_match(a: str, b: str) -> bool:
-    """Normalized-exact, or high-ratio near-match. D-P2-4."""
+    """Normalized-exact only. D-P2-4, reversed 2026-08-02.
+    A SequenceMatcher ratio branch at 0.95 grouped distinct merged work as
+    resubmissions - "Fix typo in p5.vector docs" and "Fix typo in p5.Color docs"
+    differ by a few characters and are un related PRs.Exact matching after
+    normalization is the conservative direction: a missed duplicate leaves one redundant candidate
+    in the corpus, a false duplicate deletes real work from it (02 §4).
+    """
 
-    na, nb = normalize_title(a), normalize_title(b)
-    if na == nb:
-        return True
-    return SequenceMatcher(None, na, nb).ratio() >= TITLE_SIMILARITY_THRESHOLD
+    return normalize_title(a) == normalize_title(b)
 
 
 def group_duplicates(prs: list[PRMeta]) -> list[list[PRMeta]]:
