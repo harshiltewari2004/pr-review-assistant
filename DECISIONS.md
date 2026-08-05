@@ -514,3 +514,29 @@ are already applied); batch it with the outstanding doc revisions.
 
 PREDICTION for the post-implementation run, registered before writing code:
 47 groups / 51 duplicate_resubmission / in_corpus 3,685.
+
+### D-P2-15 — RESOLVED (2026-08-05): the list cache is frozen by manifest
+Mechanism: [FILL FROM THE sed — the short-final-page rule in
+_read_cached_page]. Page 44 holds 72 of 100 items, so every run re-fetched it
+and picked up PRs opened since. Correct behaviour for an interrupted fetch,
+wrong for a completed corpus.
+
+Three drifts: 4,370 (Day 9) -> 4,371 (Day 10) -> 4,372 (Day 11). The second
+moved a measured number AND disguised a wrong prediction as an exact hit
+(see D-P2-4 CORRECTION). Cost: one session.
+
+Fix: a manifest at .cache/prs/<slug>_MANIFEST.json. When present,
+iter_list_pages serves the snapshot from disk via _iter_frozen_pages and
+issues zero requests. The frozen path deliberately bypasses
+_read_cached_page, so the staleness rule is routed around rather than
+weakened — an interrupted fetch on an unfrozen cache still resumes correctly.
+
+Guards, each watched failing: wrong total, missing page, stray page beyond
+the manifest's count, --refresh against a freeze. All raise CacheFrozen.
+--thaw is the only way to re-fetch and prints the old snapshot first.
+
+Frozen 2026-08-05: 44 pages / 4,372 PRs / #16..#9032.
+
+Not gitignored-away: .cache/ stays gitignored, but the manifest is the
+provenance for every exclusion count in the README and gets copied into
+eval/artifacts/ as corpus_snapshot.json at Phase 5 (01 §15).
