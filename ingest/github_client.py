@@ -47,6 +47,10 @@ class DiffUnavailable(Exception):
         self.status = status
 
 
+class CacheFrozen(RuntimeError):
+    """The list cache carries a freeze manifest (D-P2-15). Fetching is refused."""
+
+
 def _parse_ts(value: str | None) -> datetime | None:
     """GitHub sends '2026-07-29T14:02:11Z'.
 
@@ -143,6 +147,15 @@ class GitHubClient:
     def _list_cache_path(self, page: int) -> Path:
         return PR_LIST_CACHE / f"{self._slug}_page_{page:04d}.json"
 
+    def _manifest_path(self) -> Path:
+        return PR_LIST_CACHE / f"{self._slug}_MANIFEST.json"
+
+    def read_manifest(self) -> dict[str, Any] | None:
+        path = self._manifest_path()
+        if not path.exists():
+            return None
+        return json.loads(path.read_text())
+
     def _read_cached_page(self, page: int) -> list[dict[str, Any]] | None:
         if self.refresh:
             return None
@@ -174,6 +187,46 @@ class GitHubClient:
         # here and not three stages later.
         return json.loads(path.read_text())
 
+    def _iter_frozen_pages(
+        self, manifest: dict[str, Any]
+    ) -> Iterator[tuple[int, list[dict[str, Any]]]]:
+        """Serve the frozen snapshot from disk. Issues zero requests.
+
+        Deliberately bypasses _read_cached_page: that method never trusts a
+        short final page (D-P2-6), which is correct mid-fetch and is what
+        re-fetched page 44 on every run and drifted the corpus three times
+        (D-P2-15).
+
+        Verifies the whole snapshot BEFORE yielding anything, so a caller
+        cannot consume half a corpus and then be told it was wrong.
+        """
+
+        expected_pages = manifest["pages"]
+        pages: list[tuple[int, list[dict[str, Any]]]] = []
+        total = 0
+
+        for page in range(1, expected_pages + 1):
+            path = self._list_cache_path(page)
+            if not path.exists():
+                raise CacheFrozen(f"manifest expects page {page}; missing {path}")
+            items = json.loads(path.read_text())
+            pages.append((page, items))
+            total += len(items)
+
+        stray = self._list_cache_path(expected_pages + 1)
+        if stray.exists():
+            raise CacheFrozen(
+                f"manifest says {expected_pages} pages but {stray} exists — "
+                "the cache was written to after the freeze"
+            )
+
+        if total != manifest["total_prs"]:
+            raise CacheFrozen(
+                f"frozen cache holds {total} PRs; manifest says {manifest['total_prs']}"
+            )
+
+        yield from pages
+
     def iter_list_pages(self) -> Iterator[tuple[int, list[dict[str, Any]]]]:
         """Yield (page_number, raw_items) for every /pulls page, cache-first.
 
@@ -182,7 +235,20 @@ class GitHubClient:
         interrupted run and its resume shifts the pagination window, so page 3
         from yesterday and page 3 from today describe different PRs. Ascending
         order makes a full page's contents permanent; new PRs land on the tail.
+
+        When a freeze manifest is present the cache is served whole from disk
+        and no request is issued (D-P2-15).
         """
+
+        manifest = self.read_manifest()
+        if manifest is not None:
+            if self.refresh:
+                raise CacheFrozen(
+                    "--refresh against a frozen cache. Thaw deliberately: "
+                    "python -m scripts.freeze_cache --thaw"
+                )
+            yield from self._iter_frozen_pages(manifest)
+            return
 
         PR_LIST_CACHE.mkdir(parents=True, exist_ok=True)
         page = 1

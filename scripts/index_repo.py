@@ -107,6 +107,7 @@ if __name__ == "__main__":
     started = time.time()
     with GitHubClient(os.environ["GITHUB_TOKEN"], repo) as gh:
         fetch = fetch_all(gh)
+        manifest = gh.read_manifest()
     elapsed = time.time() - started
 
     first, last_item = fetch.items[0], fetch.items[-1]
@@ -116,6 +117,16 @@ if __name__ == "__main__":
     print(f"first           #{first['number']}  {first['created_at']}  {first['user']['login']}")
     print(f"last            #{last_item['number']}  {last_item['created_at']}")
     print(f"elapsed         {elapsed:.0f}s")
+    if manifest is None:
+        print("cache           NOT FROZEN (D-P2-15) — counts may drift between runs")
+    else:
+        print(
+            f"cache           FROZEN {manifest['frozen_at']}  "
+            f"{manifest['pages']} pages  {manifest['total_prs']} PRs"
+        )
+        assert len(fetch.items) == manifest["total_prs"], (
+            f"loaded {len(fetch.items)} PRs against a manifest claiming {manifest['total_prs']}"
+        )
     states = Counter(i["state"] for i in fetch.items)
     merged = sum(1 for i in fetch.items if i.get("merged_at"))
     print(f"states          {dict(states)}")
