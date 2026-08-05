@@ -58,6 +58,17 @@ def classify(pr: PRMeta) -> str | None:
 
     Duplicate detection is NOT here — it is set-level and needs the whole
     list. See group_duplicates().
+    Grouping is GREEDY and the exclusion count is NOT monotone in the
+    strictness of titles_match(). A PR consumed by an earlier group cannot
+    anchor a later one, so tightening the predicate RELEASES PRs and released
+    PRs can form groups the looser rule prevented.
+
+    Measured (spikes/day12_grouping_diff.py, D-P2-4): dropping the 0.95 ratio
+    branch removed 10 matched members but only 9 exclusions. Seven groups
+    dissolved outright; [283, 286, 310] lost its anchor and re-formed as
+    [286, 310], because 286 and 310 match each other exactly.
+
+    Do not predict the effect of a rule change by subtraction.
     """
 
     if pr.author_type == "Bot":

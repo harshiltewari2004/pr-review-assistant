@@ -403,6 +403,40 @@ forming a new duplicate group — bot_author (625) and housekeeping (11) are
 unchanged, so the drift is neither. Attribution inferred from the counters;
 not yet confirmed against the group log. CONFIRM BEFORE THIS NUMBER SHIPS.
 D-P2-4 CLOSED.
+CORRECTION 2026-08-05. The RESULT above is wrong on all three predicted
+figures; the drift disguised the third.
+
+Measured with spikes/day12_grouping_diff.py, running production
+group_duplicates() twice over the frozen 4,372 cache — once as shipped, once
+with the 0.95 branch restored by monkeypatch:
+
+  ratio restored : 63 groups, 132 members, 69 exclusions (exact=59 ratio=10)
+  as shipped     : 56 groups, 116 members, 60 exclusions
+
+The 10 ratio-only members: 6 in two-member pairs, 2 in [2780,2781,2782],
+2 in [283,286,310]. Seven groups dissolved. The eighth lost its anchor (#283)
+and re-formed as [286,310] — 286 and 310 match exactly. That re-formation is
+the entire discrepancy against the registered prediction.
+
+True post-drop figures on 4,371 PRs: 56 groups / 60 duplicate_resubmission /
+in_corpus 3,675. Registered prediction was 55 / 59 / 3,676 — MISSED ON ALL
+THREE, each by one. The drifted PR was an ordinary in-corpus PR, carrying
+in_corpus 3,675 -> 3,676 and making a wrong prediction read as exact.
+
+The Day-11 commit message states the prediction "matched exactly." It is in
+history and stays there; this entry is the correction of record.
+
+Attribution RESOLVED against evidence, no longer inferred from counters.
+
+All ten ratio matches now verified on GitHub. Precision 3/10:
+  CORRECT  2196/2197 (1 merged), 2792/2793 (0), 8089/8090 (0)
+  WRONG    2780/2781/2782, 4409/4438, 4369/4388, 8497/8498, 283/286/310
+Dropping the branch fixed 7 false positives and created 3 false negatives.
+Per 02 §4's asymmetry that is the correct direction. D-P2-4 stands.
+
+Note for Phase 6: with D-P2-16's guard applied, the ratio branch scores 10/10
+on these cases. NOT a reason to reopen — the guard's effect on the 47 groups
+it does not flag is unmeasured. Recorded as a tuning variant only.
 
 Note against D-P2-15: the cache has now drifted twice (4,370 → 4,371 → 4,372)
 and the second drift moved a measured number. Severity raised from "before
@@ -437,3 +471,46 @@ total + last number + fetch date, asserted on every subsequent run; or accept
 drift and freeze explicitly at Phase 5.
 
 RESOLVE: before Phase 5 labeling begins.
+
+### D-P2-16 — RESOLVED (2026-08-05): discard duplicate groups with 2+ merged members
+01 §2 says "keep the merged one, else the highest PR number." That phrasing
+presupposes at most one member is merged. When several are, pick_keeper has no
+defined behaviour and silently discards merged work. This guard enforces the
+precondition the locked rule already assumes; it is not a new clause.
+
+Measured over the frozen 4,372 cache. Merged members per group: {0: 10,
+1: 37, 2: 9}. No group has 3+ (both such groups dissolved with D-P2-4).
+The guard discards 9 of 56 groups, removing 9 exclusions:
+  [286,310] [1188,1191] [6835,6839] [6636,6637] [7583,7601]
+  [8167,8168] [8956,8957] [7747,7748] [8494,8513]
+
+Five inspected on GitHub, all false positives, two distinct causes:
+  DUAL-BRANCH PORT — the same change landed on main and dev-2.0 during p5 2.0
+  development. 8494(main/font-fix) / 8513(dev-2.0/webgl-fix) and
+  7583(main/patch-8) / 7601(dev-2.0/patch-10) were both requested explicitly
+  by davepagurek in-thread. 8497/8498 carries a literal "(main)" suffix.
+  Identical title, both merged, days apart — by design.
+  TITLES THE AUTHOR DID NOT CHOOSE — 6636/6637 are both "Update
+  contributor_guidelines.md", GitHub's web-editor default, patch-1 vs patch-2,
+  +2/-2 vs +57/-56, unrelated edits. 286/310 are "p5.sound update" off a
+  long-lived p5SOUND branch.
+
+Guard verdict matches ground truth on all 8 groups inspected across D-P2-4
+and this decision.
+
+Metadata-only: merged_at is in the list payload, so this runs at step 2 with
+zero extra requests and leaves 04 §5's step-2-before-step-3 ordering intact.
+Any content-based alternative would need diffs and cost ~5,000 requests.
+
+Implementation: a separate named function between group_duplicates() and
+pick_keeper(), with its own test and teeth check. NOT folded into either —
+pick_keeper's docstring describes a different rule.
+
+Note: on [7583,7601] pick_keeper currently takes max() and keeps the dev-2.0
+PR, dropping the main-line one.
+
+01 §2 needs an amendment sentence. Not a Phase-2 gate (01 §2's corpus rules
+are already applied); batch it with the outstanding doc revisions.
+
+PREDICTION for the post-implementation run, registered before writing code:
+47 groups / 51 duplicate_resubmission / in_corpus 3,685.

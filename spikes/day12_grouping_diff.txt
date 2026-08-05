@@ -1,0 +1,40 @@
+
+REGISTERED PREDICTION (Day 12, before running)
+  B (ratio restored) : 63 groups, 69 exclusions, anchor-branch exact=59 ratio=10
+  A (as shipped)     : 56 groups, 60 exclusions
+  wholly dissolved   : 8
+  shrunk but survived: 2
+  NEWLY CREATED      : 1  <- the claim under test
+  created group's members trace back to a dissolved group
+If created == 0, the order-dependence model is wrong and the -7/-9 deltas
+need a different explanation.
+
+cache pages: 44  first=processing__p5.js_page_0001.json  last=processing__p5.js_page_0044.json
+loaded 4372 PRs, strictly ascending, #16..#9032
+
+survivors of classify(): 3736
+
+B (ratio restored): 63 groups, 69 exclusions, 132 members
+A (as shipped)   : 56 groups, 60 exclusions, 116 members
+B anchor-branch tally: exact=59  ratio-only=10
+  (DECISIONS.md D-P2-4 recorded exact=59 ratio-only=10)
+
+identical in both : 55
+wholly dissolved  : 7
+shrunk, survived  : 1
+NEWLY CREATED     : 0
+
+  dissolved  [2196, 2197]
+  dissolved  [2780, 2781, 2782]
+  dissolved  [2792, 2793]
+  dissolved  [4369, 4388]
+  dissolved  [4409, 4438]
+  dissolved  [8089, 8090]
+  dissolved  [8497, 8498]
+  shrunk     [283, 286, 310]  ->  [286, 310]
+
+
+--- reconciliation
+  delta groups     -7
+  delta exclusions -9
+  delta members    -16

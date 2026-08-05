@@ -393,3 +393,36 @@ duplicate-evidence dump. Production files stayed untouched.
 - Eight one-token slips, all dropped-space-after-punctuation, across four files
   including two inside a comment that ruff cannot reach. Threshold was hit early
   and the session ran on anyway. Fourth session with this pattern.
+
+## 2026-08-05 Day 12
+The Day-11 prediction (55/59/3,676) was recorded as "in_corpus hit exactly."
+It didn't. True was 3,675. The cache had drifted by one PR overnight, and that
+PR was in-corpus, so it carried the real number onto the predicted one.
+
+Two errors cancelling are indistinguishable from correctness by inspection.
+Nothing in the output looked wrong. It was recoverable only because three
+things were written down in three places on three different days: the
+pre-registered prediction, the drift, and the pre-drop branch tally
+(exact=59 ratio-only=10) from the Aug-2 evidence run. Any one of them missing
+and the wrong number ships to the README.
+
+Second finding: group_duplicates() is greedy, so tightening titles_match()
+released #283 and let #286/#310 re-form as a group. A stricter rule created
+an exclusion. I predicted the change by subtraction; subtraction was the
+wrong model.
+
+Third, and the one I did not go looking for: verifying the nine PRs that
+returned to the corpus surfaced a live defect in the rule that survived
+D-P2-4. Exact title matching is deleting merged work right now — #286, and
+eight more. p5.js ports fixes across main and dev-2.0 with identical titles,
+and GitHub's web editor auto-titles PRs after the file. Neither is a
+resubmission. Title matching cannot separate resubmission from continuation
+at ANY strictness: the ratio branch broke on titles too similar to
+distinguish, exact matching breaks on titles too vague to. The fix is not a
+better predicate, it is a second signal — merged count (D-P2-16).
+
+Verification was scheduled as an optional 10-minute spot check. It found the
+larger bug. The pattern from Day 6 holds: artifacts look complete until
+someone opens them.
+
+Fourth: the run log lived in /tmp. It survived by luck. logs/ now exists.
