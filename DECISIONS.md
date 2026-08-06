@@ -540,3 +540,88 @@ Frozen 2026-08-05: 44 pages / 4,372 PRs / #16..#9032.
 Not gitignored-away: .cache/ stays gitignored, but the manifest is the
 provenance for every exclusion count in the README and gets copied into
 eval/artifacts/ as corpus_snapshot.json at Phase 5 (01 §15).
+
+### D-P2-15 — AMENDMENT, 2026-08-06 (Day 13)
+
+Guard verified. All four failure modes watched failing, one at a time, four
+distinct messages and four distinct raise sites:
+
+| Break | Site | Message |
+|---|---|---|
+| manifest total edited to 4371 | 224 | frozen cache holds 4372 PRs; manifest says 4371 |
+| page 44 removed | 211 | manifest expects page 44; missing <path> |
+| stray page 45 created | 218 | manifest says 44 pages but <path> exists — written to after the freeze |
+| --refresh | 246 | --refresh against a frozen cache. Thaw deliberately: … |
+
+Check 4 initially did not fire. `--refresh` was defined on `GitHubClient.__init__`
+and honoured at three sites (`_read_cached_page`, `iter_list_pages`,
+`fetch_diff`), but `scripts/index_repo.py` read `sys.argv[1]` only and never
+supplied it — so `self.refresh` was `False` for the life of every run and the
+guard was unreachable in practice. The run completed, printed both golden
+assertions, and reported `elapsed 0s`. Fixed with argparse, which also rejects
+unknown flags loudly. Reference-location class, same as `_diff_cache_path`
+(Day 9).
+
+**The zero-request claim is now measured, not inferred.** `GitHubClient.requests_made`
+increments per `_client.get` — per attempt, not per call, since a retry spends
+quota identically and step 3's budget (04 §5) is counted in round trips. The
+frozen branch asserts it is zero; a frozen run prints `requests 0`. This
+replaces the handoff's "zero HTTP lines in the log" criterion, which was not
+runnable: `index_repo.py` configures `basicConfig` with no `FileHandler`, so no
+log of a frozen run existed to grep.
+
+**Procedural rule the code cannot enforce.** `--thaw` followed by `freeze`
+re-derives the manifest from whatever the cache currently holds, so the repair
+always resolves a disagreement in the cache's favour. Had the cache drifted to
+4,373, the same two commands would have blessed 4,373 and printed `FROZEN`,
+indistinguishable on screen. `--thaw` prints the old totals for exactly this
+reason. **Thaw, read the printed total, then freeze — never chain them outside
+a teeth check.**
+
+Note: today's teeth checks re-derived the manifest. `frozen_at` moved from
+2026-08-05T10:57:32Z to 2026-08-06T07:17:49Z. Contents identical — 44 pages,
+4,372 PRs, first #16, last #9032 — so the snapshot every measured number rests
+on is unchanged, but the manifest file itself is not the one Day 12 wrote.
+
+---
+
+### D-P2-16 — AMENDMENT, 2026-08-06 (Day 13)
+
+The nine flagged groups were verified in commit `a7b4835`, which touched
+`DECISIONS.md` only and reused `e94e9ba`'s subject line verbatim. `git log
+--oneline` therefore shows two identical entries: `e94e9ba` is the measurement,
+`a7b4835` is the verification and the registered prediction. Recorded here
+because the history can no longer distinguish them and the README owes these
+figures.
+
+Still unimplemented. Prediction stands: **47 groups / 51 exclusions /
+in_corpus 3,685.**
+
+---
+
+### D-P2-17 — RESOLVED, 2026-08-06 (Day 13)
+**Diff chunking lives at `app/retrieval/chunking.py`, not `ingest/diff_parser.py`.**
+
+`04 §3`'s folder structure lists both — `app/retrieval/chunking.py` annotated
+"diff → hunks", and `ingest/diff_parser.py` unannotated. `09 §3` schedules
+`ingest/diff_parser.py` for days 11–12; `12 §1` names `app/retrieval/chunking.py`
+as one of the seven ritual modules. They cannot both hold the same logic.
+
+**Resolved on reachability, not style.** The deployed service must chunk the
+*query* PR's diff at request time before it can embed it — that is `03 §2`
+executing inside `/analyze`. `ingest/` is declared script-only in `04 §3`, so a
+parser living there is unreachable from the service, and the alternative is two
+copies of the highest-edge-case-density code in the project (07 §2) drifting
+apart.
+
+Import direction is legal: `scripts/index_repo.py` imports
+`app.retrieval.chunking` for step 4. The only import prohibition on the books is
+invariant 12 — `app/` never imports from `eval/` — and this does not touch it.
+
+Consequences:
+- Build `app/retrieval/chunking.py`; test at `tests/unit/test_chunking.py` (07 §5)
+- `ingest/diff_parser.py` is deleted, not filled
+- `09 §3`'s day-11–12 row is stale — doc-revision batch
+- The Doc 12 ritual fires unambiguously when `chunking.py`'s golden assertion passes
+
+**Watermark: current through D-P2-17.**

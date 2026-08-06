@@ -7,9 +7,9 @@ Imports ingest/ — never app/, never eval/ (04 §3).
 
 from __future__ import annotations
 
+import argparse
 import logging
 import os
-import sys
 import time
 from collections import Counter
 from typing import Any, NamedTuple
@@ -27,8 +27,6 @@ from ingest.corpus_filter import apply_corpus_filter
 from ingest.github_client import GitHubClient, from_list_item
 
 log = logging.getLogger(__name__)
-
-# Pre-registered before the first run (01 §14). Written down, then tested.
 
 
 class ListFetch(NamedTuple):
@@ -62,19 +60,20 @@ def assert_list_is_sound(fetch: ListFetch) -> None:
     numbers = [i["number"] for i in items]
 
     dupes = sorted(n for n, c in Counter(numbers).items() if c > 1)
-    assert not dupes, f"duplicate PR numbers across pages:{dupes[:10]}"
+    assert not dupes, f"duplicate PR numbers across pages: {dupes[:10]}"
 
     breaks = [(a, b) for a, b in zip(numbers, numbers[1:], strict=False) if a >= b]
     assert not breaks, f"not strictly ascending at {breaks[:5]}"
 
     assert numbers[0] == EXPECTED_FIRST_NUMBER, (
-        f"first PR is #{numbers[0]},predicted #{EXPECTED_FIRST_NUMBER}"
+        f"first PR is #{numbers[0]}, predicted #{EXPECTED_FIRST_NUMBER}"
     )
 
-    assert last < PER_PAGE, {f"last page held {last}items-pagination did not reach the tail"}
+    assert last < PER_PAGE, f"last page held {last} items — pagination did not reach the tail"
 
     assert EXPECTED_TOTAL_LOW <= len(items) <= EXPECTED_TOTAL_HIGH, (
-        f"{len(items)}PRs outside the predicted band around 4900"
+        f"{len(items)} PRs outside the band "
+        f"[{EXPECTED_TOTAL_LOW}, {EXPECTED_TOTAL_HIGH}] registered in ingest/constants.py"
     )
 
 
@@ -102,10 +101,18 @@ def assert_filter_is_sound(verdicts, expected_total: int) -> None:
 if __name__ == "__main__":
     load_dotenv()
     logging.basicConfig(level=logging.INFO, format="%(message)s")
-    repo = sys.argv[1] if len(sys.argv) > 1 else "processing/p5.js"
+    ap = argparse.ArgumentParser(description="Local indexing pipeline (04 §5).")
+    ap.add_argument("repo", nargs="?", default="processing/p5.js")
+    ap.add_argument(
+        "--refresh",
+        action="store_true",
+        help="re-fetch every list page. Refused against a frozen cache (D-P2-15).",
+    )
+    args = ap.parse_args()
+    repo = args.repo
 
     started = time.time()
-    with GitHubClient(os.environ["GITHUB_TOKEN"], repo) as gh:
+    with GitHubClient(os.environ["GITHUB_TOKEN"], repo, refresh=args.refresh) as gh:
         fetch = fetch_all(gh)
         manifest = gh.read_manifest()
     elapsed = time.time() - started
@@ -117,6 +124,7 @@ if __name__ == "__main__":
     print(f"first           #{first['number']}  {first['created_at']}  {first['user']['login']}")
     print(f"last            #{last_item['number']}  {last_item['created_at']}")
     print(f"elapsed         {elapsed:.0f}s")
+    print(f"requests        {gh.requests_made}")
     if manifest is None:
         print("cache           NOT FROZEN (D-P2-15) — counts may drift between runs")
     else:
@@ -126,6 +134,10 @@ if __name__ == "__main__":
         )
         assert len(fetch.items) == manifest["total_prs"], (
             f"loaded {len(fetch.items)} PRs against a manifest claiming {manifest['total_prs']}"
+        )
+        # D-P2-15's actual claim, observed rather than inferred from elapsed.
+        assert gh.requests_made == 0, (
+            f"{gh.requests_made} requests issued against a frozen cache"
         )
     states = Counter(i["state"] for i in fetch.items)
     merged = sum(1 for i in fetch.items if i.get("merged_at"))

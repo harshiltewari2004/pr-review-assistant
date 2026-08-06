@@ -90,6 +90,7 @@ class GitHubClient:
     def __init__(self, token: str, repo: str, refresh: bool = False) -> None:
         self.repo = repo
         self.refresh = refresh
+        self.requests_made = 0
         self._slug = repo.replace("/", "__")
         self._client = httpx.Client(
             base_url=GITHUB_API_ROOT,
@@ -118,6 +119,10 @@ class GitHubClient:
         """
         headers = {"Accept": accept} if accept else None
         for attempt in range(MAX_BACKOFF_ATTEMPTS):
+            # Counted per attempt, not per call: a retry spends quota exactly
+            # like a first attempt, and the step-3 budget (04 §5) is measured
+            # in round trips.
+            self.requests_made += 1
             resp = self._client.get(path, params=params, headers=headers)
             self._respect_rate_limit(resp)
             if resp.status_code in (403, 429):
@@ -303,11 +308,11 @@ if __name__ == "__main__":
     repo = sys.argv[1] if len(sys.argv) > 1 else "processing/p5.js"
     with GitHubClient(os.environ["GITHUB_TOKEN"], repo) as gh:
         page, items = next(gh.iter_list_pages())
-        assert len(items) == PER_PAGE, f"expected {PER_PAGE} items,got {len(items)}"
+        assert len(items) == PER_PAGE, f"expected {PER_PAGE} items, got {len(items)}"
         metas = [from_list_item(i) for i in items]
 
         # The premise of page-level resumability, asserted rather than assumed.
         assert metas[0].created_at < metas[-1].created_at, "direction = asc not applied"
-        print(f"page{page}:{len(metas)}items")
+        print(f"page {page}: {len(metas)} items")
         print(metas[0])
         print(metas[-1])

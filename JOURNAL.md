@@ -426,3 +426,70 @@ larger bug. The pattern from Day 6 holds: artifacts look complete until
 someone opens them.
 
 Fourth: the run log lived in /tmp. It survived by luck. logs/ now exists.
+
+Fifth: two FIND/REPLACE blocks I was given had non-unique anchors and both
+mangled github_client.py — once splicing a class into another class's body,
+once splicing a method signature into the next method's. Legal-looking edits,
+caught only by ruff. Line-range replacement worked where string matching
+failed twice. Not my transcription errors, but the same failure class:
+reference location, not name.
+
+## 2026-08-06 — Day 13
+
+Opened by verifying state instead of trusting it, and the verification was the
+useful part of the day.
+
+**Claude's five session-open predictions: four wrong.** It predicted the tree
+was still red from Day 12's syntax error, the freeze had never run, and no
+manifest existed. All false — the repair, the freeze, and commit `9bf1d6f` had
+all landed. Its stated cause: the handoff's line *"D-P2-15 code is written but
+its teeth were never watched failing"* is precisely accurate, and it inflated
+that into "the file doesn't parse" from memory of where the session ended.
+Substituting a memory for a document, which is the same shape as the
+reference-location errors already logged here. The one prediction that held —
+total 4,372 — was the one that mattered: no fourth drift, and every Day-12
+number stands.
+
+**Fifth confirmed instance of "the artifact looks complete and is wrong until
+you open it."** Teeth check 4 ran `--refresh` against a frozen cache and
+*completed*: 44 pages, both golden assertions PASSED, full counter printed. No
+raise, and no re-fetch either — the flag was discarded in silence. Worse than
+either honest outcome, because a failing guard and a working guard both produce
+visible evidence; this produced a clean-looking run. `elapsed 0s` against a
+96-second cold fetch was the only tell, and I'd have skimmed past it.
+
+**The same thing again, two hours later, and the grep caught it.** After
+applying the request-counter blocks, the run printed no `requests` line. Two of
+four `grep -n requests_made` hits — the client half applied, the observing half
+not. Had I committed on the strength of `ruff` passing and `PASSED` printing,
+the commit message would have claimed the frozen branch asserts zero requests,
+and it wouldn't have. The grep-before-commit habit is now load-bearing, not
+ceremonial.
+
+**Dropped spaces in f-strings: seven more, all in already-committed code.**
+`thefreeze`, `pages:{dupes}`, `#{n},predicted`, `{last}items-pagination`,
+`{len(items)}PRs`, `items,got`, `page{page}:{len}items`. Day 11 logged 8 and
+Day 9 logged 5 of the same class, though I haven't checked whether today's
+overlap with those — Claude asserted a cumulative "nine across three sessions"
+and that arithmetic doesn't hold either way. What's solid: **they cluster in
+`assert` and `print` messages**, i.e. in code that only executes once something
+else has already gone wrong, which is why none surfaced until read aloud. None
+were typed today.
+
+**One genuinely bad one:** `assert last < PER_PAGE, {f"..."}` — a set literal
+where parens belonged. Legal, truthy, prints wrapped in braces, and one
+keystroke from `assert (cond, "msg")`, the classic always-passes bug. In a
+golden assertion.
+
+**And a stale one:** the band-violation message named "the predicted band around
+4900" — FastAPI's figure — while the constants it tests against hold p5.js's.
+Corpus-switch cascade again. Fixed by interpolating `EXPECTED_TOTAL_LOW/HIGH`
+into the message, so it reads from the same source as the assertion and cannot
+go stale twice.
+
+**Also found:** `a7b4835` reuses `e94e9ba`'s subject verbatim. Ledger-only
+commits need their own subject line — `git log` can no longer tell the
+measurement from the verification.
+
+Numbers unchanged all day: 56 groups / 60 `duplicate_resubmission` /
+in_corpus 3,676 at 4,372. Pre-guard. D-P2-16 next.
