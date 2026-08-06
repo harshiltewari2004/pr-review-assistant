@@ -624,4 +624,8 @@ Consequences:
 - `09 §3`'s day-11–12 row is stale — doc-revision batch
 - The Doc 12 ritual fires unambiguously when `chunking.py`'s golden assertion passes
 
-**Watermark: current through D-P2-17.**
+### D-P2-16 — RESOLVED AND IMPLEMENTED.
+ Prediction 47/51/3,685 met exactly on all three. Nine groups discarded, 18 PRs returned to corpus, 9 exclusions removed. Note the handoff's list of ten pairs was wrong: 8497/8498 never formed a group — the  (main) suffix breaks normalized exact match. It is a real dual-branch port sitting in corpus as two merged near-identical PRs, i.e. the first concrete instance of D-P5-3's hazard, and evidence that D-P2-16 catches the grouped ports only.
+
+### D-P2-18 — OPEN. 
+07 §4's duplicate-triple invariant is factually wrong. The doc states the #8947/#8946/#8945 triple "leaves exactly one PR in corpus, and it is the merged one." Measured: none of the three is merged. #8947 survives via pick_keeper's highest-number fallback, not the merged branch. The doc names this as the worked example of the merged rule and it doesn't exercise it. Amend 07 §4 in the doc-revision batch; find a real merged-branch example. Note tests/unit/test_corpus_filter.py's fixture reuses those three numbers with fabricated merge state — it does test the merged branch, but on invented data under real PR numbers, which is its own small trap.

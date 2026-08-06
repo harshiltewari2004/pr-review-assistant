@@ -136,9 +136,7 @@ if __name__ == "__main__":
             f"loaded {len(fetch.items)} PRs against a manifest claiming {manifest['total_prs']}"
         )
         # D-P2-15's actual claim, observed rather than inferred from elapsed.
-        assert gh.requests_made == 0, (
-            f"{gh.requests_made} requests issued against a frozen cache"
-        )
+        assert gh.requests_made == 0, f"{gh.requests_made} requests issued against a frozen cache"
     states = Counter(i["state"] for i in fetch.items)
     merged = sum(1 for i in fetch.items if i.get("merged_at"))
     print(f"states          {dict(states)}")

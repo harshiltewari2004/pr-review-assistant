@@ -493,3 +493,5 @@ measurement from the verification.
 
 Numbers unchanged all day: 56 groups / 60 `duplicate_resubmission` /
 in_corpus 3,676 at 4,372. Pre-guard. D-P2-16 next.
+
+The guard hit 47/51/3,685 exactly, but the test protecting it was empty — three lists built, discard_multi_merged_groups never called. It passed, and would have passed forever, including after the guard was deleted. Two teeth checks in a row were silent sed no-ops that I read as passes because the pytest output looked plausible. Fixed by putting the grep before the pytest in the chain, so a failed substitution breaks the chain instead of producing a green tick. Sixth instance of the pattern this session: the output looked right and the process behind it was broken.

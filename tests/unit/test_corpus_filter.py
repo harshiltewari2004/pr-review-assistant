@@ -10,6 +10,7 @@ from ingest.corpus_filter import (
     PRMeta,
     apply_corpus_filter,
     classify,
+    discard_multi_merged_groups,
     normalize_title,
     titles_match,
 )
@@ -95,3 +96,34 @@ def test_normalize_title_leaves_no_trailing_space_after_punctuation_strip():
     fallback. Documented failure mode, pinned here."""
     assert normalize_title("Fix the bug .") == "fix the bug"
     assert normalize_title("Fix   the   bug .") == normalize_title("Fix the bug")
+
+
+def test_multi_merged_groups_are_discarded():
+    """D-P2-16. Two merged siblings are two accepted changes, not one twice."""
+    zero = [_pr(1, "fix the thing", "alice", day=0), _pr(2, "fix the thing", "alice", day=1)]
+    one = [
+        _pr(3, "fix the thing", "bob", day=0, merged=True),
+        _pr(4, "fix the thing", "bob", day=1),
+    ]
+    two = [
+        _pr(5, "fix the thing", "carol", day=0, merged=True),
+        _pr(6, "fix the thing", "carol", day=1, merged=True),
+    ]
+
+    kept = discard_multi_merged_groups([zero, one, two])
+
+    assert kept == [zero, one]
+    assert two not in kept
+
+
+def test_multi_merged_guard_leaves_members_in_corpus():
+    """A discarded group is not an exclusion — every member survives step 2."""
+    prs = [
+        _pr(5, "fix the thing", "carol", day=0, merged=True),
+        _pr(6, "fix the thing", "carol", day=1, merged=True),
+    ]
+
+    verdicts = apply_corpus_filter(prs)
+
+    assert all(v.in_corpus for v in verdicts)
+    assert all(v.exclusion_reason is None for v in verdicts)

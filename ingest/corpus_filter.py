@@ -138,6 +138,27 @@ def group_duplicates(prs: list[PRMeta]) -> list[list[PRMeta]]:
     return groups
 
 
+def discard_multi_merged_groups(groups: list[list[PRMeta]]) -> list[list[PRMeta]]:
+    """D-P2-16. Drop any group with two or more merged members.
+
+    01 §2's keeper rule — "keep the merged one, else the highest PR number" —
+    presupposes at most one merged member. Two merged siblings are two
+    independently reviewed and accepted changes, which is not one change
+    submitted twice.
+
+    Measured on the frozen 4,372 corpus: 9 of 56 groups, every one a false
+    positive on inspection. Three causes — main/dev-2.0 ports, GitHub
+    web-editor auto-titles ("Update <filename>"), and sequential work under a
+    generic title.
+
+    Discarding the group is not an exclusion: every member falls through to
+    the in_corpus default, so nothing is marked and nothing is deleted
+    (invariant 7).
+    """
+
+    return [g for g in groups if sum(1 for p in g if p.merged_at is not None) < 2]
+
+
 def pick_keeper(group: list[PRMeta]) -> PRMeta:
     """01 §2: keep the merged one, else the highest PR number.
 
@@ -165,7 +186,7 @@ def apply_corpus_filter(prs: list[PRMeta]) -> list[Verdict]:
     # "Bump x from 1.2 to 1.3" titles days apart; if bots reached this pass
     # they would land in the duplicate bucket and the §4 audit would report
     # the wrong reason for a large share of the corpus.
-    for group in group_duplicates(survivors):
+    for group in discard_multi_merged_groups(group_duplicates(survivors)):
         keeper = pick_keeper(group)
         excluded = sorted(p.number for p in group if p.number != keeper.number)
 
