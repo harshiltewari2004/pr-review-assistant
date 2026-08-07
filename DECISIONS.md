@@ -628,4 +628,107 @@ Consequences:
  Prediction 47/51/3,685 met exactly on all three. Nine groups discarded, 18 PRs returned to corpus, 9 exclusions removed. Note the handoff's list of ten pairs was wrong: 8497/8498 never formed a group — the  (main) suffix breaks normalized exact match. It is a real dual-branch port sitting in corpus as two merged near-identical PRs, i.e. the first concrete instance of D-P5-3's hazard, and evidence that D-P2-16 catches the grouped ports only.
 
 ### D-P2-18 — OPEN. 
-07 §4's duplicate-triple invariant is factually wrong. The doc states the #8947/#8946/#8945 triple "leaves exactly one PR in corpus, and it is the merged one." Measured: none of the three is merged. #8947 survives via pick_keeper's highest-number fallback, not the merged branch. The doc names this as the worked example of the merged rule and it doesn't exercise it. Amend 07 §4 in the doc-revision batch; find a real merged-branch example. Note tests/unit/test_corpus_filter.py's fixture reuses those three numbers with fabricated merge state — it does test the merged branch, but on invented data under real PR numbers, which is its own small trap.
+07 §4's duplicate-triple invariant is factually wrong. The doc states the #8947/#8946/#8945 triple "leaves exactly one PR in corpus, and it is the merged one." Measured: none of the three is merged. #8947 survives via pick_keeper's highest-number fallback, not the merged branch. The doc names this as the worked example of the merged rule and it doesn't exercise it. Amend 07 §4 in the doc-revision batch; find a real merged-branch example. Note tests/unit/test_corpus_filter.py's fixture reuses those three numbers with fabricated merge state — it does test the merged branch, but on invented data under real PR numbers, which is its own small trap.### D-P2-14 — RESOLVED, 2026-08-07 (Day 14)
+**files_changed, additions, deletions all derive from parse_hunks() output.**
+
+GitHub's PR list endpoint returns none of these fields. The alternative to
+deriving them from the diff is ~3,685 requests against the per-PR endpoint —
+a rate-limit window spent on descriptive metadata. Rejected.
+
+Rule, unified:
+- files_changed = sorted distinct file_path over the PR's hunks
+- additions / deletions = sum over the PR's hunks
+
+Reverses the recommendation carried since Day 9, which had files_changed
+excluding non-source paths while additions/deletions matched GitHub across
+all files. Two counting rules in one parser pass required a defensive
+comment to not read as a bug; one rule needs none, and the DB check is
+stronger — sum(chunks.additions) must equal pull_requests.additions.
+
+CONSEQUENCE, must be documented in 02 §4 and the README: these totals will
+NOT match GitHub's PR page on any PR touching an excluded file.
+deleted_file.diff is the extreme case — four deleted files, four @@ blocks,
++0/-0 reported. (Such a PR is caught by step 4b's no_source_content and
+never reaches retrieval, so the divergence is cosmetic, not a leak.)
+
+Not implemented: files_changed is computed but nothing writes to the DB yet.
+Blocked on steps 3-7.
+
+Open clause: the D-P2-2 406 case has no diff to count and would land as
+{}, 0, 0 — indistinguishable from an empty PR. Needs
+exclusion_reason = 'diff_unavailable', distinct from 'no_source_content'.
+See 04 §5 step 3b, still unwritten.
+
+---
+
+### D-P2-19 — RESOLVED, 2026-08-07 (Day 14)
+**parse_hunks() is pure str -> list[Hunk]. No pr_id, no token fields.**
+
+06 §5 shows `parse_hunks(diff: str, pr_id: int)`. Superseded on two grounds:
+
+1. Reachability. Per D-P2-17, /analyze chunks the QUERY PR's diff at request
+   time. That PR has no row in pull_requests, so no pr_id exists to pass;
+   the service path would have to invent a sentinel.
+2. Terminology. 06 §2 states a hunk becomes a chunk at persistence. A hunk
+   carrying a foreign key collapses the distinction the doc protects.
+   store_chunks() attaches pr_id and repo_id.
+
+token_count and was_truncated are NOT on Hunk. They require the MiniLM
+tokenizer (03 §3), which would drag sentence-transformers into the
+highest-edge-case-density module in the project and make test_chunking.py
+load a model. Stamped at pipeline step 5, Phase 3.
+
+Consequence: 07 §4 files "was_truncated is True exactly when
+token_count > 256" under Chunking. It belongs to the embedding stage.
+Doc-revision batch.
+
+---
+
+### D-P2-20 — OPEN, 2026-08-07 (Day 14)
+**03 §2's exclusion list omits .yml / .yaml / generic .json.**
+
+Observed, not hypothesized: binary_file.diff chunks
+docs/en/data/sponsors.yml and sponsors_badge.yml — content "silver:" and
+"logins:", a sponsor list embedded as source. The p5.js equivalent is
+.github/workflows/*.yml.
+
+NOT widening the list on one fixture. 03 §2 is locked, and the evidence is
+available cheaply after step 4 populates chunks:
+
+    SELECT split_part(file_path, '.', -1) AS ext, count(*)
+    FROM chunks GROUP BY 1 ORDER BY 2 DESC;
+
+Widen with a number behind it or leave it and say why. Resolve after the
+first full parse run.
+
+test_chunking.py pins current behaviour: `assert not is_excluded("b.json")`.
+That assertion fails the day the list widens, which is the point.
+
+---
+
+### D-P2-4 — teeth check CLOSED, 2026-08-07 (Day 14)
+The Day-11 open loop was framed unsatisfiably, not left undone.
+
+test_high_ratio_titles_do_not_group carries two in_corpus assertions.
+pick_keeper() excludes exactly ONE member of a group, so under any break at
+most one of them can fire. "Watch both fail" was never achievable.
+
+Watched, with `return True` forced at the head of titles_match():
+- line 84 (assert not titles_match) — failed, `assert not True`
+- line 87 (verdicts[9101]) — failed with
+  Verdict(number=9101, in_corpus=False, exclusion_reason='duplicate_resubmission')
+- line 88 (verdicts[9102]) — PASSED with the regression fully live
+
+Prediction registered before the run and met: 9102 survives via the
+highest-number fallback (neither PR merged, so D-P2-16 does not fire).
+
+The pair is sound jointly; line 88 is dead weight in this scenario. A
+single `assert [v for v in verdicts if not v.in_corpus] == []` would be
+observable in one run regardless of keeper choice. Declined today — noted,
+not fixed.
+
+GENERAL FORM, worth carrying: any per-member assertion about a selection
+function has at most one live branch.
+
+**Watermark: current through D-P2-20.**
+

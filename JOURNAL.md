@@ -495,3 +495,48 @@ Numbers unchanged all day: 56 groups / 60 `duplicate_resubmission` /
 in_corpus 3,676 at 4,372. Pre-guard. D-P2-16 next.
 
 The guard hit 47/51/3,685 exactly, but the test protecting it was empty — three lists built, discard_multi_merged_groups never called. It passed, and would have passed forever, including after the guard was deleted. Two teeth checks in a row were silent sed no-ops that I read as passes because the pytest output looked plausible. Fixed by putting the grep before the pytest in the chain, so a failed substitution breaks the chain instead of producing a green tick. Sixth instance of the pattern this session: the output looked right and the process behind it was broken.
+
+## 2026-08-07 — Day 14
+
+app/retrieval/chunking.py written, 14 chunking tests, 28 passing. The
+module took under an hour; the surrounding verification took the session,
+and the verification is where everything was found.
+
+**Fixture survey before writing tests — three findings.**
+Printed block count, hunk count and every +++ path for all seven fixtures
+before a single assertion existed. multi_file.diff turned out to be a
+release PR: one source file, one hunk, plus .md release notes. Day 2's
+auto-classifier bucketed on "more than one diff --git", which does not mean
+what the filename claims. Renamed md_excluded.diff. huge_hunk.diff is the
+actual multi-file fixture — 5 .py files, 23 hunks — and is the only thing
+in the set that exercises hunk_index resetting per file.
+
+Had I written test_chunking.py from the filenames, "multi-file parsing" and
+"hunk_index reset" would both have been covered by a fixture that tests
+neither, and the suite would have been green.
+
+**Second finding: .yml is not on 03 §2's exclusion list.** binary_file.diff
+embeds two sponsor YAML files as source. Logged D-P2-20 rather than
+widening the list — the extension distribution query after step 4 answers
+it with a number.
+
+**All seven parse predictions met.** Registered before running: 1/1/1/0/0/2/23.
+Actual: identical. Zero-hunk cases returned [] rather than raising.
+
+**Claude error — the teeth check I designed did not have teeth.**
+For the golden assertion's third line I proposed inverting
+`assert not HEADER_NUMBERS.search(...)` to `assert HEADER_NUMBERS.search(...)`
+and said watching it fail proves the regex is not a dead pattern. It proves
+nothing of the sort: a regex with a typo produces the identical `assert None`.
+The real check is matching the pattern against a raw header string directly.
+Second time in two sessions that a verification step was itself the defect —
+Day 13 was a test with no assertions, today was a teeth check that tested
+the wrong direction. The class is: verification code gets less scrutiny than
+the code it verifies.
+
+**Day-11 loop closed as unsatisfiable, not undone.** See D-P2-4 addendum.
+pick_keeper() excludes one member, so only one of the two in_corpus
+assertions can ever fire.
+
+**Risk marker: Day 14, "PRs and chunks in the database" — NOT MET.**
+09 §6 names this checkpoint and prescribes the response. See HANDOFF.
