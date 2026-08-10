@@ -123,7 +123,18 @@ class GitHubClient:
             # like a first attempt, and the step-3 budget (04 §5) is measured
             # in round trips.
             self.requests_made += 1
-            resp = self._client.get(path, params=params, headers=headers)
+            try:
+                resp = self._client.get(path, params=params, headers=headers)
+            except httpx.TransportError as exc:
+                # No status code to inspect: the connection died before a
+                # response arrived. Over a 3,685-request run this happens —
+                # laptop sleep, DNS blip, GitHub dropping a keep-alive — and
+                # it is exactly as retryable as a 429. Caught here rather
+                # than in callers so retry has one owner.
+                wait = BACKOFF_BASE_S**attempt
+                log.warning("transport error on %s (%s);sleeping %.1fs", path, exc, wait)
+                time.sleep(wait)
+                continue
             self._respect_rate_limit(resp)
             if resp.status_code in (403, 429):
                 # GitHub returns 403, not 429, on secondary rate limits, and

@@ -85,7 +85,7 @@ def parse_hunks(diff: str) -> list[Hunk]:
             continue
 
         parts = _HUNK_HEADER.split(block)
-        for index, (context, body) in enumerate(zip(parts[1::2], parts[2::2])):
+        for index, (context, body) in enumerate(zip(parts[1::2], parts[2::2], strict=True)):
             lines = body.splitlines()
             hunks.append(
                 Hunk(

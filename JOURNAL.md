@@ -540,3 +540,37 @@ assertions can ever fire.
 
 **Risk marker: Day 14, "PRs and chunks in the database" — NOT MET.**
 09 §6 names this checkpoint and prescribes the response. See HANDOFF.
+
+## 2026-08-08 — Day 15
+
+- Golden assertion line 3 closed. Ran the regex from HANDOFF and it matched,
+  then realised that proved nothing: I had retyped the pattern, so a match
+  only showed the string in the markdown file was live. Grepped it out of
+  test_chunking.py:14 instead — byte-identical, so the assertion is genuinely
+  live. The first attempt (inverting the assertion) and this second one were
+  both invalid for the same underlying reason: neither touched the real
+  pattern. Reference-location failure class, third occurrence.
+
+- Predicted before running label_histogram.py:
+    distinct Area:* labels    15-30        actual 11
+    >=1 Area:* label          <15%         actual 5.8%
+    union over seven areas    ~215         actual ~140 (est.)
+    largest area              colour/image actual Area:WebGL (121)
+
+- **The union prediction landed by coincidence and I nearly recorded it as a
+  hit.** Derivation was 3685 x 0.10 x 0.70 / 1.2 = 215, and the actual total
+  Area-labelled count is exactly 215. But the real fraction was 5.8% not 10%
+  and the real overlap 1.05 not 1.2 — two errors cancelling. A prediction
+  that lands through compensating errors validates a wrong model and is worse
+  than a clean miss. Check the intermediate terms, not just the total.
+
+- Prediction 4 was wrong because I answered from the recent end of the repo
+  after explicitly warning about that skew one message earlier. Area:Color is
+  3 PRs, third from the bottom.
+
+- Two findings neither prediction was looking for: the `Area:*` taxonomy is
+  ~1/3 the assumed size, and it was abandoned around 2023. Both fell out of
+  the date-span column, which was added as a diagnostic for a recency floor
+  inside each area — a feature that no longer has a use. Logged as D-P2-22.
+
+- zsh globs `--include=*.py` before grep sees it. Quote glob-bearing flags.

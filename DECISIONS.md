@@ -730,5 +730,47 @@ not fixed.
 GENERAL FORM, worth carrying: any per-member assertion about a selection
 function has at most one live branch.
 
-**Watermark: current through D-P2-20.**
+### D-P2-21 — Corpus-size cut for diff fetching
+**Status:** OPEN (narrowed — default is NO CUT)
+**Date:** 2026-08-08 (Day 15)
+
+09 §6's Day-14 marker fired; prescribed remedy is 500 PRs. Two subset rules
+were considered: recent-N and stratified across `Area:*`.
+
+**Stratified-across-`Area:*` is REJECTED on evidence** — see D-P2-22.
+
+**Default: no cut.** Rationale, stated precisely because the obvious version
+is wrong:
+
+  Cutting the corpus does NOT lower Recall@3. 01 §9 pools from the corpus
+  and 01 §11 scores against the pooled relevant set, so a smaller corpus
+  yields a smaller relevant set and fewer competitors for the top 3 — the
+  number would likely go UP. That is the problem, not the reassurance: a
+  cut would flatter the headline figure while making the task easier, and
+  nothing in the harness would distinguish the two.
+
+  The real costs of cutting are (a) cluster density — 01 §11 puts genuine
+  clusters at 2-5 PRs, so a 1-in-7 sample leaves most queries with zero
+  grade-2 candidates and an undefined recall; (b) the claim shrinks, and
+  10 requires corpus size to ship alongside the number; (c) cutting later
+  makes figures uncomparable across corpora, which 01 §15's frozen-snapshot
+  rule exists to prevent.
+
+**Gates that can still force a cut** — both measured, not assumed:
+  1. Seconds-per-diff over a 50-PR timing run, extrapolated to 3,685. Cut
+     if the projection exceeds ~2 hours unattended, or if 3,685 requests
+     against the 5,000/hr limit leaves no retry headroom (11 §7: this
+     project's I/O estimates run 4-7x low).
+  2. Chunk count and DB size after ~500 PRs land; cut if the full-corpus
+     projection breaches 02 §11's 250 MB target.
+
+**Clause holding regardless of outcome:** if a subset is fetched, non-subset
+PRs are marked `in_corpus = FALSE` with a DISTINCT `exclusion_reason`
+(e.g. `outside_diff_subset`). Leaving them `in_corpus = TRUE` with no chunks
+gives BM25 and file-overlap visibility the vector signal structurally lacks —
+asymmetric coverage across the candidate set, violating hot invariants 2 and
+3. A distinct reason also keeps 02 §4's audit and the README's 5 exclusion
+counts clean: a budget cut is not a content exclusion.
+
+Resolve after the 50-diff timing run.
 
