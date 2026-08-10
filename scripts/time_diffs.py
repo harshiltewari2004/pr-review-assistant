@@ -30,9 +30,9 @@ SEED = 20260808  # fixed: the sample must be reproducible
 CORPUS_TOTAL = 3685
 
 # Registered before the run.
-PREDICTED_MEAN_S = None      # fill in
-PREDICTED_TOTAL_MIN = 60     # 3685 * predicted mean, in minutes
-PREDICTED_406 = None         # fill in
+PREDICTED_MEAN_S = None  # fill in
+PREDICTED_TOTAL_MIN = 60  # 3685 * predicted mean, in minutes
+PREDICTED_406 = None  # fill in
 PREDICTED_REQUESTS = 50
 
 log = logging.getLogger(__name__)
@@ -95,7 +95,10 @@ def main() -> None:
 
     print("\n--- predicted vs actual ---")
     print(f"mean s/diff      predicted {PREDICTED_MEAN_S}   actual {mean:.2f}")
-    print(f"3685 wall (min)  predicted {PREDICTED_TOTAL_MIN}   actual {mean * CORPUS_TOTAL / 60:.0f}")
+    print(
+        f"3685 wall (min)  predicted {PREDICTED_TOTAL_MIN}"
+        f"           actual {mean * CORPUS_TOTAL / 60:.0f}"
+    )
     print(f"406 count        predicted {PREDICTED_406}   actual {len(unavailable)}")
     print(f"requests_made    predicted {PREDICTED_REQUESTS}   actual {requests_made}")
 
@@ -117,9 +120,14 @@ def main() -> None:
 
     if sizes:
         print("\n--- diff sizes (gate 2 input) ---")
-        print(f"mean / median    : {statistics.mean(sizes):,.0f} / {statistics.median(sizes):,.0f} bytes")
+        print(
+            f"mean / median    : {statistics.mean(sizes):,.0f}"
+            f"/ {statistics.median(sizes):,.0f} bytes"
+        )
         print(f"largest          : {max(sizes):,} bytes")
-        print(f"3685 projection  : {statistics.mean(sizes) * CORPUS_TOTAL / 1e6:.0f} MB of raw diff")
+        print(
+            f"3685 projection  : {statistics.mean(sizes) * CORPUS_TOTAL / 1e6:.0f} MB of raw diff"
+        )
 
 
 if __name__ == "__main__":

@@ -59,7 +59,6 @@ def main() -> None:
     contents: list[int] = []
     zero_hunk: list[int] = []
     ext_counter: Counter[str] = Counter()
-    excluded_files = 0
     kept_files = 0
 
     for number in sample:
@@ -79,9 +78,7 @@ def main() -> None:
     embed_mb = projected * EMBEDDING_DIM * BYTES_PER_FLOAT / 1e6
     content_mb = statistics.mean(contents) * projected / 1e6 if contents else 0.0
 
-    long_chunks = sum(
-        1 for c in contents if c / APPROX_BYTES_PER_TOKEN > TRUNCATION_TOKENS
-    )
+    long_chunks = sum(1 for c in contents if c / APPROX_BYTES_PER_TOKEN > TRUNCATION_TOKENS)
 
     print("\n--- predicted vs actual ---")
     print(f"chunks per PR    predicted {PREDICTED_CHUNKS_PER_PR}   actual {mean_pr:.1f}")
@@ -104,7 +101,10 @@ def main() -> None:
 
     print("\n--- chunk content sizes ---")
     if contents:
-        print(f"mean / median    : {statistics.mean(contents):,.0f} / {statistics.median(contents):,.0f} bytes")
+        print(
+            f"mean / median    : {statistics.mean(contents):,.0f}"
+            f" / {statistics.median(contents):,.0f} bytes"
+        )
         print(f"largest          : {max(contents):,} bytes")
         pct = long_chunks / len(contents) * 100
         print(f">256 tok (approx): {long_chunks}/{len(contents)} = {pct:.0f}%  FLOOR, not a rate")
@@ -116,8 +116,13 @@ def main() -> None:
 
     print("\n--- exclusion spot-check (03 §2) ---")
     probes = [
-        "src/core/main.js", "README.md", "docs/guide.md", "package-lock.json",
-        "translations/es.json", ".github/workflows/ci.yml", "test/unit/color.js",
+        "src/core/main.js",
+        "README.md",
+        "docs/guide.md",
+        "package-lock.json",
+        "translations/es.json",
+        ".github/workflows/ci.yml",
+        "test/unit/color.js",
     ]
     for probe in probes:
         print(f"  {'EXCL' if is_excluded(probe) else 'keep'}  {probe}")
