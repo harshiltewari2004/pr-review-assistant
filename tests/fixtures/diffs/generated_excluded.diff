@@ -1,0 +1,25 @@
+diff --git a/src/core/main.js b/src/core/main.js
+index 1111111..2222222 100644
+--- a/src/core/main.js
++++ b/src/core/main.js
+@@ -10,6 +10,7 @@ p5.prototype._initialize = function() {
+   this._setupDone = false;
++  this._pixelDensity = 1;
+   this._userNode = null;
+diff --git a/test/unit/visual/screenshots/WebGL/Camera/Custom camera before and after resize/metadata.json b/test/unit/visual/screenshots/WebGL/Camera/Custom camera before and after resize/metadata.json	
+index 3333333..4444444 100644
+--- a/test/unit/visual/screenshots/WebGL/Camera/Custom camera before and after resize/metadata.json	
++++ b/test/unit/visual/screenshots/WebGL/Camera/Custom camera before and after resize/metadata.json	
+@@ -1,3 +1,3 @@
+ {
+-  "numScreenshots": 2
++  "numScreenshots": 3
+ }
+diff --git a/.all-contributorsrc b/.all-contributorsrc
+index 5555555..6666666 100644
+--- a/.all-contributorsrc
++++ b/.all-contributorsrc
+@@ -40,6 +40,7 @@
+       "contributions": [
++        "code",
+         "doc"

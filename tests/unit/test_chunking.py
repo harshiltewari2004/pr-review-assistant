@@ -121,3 +121,8 @@ def test_diff_totals_are_source_only():
 def test_hunk_carries_no_token_fields():
     # D-P2-19: token_count / was_truncated are stamped at the embedding stage.
     assert not hasattr(Hunk("a", 0, "", 0, 0), "token_count")
+
+
+def test_generated_files_excluded_through_parse_hunks():
+    hunks = parse_hunks(load("generated_excluded"))
+    assert [h.file_path for h in hunks] == ["src/core/main.js"]

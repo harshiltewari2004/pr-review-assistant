@@ -15,15 +15,19 @@ from dataclasses import dataclass
 
 # --- file-level exclusions, 03 §2 -------------------------------------------
 
-EXCLUDED_EXTENSIONS = frozenset({".md", ".txt", ".rst", ".po", ".lock", ".svg"})
+EXCLUDED_EXTENSIONS = frozenset(
+    {".md", ".txt", ".rst", ".po", ".lock", ".svg", ".map", ".obj", ".mtl", ".stl"}
+)
 
-EXCLUDED_BASENAMES = frozenset({"package-lock.json"})
+EXCLUDED_BASENAMES = frozenset({"package-lock.json", ".all-contributorsrc"})
 
-# 03 §2: the exclusion is on the PAYLOADS, not the directory.
-# translations/dev.js and translations/index.js are the i18next loader and
-# are ordinary source. Only translations/<locale>/translation.json is data.
 TRANSLATION_PAYLOAD = re.compile(r"^translations/[^/]+/translation\.json$")
 
+# Visual-regression fixtures written by the screenshot harness — 360 file
+# appearances, all .json, the largest generated-content class in the corpus.
+# They repeat across every visual-test PR, so file overlap and BM25 both fire
+# at ceiling on content carrying no review semantics. 03 §2, generated paths.
+VISUAL_SCREENSHOTS = re.compile(r"^test/unit/visual/screenshots/")
 # --- diff structure ---------------------------------------------------------
 
 _FILE_BLOCK = re.compile(r"^diff --git ", re.MULTILINE)
@@ -55,14 +59,14 @@ def is_excluded(path: str) -> bool:
     basename = path.rsplit("/", 1)[-1]
     if basename in EXCLUDED_BASENAMES:
         return True
-    if TRANSLATION_PAYLOAD.match(path):
+    if TRANSLATION_PAYLOAD.match(path) or VISUAL_SCREENSHOTS.match(path):
         return True
     dot = basename.rfind(".")
     return dot != -1 and basename[dot:] in EXCLUDED_EXTENSIONS
 
 
 def _new_path(header_region: str) -> str | None:
-    """Path from `+++b/<path>`.None means:emit no hunks for this block."""
+    """Path from `+++ b/<path>`. None means: emit no hunks for this block."""
     match = _NEW_PATH.search(header_region)
     if match is None:
         return None
