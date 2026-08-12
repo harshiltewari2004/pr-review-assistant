@@ -1,8 +1,9 @@
 """Local indexing pipeline (04 §5). Run: python -m scripts.index_repo processing/p5.js
 
-Steps 1-7 land here incrementally; step 1 (fetch PR list) is implemented.
+Steps 1-7 land here incrementally; steps 1-2 are implemented.
 Raw pages are cached inside GitHubClient before parsing (invariant 19).
-Imports ingest/ — never app/, never eval/ (04 §3).
+Imports ingest/ and app/ — never eval/. The prohibited directions are
+app/ -> ingest/ and app/ -> eval/ (04 §3); scripts/ sits above both.
 """
 
 from __future__ import annotations
