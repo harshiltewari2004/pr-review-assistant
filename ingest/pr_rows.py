@@ -7,6 +7,7 @@ files_changed, additions and deletions all derive from parse_hunks output
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any, NamedTuple
 
 from app.retrieval.chunking import diff_totals, files_changed, parse_hunks
@@ -25,9 +26,9 @@ class PRRow(NamedTuple):
     files_changed: list[str]
     additions: int
     deletions: int
-    created_at: str
-    merged_at: str | None
-    closed_at: str | None
+    created_at: datetime
+    merged_at: datetime | None
+    closed_at: datetime | None
     in_corpus: bool
     exclusion_reason: str | None
     raw: dict[str, Any]
@@ -38,6 +39,29 @@ def outcome_of(item: dict[str, Any]) -> str:
     if item.get("merged_at"):
         return "merged"
     return "closed_unmerged" if item["state"] == "closed" else "open"
+
+
+def _ts(value: str | None) -> datetime | None:
+    """GitHub returns '2024-03-01T09:00:00Z'. Python 3.11's fromisoformat
+    handles the Z suffix natively; 3.10 and earlier do not.
+    """
+    return datetime.fromisoformat(value) if value else None
+
+
+_RAW_DROP = ("base", "head", "links")
+
+
+def _lean_raw(item: dict[str, Any]) -> dict[str, Any]:
+    """02 §4 keeps raw for future use but never filters on it. base/head/_links
+    are 80% of the payload (58.7 MB of 73.5 across 4,372 PRs, measured
+    2026-08-12) and base.repo duplicates the repos table row-for-row. head.sha
+    is kept: it is the only identifier of the commit state a diff was fetched
+    at, which the frozen-snapshot claim in 01 §15 depends on. D-P2-27.
+    """
+    lean = {k: v for k, v in item.items() if k not in _RAW_DROP}
+    head = item.get("head") or {}
+    lean["head_sha"] = head.get("sha")
+    return lean
 
 
 def build_row(
@@ -74,10 +98,10 @@ def build_row(
         files_changed=files_changed(hunks),
         additions=additions,
         deletions=deletions,
-        created_at=item["created_at"],
-        merged_at=item.get("merged_at"),
-        closed_at=item.get("closed_at"),
+        created_at=_ts(item["created_at"]),
+        merged_at=_ts(item.get("merged_at")),
+        closed_at=_ts(item.get("closed_at")),
         in_corpus=in_corpus,
         exclusion_reason=exclusion_reason,
-        raw=item,
+        raw=_lean_raw(item),
     )

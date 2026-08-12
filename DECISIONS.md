@@ -731,46 +731,219 @@ GENERAL FORM, worth carrying: any per-member assertion about a selection
 function has at most one live branch.
 
 ### D-P2-21 — Corpus-size cut for diff fetching
-**Status:** OPEN (narrowed — default is NO CUT)
+**Status:** RESOLVED — NO CUT
 **Date:** 2026-08-08 (Day 15)
 
-09 §6's Day-14 marker fired; prescribed remedy is 500 PRs. Two subset rules
-were considered: recent-N and stratified across `Area:*`.
+09 §6's Day-14 marker fired, prescribing 500 PRs instead of full history.
+Two subset rules were considered: recent-N and stratified across `Area:*`.
+Stratified is rejected on evidence (D-P2-22). The cut itself is rejected on
+measurement — both gates cleared.
 
-**Stratified-across-`Area:*` is REJECTED on evidence** — see D-P2-22.
+**Gate 1 — time.** 50-PR seeded random sample, cold cache, measured
+1.57s mean per diff (median 1.52, slowest 3.10). INTER_REQUEST_DELAY_S =
+0.75 is 48% of that, so the run is roughly half delay-bound. Projected
+3,685 x 1.57s = 97 min. Actual full run sustained ~1.64s/request. Quota is
+a non-issue: 0.75s spacing draws ~2,290 req/hr against a 5,000/hr limit.
 
-**Default: no cut.** Rationale, stated precisely because the obvious version
-is wrong:
+**Gate 2 — storage.** parse_hunks() over the same 50 cached diffs: 8.3
+chunks/PR mean, 3 median, 53 max. Projected 30,659 chunks at 3,685.
+Embeddings 47 MB + content 46 MB = 93 MB against 02 §11's 250 MB target.
+Headroom is real even allowing for indexes and pull_requests rows.
 
-  Cutting the corpus does NOT lower Recall@3. 01 §9 pools from the corpus
-  and 01 §11 scores against the pooled relevant set, so a smaller corpus
-  yields a smaller relevant set and fewer competitors for the top 3 — the
-  number would likely go UP. That is the problem, not the reassurance: a
-  cut would flatter the headline figure while making the task easier, and
-  nothing in the harness would distinguish the two.
+**Why cutting would have been wrong regardless.** A smaller corpus does NOT
+lower Recall@3. 01 §9 pools from the corpus and 01 §11 scores against the
+pooled relevant set, so a smaller corpus yields a smaller relevant set and
+fewer competitors for the top 3 — the number would likely go UP. That is
+the hazard, not the reassurance: the cut would have flattered the headline
+figure while making the task easier, and nothing in the harness distinguishes
+the two. The genuine costs are cluster density (01 §11 puts clusters at 2-5
+PRs; a 1-in-7 sample leaves most queries with zero grade-2 candidates), a
+smaller published claim (10 requires corpus size to ship with the number),
+and cross-corpus incomparability (01 §15's frozen-snapshot rule).
 
-  The real costs of cutting are (a) cluster density — 01 §11 puts genuine
-  clusters at 2-5 PRs, so a 1-in-7 sample leaves most queries with zero
-  grade-2 candidates and an undefined recall; (b) the claim shrinks, and
-  10 requires corpus size to ship alongside the number; (c) cutting later
-  makes figures uncomparable across corpora, which 01 §15's frozen-snapshot
-  rule exists to prevent.
+**Superseded clause.** The earlier draft required non-subset PRs to carry a
+distinct `exclusion_reason` = 'outside_diff_subset', to avoid asymmetric
+signal coverage (hot invariants 2 and 3). Moot — no subset exists. Retained
+here because the reasoning applies to any future corpus bounding.
 
-**Gates that can still force a cut** — both measured, not assumed:
-  1. Seconds-per-diff over a 50-PR timing run, extrapolated to 3,685. Cut
-     if the projection exceeds ~2 hours unattended, or if 3,685 requests
-     against the 5,000/hr limit leaves no retry headroom (11 §7: this
-     project's I/O estimates run 4-7x low).
-  2. Chunk count and DB size after ~500 PRs land; cut if the full-corpus
-     projection breaches 02 §11's 250 MB target.
+---
 
-**Clause holding regardless of outcome:** if a subset is fetched, non-subset
-PRs are marked `in_corpus = FALSE` with a DISTINCT `exclusion_reason`
-(e.g. `outside_diff_subset`). Leaving them `in_corpus = TRUE` with no chunks
-gives BM25 and file-overlap visibility the vector signal structurally lacks —
-asymmetric coverage across the candidate set, violating hot invariants 2 and
-3. A distinct reason also keeps 02 §4's audit and the README's 5 exclusion
-counts clean: a budget cut is not a content exclusion.
+### D-P2-22 — 01 §8's `Area:*` stratification claim is false
+**Status:** OPEN (doc-revision batch, with D-P2-18)
+**Date:** 2026-08-08 (Day 15)
 
-Resolve after the 50-diff timing run.
+01 §8's p5.js amendment asserts that `Area:*` labels "make the stratification
+machine-readable rather than hand-assigned." Measured over the 3,685
+in_corpus set from the frozen cache:
 
+- 11 distinct `Area:*` labels
+- 215 / 3,685 = 5.8% of in_corpus PRs carry any `Area:*` label
+- mean 1.05 per labelled PR — effectively no multi-labelling
+
+Mapping §8's seven named clusters:
+
+| §8 cluster | Reality |
+|---|---|
+| Friendly Error System | `Friendly Errors` (23) — different prefix |
+| p5.strands | `p5.strands` (1) — different prefix, ONE PR |
+| WebGL shaders | `Area:WebGL` (121) |
+| Vector/Math | `Area:Math` (11) |
+| image and colour | `Area:Image` (12) + `Area:Color` (3) |
+| framebuffer/renderer | no label exists |
+| output | no label exists |
+
+**Second, independent finding: the scheme is retired.** Last-seen dates —
+Area:Events 2019-06, Area:IO 2019-07, Area:Utilities 2019-09, Area:WebGL
+(the largest, 121) 2023-12. Only Area:Typography reaches 2026, at 12 PRs
+across eleven years, which reads as incidental.
+
+**Consequence beyond D-P2-21.** 01 §5 draws query PRs from the recent end,
+so query PRs will carry no `Area:` label at all. 02 §6's
+`eval_queries.subsystem` column cannot be populated from labels and needs
+another source — path prefix under `src/`, or hand assignment as §8
+originally assumed. Resolve with D-P5-2 before Day 25.
+
+Same defect class as D-P2-18: a locked doc asserting a property the data
+does not have.
+
+---
+
+### D-P2-20 — `.yml`/`.yaml`/`.json` on 03 §2's exclusion list
+**Status:** RESOLVED — partial
+**Date:** 2026-08-08 (Day 15)
+
+Resolved with the extension histogram over 50 parsed diffs plus an
+is_excluded() spot-check, rather than the planned post-step-4 SQL query.
+Kept-file extensions across the sample: .js 119, .json 6, .html 6, .mjs 6,
+.vert 4, .frag 3, .yml 2, .all-contributorsrc 2, .glsl 1.
+
+**The spot-check, not the histogram, is the finding:**
+
+    keep  translations/es.json      <- DEFECT
+    keep  .github/workflows/ci.yml
+    keep  test/unit/color.js
+    EXCL  README.md / docs/guide.md / package-lock.json
+
+**`translations/es.json` surviving is a specified behaviour that is not
+happening.** 04 §5 step 4b exists precisely because a translation-only PR
+is human-authored, carries no distinguishing label on processing/p5.js, and
+is invisible to every metadata rule. The non-Area histogram shows 29
+`Translation`-labelled PRs, and step 4b's job is the ones WITHOUT that label.
+04 §5 states the consequence directly: file overlap scores translation PRs
+against each other at Jaccard ~1.0 while BM25 matches near-identical titles —
+two of three signals at ceiling on content that means nothing.
+
+`.all-contributorsrc` is the same class: pure metadata churn, no code.
+
+**Resolution:**
+- ADD locale `.json` under `translations/` to 03 §2's exclusion list
+- ADD `.all-contributorsrc`
+- DEFER `.yml`/`.yaml` — 2 of ~149 kept files (~1%), and CI config carries
+  some genuine signal. Revisit if the full-corpus distribution differs.
+
+---
+
+### D-P2-23 — Transport errors retried at the `_request` layer
+**Status:** RESOLVED
+**Date:** 2026-08-08 (Day 15)
+
+The first warm-cache run died at ~2,450/3,685 with
+httpx.RemoteProtocolError ("Server disconnected without sending a
+response") after the Mac slept. `_request`'s retry loop handled only
+403/429, so a dead socket — no status code to inspect — propagated past it
+and killed the run.
+
+Sleep was the trigger; the uncaught transport error is the defect. Over
+3,685 requests a dropped connection is expected regardless of lid state.
+
+Caught as `httpx.TransportError` (parent of RemoteProtocolError,
+ConnectError, ReadTimeout, ConnectTimeout) inside `_request`, with the same
+exponential backoff as 403/429. Placed there rather than in callers so
+retry has one owner.
+
+**Side effect on `requests_made`:** the counter increments before the
+attempt, so a transport failure counts as a request even though it likely
+spent no quota. This makes it an upper bound on quota consumed — the safe
+direction, and consistent with the existing per-attempt framing.
+
+**UNPROVEN.** The successful re-run logged errors=0, so the except branch
+has never executed. Teeth not watched.
+
+---
+
+### D-P2-24 — Invariant 11's chunk-count premise is 3.1x low
+**Status:** OPEN
+**Date:** 2026-08-08 (Day 15)
+
+Hot invariant 11 reads: "No ANN index on chunks.embedding in v1. Exact
+search at ~10k chunks is milliseconds with perfect recall." Measured
+projection is 30,659 chunks — 3.1x the stated premise.
+
+The decision is probably still correct: exact cosine over 30k x 384-dim is
+plausibly tens of milliseconds, and 04 §7's cold-start budget dwarfs it.
+But the stated reasoning no longer describes the system, and a locked
+decision whose premise moved 3x cannot be silently renumbered.
+
+**Required, both:**
+1. Amend invariant 11's figure to the measured one
+2. MEASURE actual query latency in Phase 3 rather than re-asserting
+   "milliseconds" against a second untested number
+
+Resolve at Phase 3, day 17 (vector similarity query).
+
+### D-P2-25 — RESOLVED (2026-08-12)
+`scripts/` may import `app/`. The prohibited directions are `app/ -> ingest/`
+and `app/ -> eval/` (04 §3, 06 §10) — both exist to stop deployed state from
+reaching a published number, and a local script reading service code runs the
+other way. `index_repo.py`'s docstring claimed "never app/", which was written
+on Day 11 when the parser was still expected to live in `ingest/`; D-P2-17
+moved chunking to `app/` and the docstring did not follow. Stale comment, not
+a locked decision. Docstring corrected.
+
+### D-P2-26 — RESOLVED (2026-08-12)
+Chunks deferred to Phase 3; Phase 2's deliverable is `pull_requests` only.
+`chunks.token_count` is `NOT NULL` (02 §5) and its only legal source is the
+MiniLM tokenizer, which arrives at pipeline step 5 in Phase 3 (D-P2-19).
+Writing 0 today would be a value the `was_truncated` invariant (07 §4:
+true exactly when `token_count > 256`) is built on top of.
+Consequence: Phase 3 re-parses the same cached diffs that Phase 2 parsed for
+`files_changed`/`additions`/`deletions` (D-P2-14) and 4b's zero-hunk rule.
+The re-parse is deliberate — it costs seconds against `.cache/` and keeps
+each phase's write set clean.
+
+### D-P2-27 — RESOLVED (2026-08-12)
+`pull_requests.raw` stores the list item minus `base`, `head`, and `_links`,
+plus a flattened `head_sha`.
+Measured across all 4,372 items: full 73.5 MB, stripped 14.8 MB — 58.7 MB
+saved, 80%. `base.repo` is the same object on every row and duplicates the
+`repos` table record-for-record; `_links` is reconstructible from `number`
+and `full_name`. 02 §4 defines `raw` as fields "kept for future use but never
+filtered on", so nothing queryable is lost.
+`head.sha` is kept deliberately: it is the only identifier of the commit state
+a diff was fetched at, which 01 §15's frozen-snapshot claim depends on.
+Storage: 91 MB chunks + 14.8 MB raw ≈ 106 MB against 02 §11's 250 MB.
+
+### D-P2-20 — RESOLVED (2026-08-11)
+Exclusions added to 03 §2's list: `test/unit/visual/screenshots/**`
+(~360 file appearances, all `.json`, screenshot-harness fixtures),
+`.all-contributorsrc` (133), `.map` (8), `.obj`/`.mtl`/`.stl` (22).
+All fall under 03 §2's existing "generated or vendored paths" clause.
+KEPT with reasons: `.yml` (219) — a CI-config change is a real change with
+real precedent value, and boilerplate over-matching is a scoring problem that
+03 §8's per-query normalization exists to handle; excluding on suspected
+scoring behaviour before Phase 6 measures anything is guessing. Dotfiles
+(`.gitignore`, `.eslintrc`, `.jshintrc`, etc., 80) — same argument, quarter
+the volume, and they rarely appear alone.
+**`TRANSLATION_PAYLOAD` investigated and found CORRECT.** The prior claim that
+`is_excluded()` keeps `translations/es.json` was false: that path does not
+exist in the corpus. The real layout is `translations/<locale>/translation.json`
+across 13 locales, which 03 §2's pattern matches exactly. The defect was in a
+hand-written probe string in `chunk_projection.py`, not in the predicate.
+Probe list corrected to real corpus paths.
+Untested by the fixture: `.map`, `.obj`, `.mtl`, `.stl` (30 appearances total).
+Known gap, accepted for MVP.
+
+### D-P2-24 — OPEN (updated 2026-08-12)
+Invariant 11's ~10k premise remains low. Projection was 29,406 at 3,685
+in-corpus PRs; the corpus is now 3,196, so ~25,500 — still ~2.5x.
+Amend the figure AND measure real query latency at Phase 3.

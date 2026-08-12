@@ -7,6 +7,7 @@ is invisible in the row's shape and visible only in the reason.
 
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 
 from ingest.constants import (
@@ -36,6 +37,8 @@ def item(number: int = 1234, **overrides) -> dict:
         "closed_at": "2024-03-02T10:00:00Z",
         "created_at": "2024-03-01T09:00:00Z",
         "labels": [{"name": "Bug"}],
+        "base": {"repo": {"full_name": "processing/p5.js"}},
+        "head": {"sha": "abc123"},
     }
     base.update(overrides)
     return base
@@ -53,6 +56,10 @@ def test_in_corpus_pr_with_source_diff():
     assert row.files_changed == ["src/core/main.js"]
     assert row.additions == 1
     assert row.outcome == "merged"
+    assert isinstance(row.created_at, datetime)
+    assert row.created_at.tzinfo is not None
+    assert "base" not in row.raw
+    assert row.raw["head_sha"] == "abc123"
 
 
 def test_step2_exclusion_keeps_its_reason_and_parses_nothing():

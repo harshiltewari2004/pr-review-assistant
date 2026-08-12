@@ -572,5 +572,124 @@ assertions can ever fire.
   ~1/3 the assumed size, and it was abandoned around 2023. Both fell out of
   the date-span column, which was added as a diagnostic for a recency floor
   inside each area — a feature that no longer has a use. Logged as D-P2-22.
+  
+- **Diff timing prediction — the decomposition is the lesson.** Predicted
+  60 min for 3,685, actual projection 97. Looks like a 1.6x miss. It is not:
+  0.75 of the 1.57s mean is INTER_REQUEST_DELAY_S, a constant I had just
+  read off the page. My 60-min figure implied ~0.23s of latency+write;
+  actual was 0.82s. **The part I actually estimated was 3.5x low** —
+  squarely inside 11 §7's 4-7x band. The total only looked respectable
+  because half of it was a constant. Do not log this as "1.6x low."
+
+- 406 rate: 0/50 in the sample, 19/3,685 (0.5%) over the full run. The
+  sample could not have distinguished 0.5% from 0% — rule-of-three upper
+  bound on 0/50 is ~6%, i.e. up to ~220 PRs. Correct to have refused to
+  publish a rate from it. **14 of the 19 sit above #7257, dense band
+  #8090-#8449** — the p5.js 2.0 era, which is exactly where 01 §5 says
+  query PRs come from.
+
+- Warm-cache run died at ~2,450/3,685 when the Mac slept:
+  httpx.RemoteProtocolError, no status code, straight past the 403/429
+  retry loop. The sleep was the trigger; the uncaught transport error was
+  the defect, and it would have fired eventually with the lid open. D-P2-23.
+  Re-ran under `caffeinate -i`.
+
+- **The crash output was misleading and I nearly chased a ghost.** It showed
+  a last checkpoint at 150/3685, but the re-run reported 2,491 cache hits.
+  Under `tee`, stdout is block-buffered; the process died without flushing,
+  so ~2,300 checkpoints were written and never displayed. Reconciled by
+  counting files: 3,666 = 3,685 - 19, plus 12 spike files = 3,678. **The
+  file count was the ground truth, not the log.**
+
+- ruff caught a live B905 in chunking.py — bare zip() over two re.split
+  slices. Lengths are equal by construction today, but bare zip truncates
+  SILENTLY, losing a hunk in the module whose job is not losing hunks.
+  strict=True. It had been sitting in a committed, all-green tree, which
+  means `ruff check` never ran before that commit.
 
 - zsh globs `--include=*.py` before grep sees it. Quote glob-bearing flags.
+
+## 2026-08-10 — Day 17
+D-P2-20 prediction, registered before the exclusion change:
+- chunks per PR mean: was 8.3, predict ___
+- total at 3,685:     was 30,659, predict ___
+- zero-hunk PRs in the 50-sample: was 2, predict ___
+
+
+Four hypotheses about the corpus. Three withdrawn.
+
+1. `is_excluded()` keeps `translations/es.json` — **false**, that path does not
+   exist. Real layout is `translations/<locale>/translation.json`; 03 §2's
+   pattern matches it. The probe string was invented, not sampled.
+2. CRLF line endings corrupting `+++` paths — **false**, zero `\r` in the corpus.
+3. Trailing tab surviving into `file_path` — **true that the tab exists** (361
+   headers, all paths containing spaces, git's disambiguation terminator), but
+   **false that it survives**: `_new_path` calls `.strip()` at capture.
+
+Common cause, and the day's real artifact: **a shell reconstruction of a code
+path is a different code path.** `awk`/`sed` pipelines don't call `.strip()`;
+`parse_hunks` does. Every finding was an artifact of the instrument. To test a
+predicate, run the predicate. Adjacent to the reference-location class — same
+root, different surface.
+
+The teeth check settled it with evidence rather than inference: breaking
+`VISUAL_SCREENSHOTS` produced a failure message showing the screenshot path
+with **no trailing tab**, through the real parser, on a real space-bearing
+header.
+
+`#7149`: 10 MB diff, 142,576-byte single chunk, `docs/data.json` — p5.js's
+generated reference payload. Appears in exactly one PR. Legitimate blob, not a
+parse defect. Handoff open loop closed. But it means the storage projection is
+mean-driven with a heavy tail — median chunk 399 bytes, mean 1,554, and one PR
+carried a fifth of the sampled content total.
+
+Prediction (D-P2-20 chunk re-run): mean 8 — hit (8.0). Zero-hunk 3/50 — hit.
+Total 30,660 — **miss**, actual 29,406. The two predictions were mutually
+inconsistent: 8 x 3,685 = 29,480, not 30,660. The total was anchored on the
+prior figure instead of derived from my own mean. Had the mean landed at 8.3
+the total would have "confirmed" and taught nothing.
+
+Seven one-token transcription errors, all in pasted-then-adjusted code:
+`==[` spacing, `.diff` extension on a stem-taking loader, `exclusion`/`excluded`,
+`Typing`, `md_only.dff`, a test function pasted into `chunking.py` instead of
+the test file, and a docstring opener dropped mid-paste. That seam — paste,
+then hand-edit — is where the type/paste split in 06 §13 gets blurry.
+
+## 2026-08-12 — Day 18
+
+**Phase 2's deliverable met.** `pull_requests` populated: 4,372 rows,
+3,196 in corpus. First rows in the table since the schema was created on Day 1.
+
+Prediction (zero-hunk PRs among 3,666 fetched diffs): **220 predicted, 470
+actual** — 2.1x. It sits inside the 3/50 sample's 95% interval (roughly 48–620),
+so the prediction wasn't broken so much as wrongly *shaped*: a 3-of-50 rate
+should never have been extrapolated to a point estimate. A range was the honest
+form. Registering "220" created false precision I then measured against.
+
+The filter is right, not the projection. Fifteen random `no_source_content`
+rows, zero false positives: translation payloads, `CODE_OF_CONDUCT.md`,
+`steward_guidelines.md`, `.all-contributorsrc`, contributor additions, empty
+merge commits, license scan reports. #8247 — "Improve Accessibility Guidance
+for `describe()` Usage" — reads like a code PR from its title and is docs.
+No step-2 metadata rule could have caught it. That is precisely what 04 §5
+step 4b was written for.
+
+Consequence: corpus 3,685 -> 3,196, a 13% reduction. Chunk projection drops to
+~25,500. All five carried anchors verified still in corpus (#8862, #8964,
+#8823 for 01 §7; #8497/#8498 for D-P5-3).
+
+`raw` payload measured before storing rather than after: 73.5 MB full,
+14.8 MB stripped. 80% of it was `base.repo` — the same object serialised 4,372
+times, duplicating the `repos` row we write in the same transaction (D-P2-27).
+Also: median item size (17,199) sits *above* the mean (16,811). Left-skewed —
+the fixed metadata dominates and bodies are the minority of the payload. I
+predicted the opposite.
+
+`build_all_rows`'s signature changed from `gh` to `diff_path`; the call site
+kept passing `gh`. Fourth reference-location instance this week. Ruff cannot
+see it — `gh` is a valid in-scope name — and it only raised because
+`GitHubClient` has no `__call__`. A callable would have run to completion
+producing wrong paths.
+
+Also this session: `ruff format` rewrote `index_repo.py` while the editor held
+unsaved edits, producing a save conflict. Save before running the formatter.

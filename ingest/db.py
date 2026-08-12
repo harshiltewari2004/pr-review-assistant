@@ -10,6 +10,7 @@ uses by default.
 
 from __future__ import annotations
 
+import json
 import os
 from contextlib import asynccontextmanager
 
@@ -33,7 +34,46 @@ def resolve_dsn(target: str) -> str:
 @asynccontextmanager
 async def connect(target: str):
     conn = await asyncpg.connect(resolve_dsn(target))
+    await conn.set_type_codec(
+        "jsonb",
+        encoder=json.dumps,
+        decoder=json.dumps,
+        schema="pg_catalog",
+    )
     try:
         yield conn
     finally:
         await conn.close()
+
+
+UPSERT_REPO = """
+INSERT INTO repos (github_id, owner, name, full_name, status, total_prs)
+VALUES ($1, $2, $3, $4, 'indexing', $5)
+ON CONFLICT (github_id) DO UPDATE
+SET status = 'indexing', total_prs = EXCLUDED.total_prs
+RETURNING id
+"""
+
+UPSERT_PR = """
+INSERT INTO pull_requests (
+    repo_id, number, github_id, title, body, author, author_type, outcome,
+    labels, files_changed, additions, deletions, created_at, merged_at,
+    closed_at, in_corpus, exclusion_reason, raw
+) VALUES (
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
+    $17, $18
+)
+ON CONFLICT (repo_id, number) DO UPDATE SET
+    title = EXCLUDED.title,
+    body = EXCLUDED.body,
+    outcome = EXCLUDED.outcome,
+    labels = EXCLUDED.labels,
+    files_changed = EXCLUDED.files_changed,
+    additions = EXCLUDED.additions,
+    deletions = EXCLUDED.deletions,
+    merged_at = EXCLUDED.merged_at,
+    closed_at = EXCLUDED.closed_at,
+    in_corpus = EXCLUDED.in_corpus,
+    exclusion_reason = EXCLUDED.exclusion_reason,
+    raw = EXCLUDED.raw
+"""
