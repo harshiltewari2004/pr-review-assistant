@@ -693,3 +693,49 @@ producing wrong paths.
 
 Also this session: `ruff format` rewrote `index_repo.py` while the editor held
 unsaved edits, producing a save conflict. Save before running the formatter.
+
+## 2026-08-13 — Day 19
+
+**Neon was in Singapore for eighteen days.** Surfaced only because the gate
+command queried `$DATABASE_URL` and `$DATABASE_URL_DIRECT` and both returned
+`repos.id = 4` — two databases cannot both hold id 4. `\conninfo` then showed
+both pointing at the same Neon endpoint, pooled and direct, and no local
+string in `.env` at all. The region was visible on the Neon dashboard from
+day 1 and never read.
+
+The class: a checklist item whose verification is ten seconds and whose
+failure is invisible until a phase that is six weeks away. 08 §9 says "Neon
+project created in a US region" — checking the box required looking at the
+console, and the console was open at the time.
+
+**`ingest/db.py` registered the jsonb codec with `decoder=json.dumps`.**
+Encoder correct, which is why 4,372 rows wrote cleanly on two databases and
+nothing raised. The decoder is the read path; asyncpg hands it raw text and
+expects an object back, so every `SELECT raw` through `connect()` would have
+returned a re-encoded string. Nothing reads `raw` yet, so it cost nothing —
+it would have presented in Phase 5 as a data-shape mystery, not an error.
+
+Fifth reference-location-class instance this month, and the first that is
+symmetrical rather than misplaced: `encoder=`/`decoder=` are adjacent lines
+with the same shape, and `json.dumps` on both reads as consistent. ruff
+cannot see it; both are callables with compatible signatures.
+
+**`LOCAL_DSN` was a hardcoded literal**, which is why `.env` had no local
+variable and why the gate silently checked Neon twice. Now
+`os.environ.get("DATABASE_URL_LOCAL", <compose default>)`, documented in
+`.env.example` with the real value rather than a placeholder — it is
+`postgres:dev` against a disposable container, and 07 §10 requires tests to
+run against local Postgres, never Neon. Asymmetry kept deliberately: the
+`neon` branch raises SystemExit on a missing variable, `local` falls back.
+A wrong local target costs a re-run; a wrong remote target is a write to
+the wrong database.
+
+Both teeth checks watched: a wrong `DATABASE_URL_LOCAL` raised
+`InvalidPasswordError`, proving the variable is read; `env -u` fell back and
+wrote 4372/3196 to repo_id 2.
+
+**Stale prediction constant:** the run still prints
+`no_source_content 470 predicted 220`. The miss is recorded and closed; the
+constant is now noise on every run. Update it to 470 or drop the line —
+invariant 20 wants prediction constants set deliberately, and one that is
+permanently wrong trains the eye to skip that line.

@@ -16,7 +16,9 @@ from contextlib import asynccontextmanager
 
 import asyncpg
 
-LOCAL_DSN = "postgresql://postgres:dev@localhost/prreview"
+LOCAL_DSN = os.environ.get(
+    "DATABASE_URL_LOCAL", "postgresql://postgres:dev@localhost/prreview"
+)
 
 
 def resolve_dsn(target: str) -> str:
@@ -37,7 +39,7 @@ async def connect(target: str):
     await conn.set_type_codec(
         "jsonb",
         encoder=json.dumps,
-        decoder=json.dumps,
+        decoder=json.loads,
         schema="pg_catalog",
     )
     try:

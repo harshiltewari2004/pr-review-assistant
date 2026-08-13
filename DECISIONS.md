@@ -947,3 +947,31 @@ Known gap, accepted for MVP.
 Invariant 11's ~10k premise remains low. Projection was 29,406 at 3,685
 in-corpus PRs; the corpus is now 3,196, so ~25,500 — still ~2.5x.
 Amend the figure AND measure real query latency at Phase 3.
+
+### D-P3-3 — RESOLVED (2026-08-13)
+Neon project region: ap-southeast-1 (Singapore) → aws-us-east-1 (N. Virginia).
+
+04 §9 and 08 §1 both require Neon in a US region so the database sits near
+Cloud Run rather than across an ocean; 08 §9's checklist line "Neon project
+created in a US region" was marked complete on Day 1 without the region
+being read back. Singapore was the fast choice from Lucknow and every step
+since — local scripts, psql, the eval harness — is unaffected by it, which
+is why eighteen days passed without the error surfacing. Only the deployed
+service's latency is governed by this, and the service does not exist yet.
+
+Neon fixes region at project creation; it cannot be changed in place.
+Resolved by creating a new project and re-running `index_repo --target neon`
+from the frozen cache — 0 GitHub requests, faster than pg_dump/pg_restore,
+and it re-exercises the write path. Old project deleted after verification.
+
+Verified: us-east-1 host, pgvector 0.8.0 (unchanged, D-P1-3 still holds),
+6 tables, 4372/3196, six-row reason breakdown identical to local.
+
+**Phase 7 consequence, recorded here so it is not re-decided by default:**
+Cloud Run region is `us-east1`. 04 §9 permits us-central1, us-east1, and
+us-west1; us-central1 is the common default and would put the service a
+continent from the database. Pairing is aws-us-east-1 ⇒ us-east1.
+
+Cost of this fix today: ~40 minutes and no rate-limit spend. Cost after the
+chunks write: a dump/restore of ~25,500 rows carrying 384-dim vectors, or a
+full re-embed. This was the last cheap moment.
