@@ -739,3 +739,21 @@ wrote 4372/3196 to repo_id 2.
 constant is now noise on every run. Update it to 470 or drop the line —
 invariant 20 wants prediction constants set deliberately, and one that is
 permanently wrong trains the eye to skip that line.
+
+**Resident memory with MiniLM loaded: 360 MB peak RSS.** Predicted 600–800;
+04 §9 estimated 700 MB–1.2 GB. Both high, mine by ~2x and the doc by ~3x.
+
+The doc's estimate is not decorative — it is the entire basis for
+disqualifying Render, Koyeb, and Railway at 512 MB. On this figure they were
+not disqualified. The host decision stands anyway: this is macOS arm64, not
+a linux/amd64 container, and it is peak across a load plus one four-word
+encode rather than batch-32 over 256-token chunks. The container reading
+(09 Day 15, `docker stats`) is the one that governs and is still owed.
+
+If the container agrees, the Phase 7 consequence is a 512 MiB Cloud Run
+allocation rather than 1 GiB — which doubles the request-seconds fitting
+inside 04 §9's 360,000 GiB-second free tier.
+
+Where the estimate came from is worth knowing: it predates the CPU-only
+torch change, so it likely carried CUDA library weight the service never
+loads.

@@ -17,3 +17,11 @@ REASON_HIGH_BM25 = 0.70  # rule 4
 
 CANDIDATE_TOP_N = 50
 RESULTS_RETURNED = 3
+
+# 03 §3. The model is part of the evaluation methodology: a version bump
+# changes the embeddings and invalidates every published number (06 §11)
+EMBEDDING_MODEL="sentence-transformers/all-MiniLM-L6-v2"
+
+# 06 §9: batch always. One encode call per hunk is roughly an order of
+# magnitude slower and turns the Day-19 index run into an overnight job.
+EMBED_BATCH_SIZE=32
