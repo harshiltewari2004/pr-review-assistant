@@ -20,6 +20,9 @@ from typing import Any, NamedTuple
 
 from dotenv import load_dotenv
 
+from app.retrieval.chunking import parse_hunks
+from app.retrieval.embedding import count_tokens, embed
+from ingest.chunk_rows import build_chunk_rows
 from ingest.constants import (
     ALL_EXCLUSION_REASONS,
     EXPECTED_FIRST_NUMBER,
@@ -31,7 +34,7 @@ from ingest.constants import (
     STEP2_EXCLUSION_REASONS,
 )
 from ingest.corpus_filter import apply_corpus_filter
-from ingest.db import UPSERT_PR, UPSERT_REPO, connect
+from ingest.db import INSERT_CHUNK, SELECT_CHUNKED_PR_IDS, UPSERT_PR, UPSERT_REPO, connect
 from ingest.github_client import GitHubClient, from_list_item
 from ingest.pr_rows import PRRow, build_row
 
@@ -193,6 +196,57 @@ async def write_rows(target: str, repo_meta: dict, rows: list[PRRow]) -> int:
             )
     return repo_id
 
+async def store_chunks(target: str, full_name: str, diff_path, limit: int | None) -> None:
+    """04 §5 steps 5-6. Commits per PR — see the resumability note above."""
+    async with connect(target) as conn:
+        repo_id = await conn.fetchval(
+            "SELECT id FROM repos WHERE full_name = $1", full_name
+        )
+        if repo_id is None:
+            raise SystemExit(f"{full_name} not in repos on {target} — run the PR write first")
+        #RESUME check sits before the embed. ON CONFLICT DO NOTHING makes
+        #the write idempotent but not resumable:without this,a restart
+        #re-embeds everything discards it
+        pending = await conn.fetch(
+            "SELECT id, number FROM pull_requests "
+            "WHERE repo_id = $1 AND in_corpus ORDER BY number",
+            repo_id,
+        )
+        done = {r["pr_id"]for r in await conn.fetch(SELECT_CHUNKED_PR_IDS,repo_id)}
+        todo = [(r["id"],r["number"])for r in pending if r["id"]not in done]
+
+        print(f"repo_id {repo_id}  in_corpus {len(pending)}  "
+              f"already chunked {len(done)}  todo {len(todo)}")
+        if limit:
+            todo = todo[:limit]
+            print(f"--limit {limit}: processing {len(todo)}")
+
+        started = time.perf_counter()
+        written = truncated = 0
+        for n, (pr_id, number) in enumerate(todo, 1):
+            try:
+                hunks = parse_hunks(diff_path(number).read_text())
+                texts = [h.content for h in hunks]
+                rows = build_chunk_rows(
+                    pr_id, repo_id, hunks, count_tokens(texts), embed(texts)
+                )
+                async with conn.transaction():
+                    await conn.executemany(INSERT_CHUNK, [r.as_params() for r in rows])
+            except Exception:
+                # 06 §8: one bad PR never kills a multi-hour run.
+                log.exception("chunking failed", extra={"pr": number})
+                continue
+            written += len(rows)
+            truncated += sum(1 for r in rows if r.was_truncated)
+            if n % 10 == 0:
+                rate = written / (time.perf_counter() - started)
+                print(f"  {n}/{len(todo)}  chunks {written}  {rate:.0f}/s")
+
+        elapsed = time.perf_counter() - started
+        print(f"\nchunks written  {written}")
+        print(f"truncated       {truncated} ({truncated / max(written, 1):.1%})")
+        print(f"elapsed         {elapsed:.0f}s  ({written / max(elapsed, 1e-9):.0f} chunks/s)")
+
 
 if __name__ == "__main__":
     load_dotenv()
@@ -205,8 +259,18 @@ if __name__ == "__main__":
         help="re-fetch every list page. Refused against a frozen cache (D-P2-15).",
     )
     ap.add_argument("--target", choices=("local", "neon"), required=True)
+    ap.add_argument("--limit", type=int, help="process only the first N in-corpus PRs")
+    ap.add_argument("--chunks-only", action="store_true", help="skip steps 1-4b")
     args = ap.parse_args()
     repo = args.repo
+    if args.chunks_only:
+        # Steps 1-4b are pure re-derivation from the frozen cache and add
+        # ~30s to every chunk-write retry. GitHubClient is opened only to
+        # resolve the diff cache path.
+        with GitHubClient(os.environ["GITHUB_TOKEN"], repo, refresh=False) as gh:
+            diff_path = gh._diff_cache_path
+        asyncio.run(store_chunks(args.target, repo, diff_path, args.limit))
+        raise SystemExit(0)
 
     started = time.time()
     with GitHubClient(os.environ["GITHUB_TOKEN"], repo, refresh=args.refresh) as gh:
@@ -275,3 +339,4 @@ if __name__ == "__main__":
     }
     repo_id = asyncio.run(write_rows(args.target, repo_meta, rows))
     print(f"\nwrote {len(rows)} rows to {args.target}, repo_id {repo_id}")
+    asyncio.run(store_chunks(args.target, repo, diff_path, args.limit))

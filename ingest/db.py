@@ -15,6 +15,7 @@ import os
 from contextlib import asynccontextmanager
 
 import asyncpg
+from pgvector.asyncpg import register_vector
 
 LOCAL_DSN = os.environ.get(
     "DATABASE_URL_LOCAL", "postgresql://postgres:dev@localhost/prreview"
@@ -42,6 +43,11 @@ async def connect(target: str):
         decoder=json.loads,
         schema="pg_catalog",
     )
+    # D-P3-1: pgvector's codec over a manual '[0.1,0.2,...]'::vector cast.
+    # Binary format on the wire — ~1.5 KB per 384-float vector against
+    # ~4.6 KB for text — and it matches the codec already registered above
+    # rather than introducing a second mechanism for the same problem.
+    await register_vector(conn)
     try:
         yield conn
     finally:
@@ -78,4 +84,16 @@ ON CONFLICT (repo_id, number) DO UPDATE SET
     in_corpus = EXCLUDED.in_corpus,
     exclusion_reason = EXCLUDED.exclusion_reason,
     raw = EXCLUDED.raw
+"""
+
+SELECT_CHUNKED_PR_IDS = """
+SELECT DISTINCT pr_id FROM chunks WHERE repo_id = $1
+"""
+
+INSERT_CHUNK = """
+INSERT INTO chunks (
+    pr_id, repo_id, file_path, hunk_index, content,
+    token_count, was_truncated, additions, deletions, embedding
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+ON CONFLICT (pr_id, file_path, hunk_index) DO NOTHING
 """

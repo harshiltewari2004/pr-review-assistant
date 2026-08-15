@@ -757,3 +757,73 @@ inside 04 §9's 360,000 GiB-second free tier.
 Where the estimate came from is worth knowing: it predates the CPU-only
 torch change, so it likely carried CUDA library weight the service never
 loads.
+## 2026-08-15 — Day 21
+
+**Overwrote `ingest/pr_rows.py` with `chunk_rows.py` content.** Paste-target
+slip; `PRRow`, `build_row`, `outcome_of`, `_ts`, `_lean_raw` gone from the
+working tree. Recovered with `git checkout` because the file was committed at
+Day-19 close. Uncommitted, it was unrecoverable. Not a fatigue signal —
+five minutes into the session — but it is the whole argument for committing at
+session boundaries rather than "when the feature is done."
+
+**Chunk-count prediction missed 1.7×: predicted ~25,000, measured 41,899.**
+
+Root cause is mine and it is a statistics error, not a data surprise. The
+50-PR sample gave mean 22.0, median 7.5, max 198. I anchored the corpus
+projection on the median because it resists outliers — correct instinct for
+describing a typical PR, wrong for a total. A sum is always mean × count. On
+right-skewed data the median systematically underestimates a sum, and the
+skew here is severe. Corpus mean landed at 13.1 chunks/PR, between the early
+slice's 22 and the projection's 8, exactly where a mean-based estimate would
+have put it.
+
+Rule: median for "what is typical," mean for "what is the total." Applies to
+capacity, cost, and aggregate load generally.
+
+`scripts/chunk_projection.py` undercounted ~60% (8/PR vs 13.1). Deleted — a
+script emitting a number known to be wrong is worse than no script.
+
+**`ORDER BY number` is a sampling decision, not a neutral one.** The 50-PR
+run drew the oldest 50 of a 13-year repo: 22 chunks/PR against a corpus 13.1,
+because early PRs carry initial structure and vendored files. Determinism read
+as unbiased. It is not. Same trap in any "first N rows."
+
+**My idempotency assertion was wrong; the code was right.** Predicted
+`chunks written 0` on a re-run. Actual: resume skipped the done 50, `--limit`
+sliced the *next* 50, 1,096 new chunks. `--limit` correctly applies after the
+skip.
+
+Consequence worth keeping: `ON CONFLICT DO NOTHING` was never exercised,
+because the resume check stops the conflict from ever reaching Postgres.
+Layered guards hide each other — the cheap outer check makes the inner
+guarantee untestable through the normal path. Verified separately with a
+self-referential INSERT ... SELECT expecting `INSERT 0 0`.
+
+**Neon write ran at 5 chunks/s against local's 39 — 8× slower, 2h09m.**
+Not Neon; it is ~250ms Lucknow→Virginia per round trip against a per-PR
+commit. Direct consequence of the Day-19 region move, and the right trade:
+indexing runs a handful of times unattended from a laptop outside the
+production path; retrieval runs on every PR from Cloud Run us-east1, where
+the same hop is sub-5ms. Do not carry 5/s into any Phase 7 estimate.
+
+**Truncation, corpus-wide: 23.3%** (9,748 of 41,899). Supersedes the Day-4
+spike's 28% on n=32. This is the README figure per `02 §5`.
+
+**Determinism confirmed by accident.** Local and Neon were indexed in
+separate runs and produced identical counts — 41,899 chunks, 23.3% truncated,
+3,196 PRs. Same frozen cache → same hunks → same tokenization → same
+truncation flags. Any order-dependence in `parse_hunks` or nondeterminism in
+the tokenizer would have shown as drift.
+
+**Storage: 133 MB Neon, 147 MB local, same rows.** The 14 MB gap is dead
+tuples from repeated `UPSERT ... DO UPDATE` runs locally — MVCC leaves old row
+versions until vacuum. Cite the Neon figure. `02 §9` estimated ~50 MB total;
+actual is ~2.7× that, still 27% of the 0.5 GB quota. `02 §11`'s "under
+250 MB after full index" passes. `02 §9` says re-measure after the first full
+index — done, doc owes the update.
+
+**D-P2-24 is worse than recorded.** `02 §5`'s no-ANN-index rationale assumes
+~10,000 chunks; measured 41,899, so 4.2× not ~2.5×. Under the documented
+100,000 HNSW threshold, so the decision likely holds — but "likely" is not an
+answer. Day 17's `EXPLAIN ANALYZE` on the similarity query closes it with a
+measurement.

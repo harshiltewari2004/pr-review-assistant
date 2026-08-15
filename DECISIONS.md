@@ -975,3 +975,34 @@ continent from the database. Pairing is aws-us-east-1 ⇒ us-east1.
 Cost of this fix today: ~40 minutes and no rate-limit spend. Cost after the
 chunks write: a dump/restore of ~25,500 rows carrying 384-dim vectors, or a
 full re-embed. This was the last cheap moment.
+
+### D-P3-1 — RESOLVED (2026-08-15)
+Bulk vector insert: pgvector asyncpg codec over a manual `'[...]'::vector`
+string cast.
+
+Context: `chunks.embedding` is `VECTOR(384)`; asyncpg has no native handling.
+Options were formatting each vector as a text literal with a `::vector` cast
+(proven in the Day-3 spike, no new dependency) or `register_vector(conn)`.
+
+Chose the codec. Binary wire format — ~1.5 KB per vector against ~4.6 KB for
+text, ~3× on the largest write in the project, repeated on every re-index.
+Secondarily it matches the JSONB codec already registered in `connect()`;
+two mechanisms for one problem in one file reads as arbitrary.
+
+Cost: one pinned dependency, and `register_vector` must run per connection.
+
+Consequence to carry: the read path returns a pgvector `Vector`, not an
+ndarray. `.to_numpy()` is required before numpy touches it — relevant at the
+Day-17 similarity query.
+
+### D-P2-24 — UPDATED (2026-08-15), still OPEN
+Measured corpus is 41,899 chunks against `02 §5`'s ~10,000 premise. 4.2×,
+not the ~2.5× recorded at Phase 2. Below the documented 100,000 HNSW
+threshold, so invariant 11 stands for now. Closes at Day 17 with
+`EXPLAIN ANALYZE` on the vector query — latency, not chunk count, is the
+criterion.
+
+### D-P2-18 / D-P2-22 — doc-revision batch, appended
+- `02 §9` storage table: measured 133 MB, not the estimated ~50 MB.
+- `02 §5` chunk-count premise: 41,899 measured.
+- `02 §5` truncation rate: 23.3% corpus-wide.
