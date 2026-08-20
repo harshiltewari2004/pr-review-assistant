@@ -827,3 +827,28 @@ index — done, doc owes the update.
 100,000 HNSW threshold, so the decision likely holds — but "likely" is not an
 answer. Day 17's `EXPLAIN ANALYZE` on the similarity query closes it with a
 measurement.
+
+## 2026-08-17 — Day 21 (Phase 3 Day 17)
+
+The temporal filter passed vacuously on the first run. The spike picked the
+newest in-corpus PR as the query, so nothing could postdate it:
+"Rows Removed by Filter: 1", and that 1 was the query PR caught by id <> $4.
+The predicate removed zero rows. A <= instead of <, or the clause deleted
+outright, prints identical output. Re-ran against a PR 1,600 deep in history
+— 1,596 rows removed, assertion still green, now meaning something.
+
+Same shape as the Day 9 shadowed-constants defect: correct code, green
+result, no evidence. Teeth-check applies to filters, not only to tests.
+
+Second surprise: query cost tracks preceding history, not corpus size.
+48.3 ms for the newest PR against 29.8 ms mid-history, because <=> runs over
+join output rather than the full table. The temporal filter is a performance
+feature. The newest PR — the actual production case — is the worst case.
+
+Five one-token faults across the session (numpy as numpy, ndarry,
+c.embeddings, c.repo, a 16-space indent) and ran past ruff errors twice.
+All mechanical, none semantic, all caught in under a second by tooling.
+Closed after the measurement rather than starting Day 18.
+
+Also noted: three PRs tied at exactly +0.7237. Duplicate chunk content
+across 2015 merge PRs. Logged D-P6-1.

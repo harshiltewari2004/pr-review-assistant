@@ -17,9 +17,7 @@ from contextlib import asynccontextmanager
 import asyncpg
 from pgvector.asyncpg import register_vector
 
-LOCAL_DSN = os.environ.get(
-    "DATABASE_URL_LOCAL", "postgresql://postgres:dev@localhost/prreview"
-)
+LOCAL_DSN = os.environ.get("DATABASE_URL_LOCAL", "postgresql://postgres:dev@localhost/prreview")
 
 
 def resolve_dsn(target: str) -> str:

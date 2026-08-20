@@ -20,8 +20,12 @@ RESULTS_RETURNED = 3
 
 # 03 §3. The model is part of the evaluation methodology: a version bump
 # changes the embeddings and invalidates every published number (06 §11)
-EMBEDDING_MODEL="sentence-transformers/all-MiniLM-L6-v2"
+EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 
 # 06 §9: batch always. One encode call per hunk is roughly an order of
 # magnitude slower and turns the Day-19 index run into an overnight job.
-EMBED_BATCH_SIZE=32
+EMBED_BATCH_SIZE = 32
+
+# 03 §4 step 2 — the vector signal's contribution to the candidate set.
+# Not the display count: 09's "top 10" for Day 17 is a parameter, not this.
+VECTOR_TOP_K = 50

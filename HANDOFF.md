@@ -1,108 +1,91 @@
-# Handoff — 2026-08-15, Day 21 (04 §5 steps 5-6 COMPLETE — chunks written)
+# Handoff — 2026-08-17, Day 21 (09 Day 17 COMPLETE — vector query + D-P2-24 closed)
 
 ## Done and committed
-- **41,899 chunks with 384-dim vectors on BOTH local and Neon.** 3,196 PRs,
-  23.3% truncated (9,748). Two independent runs, identical counts — the
-  pipeline is deterministic from the frozen cache.
-- ingest/chunk_rows.py: `ChunkRow`, `build_chunk_rows`, `as_params()`.
-  `was_truncated = token_count > MAX_MODEL_TOKENS` (invariant 9). `zip(...,
-  strict=True)` guards hunk/count/vector alignment — misalignment would
-  produce valid-looking rows with wrong vectors.
-- ingest/db.py: `register_vector(conn)` (D-P3-1), `INSERT_CHUNK` with
-  ON CONFLICT DO NOTHING, `SELECT_CHUNKED_PR_IDS`.
-- scripts/index_repo.py: `store_chunks` (steps 5-6), `--limit`,
-  `--chunks-only`. Commits PER PR, not one transaction — see below.
-- scripts/chunk_projection.py DELETED. Projected 8 chunks/PR against a
-  measured 13.1.
-- requirements.txt: pgvector pinned.
-- Tests: 35 passing.
+- app/retrieval/signals.py: VECTOR_SIGNAL_SQL + vector_signal(). Takes an
+  open asyncpg.Connection rather than acquiring one — keeps app/ off both
+  ingest/ (06 §10) and eval/ (invariant 12) with three callers ahead.
+  Alias is vector_score_raw (invariant 6). No ::vector cast (D-P3-1).
+  Guards: (384,) shape, tz-aware created_at. The tz guard is the one that
+  matters — a naive datetime shifts invariant 1's boundary by the local
+  offset with nothing raised.
+- app/retrieval/constants.py: VECTOR_TOP_K = 50. Embedding constants grouped
+  (handoff open loop closed).
+- spikes/day17_vector_query.py: read-only. `local|neon` + optional `mid`.
+- D-P2-24 CLOSED. 48.3 ms newest / 29.8 ms mid-history, local.
+- Tests: 35 passing (no new tests — spike, not module).
 
 ## NEXT SESSION STARTS HERE
 1. `git status` clean, `pytest tests/unit -q` = 35, `docker compose up -d`.
    `set -a && source .env && set +a && echo ${#DATABASE_URL_DIRECT}` → 140.
-2. Verify both DBs:
-   `psql "$DATABASE_URL_LOCAL"` and `psql "$DATABASE_URL_DIRECT"` →
-   `SELECT count(*), count(embedding), count(DISTINCT pr_id) FROM chunks;`
-   Expect 41899 / 41899 / 3196 on both.
-   **`$DATABASE_URL` is Neon pooled — `$DATABASE_URL_LOCAL` is Docker.**
-3. **09 Day 17 — vector similarity query.** Top 10 by cosine `<=>`,
-   temporal filter enforced in SQL.
-   - **Invariant 1: `candidate.created_at < query.created_at`.** First code
-     where a bug invalidates published numbers instead of costing a re-run.
-   - Filter `in_corpus` AND `repo_id` before the vector scan.
-   - Exclude the query PR's own chunks.
-   - pgvector's read path returns a `Vector`, NOT an ndarray — `.to_numpy()`
-     before anything numpy touches it (D-P3-1 consequence).
-   - Name it `vector_score_raw` (invariant 6). Cosine *distance* is
-     `<=>`; similarity is `1 - (a <=> b)`.
-   - Run `EXPLAIN ANALYZE` and record actual latency at 41,899 chunks —
-     that closes D-P2-24.
+2. **FIRST DECISION, BEFORE ANY CODE — the Phase 4 cut.** Deferred twice
+   under the fatigue guard. Do not start Phase 4 work until it is written.
+   Standing proposal: drop Day 23's naive weighted sum. 01 §9 needs four
+   pool variants; vector-only / BM25-only / file-only are three, and a crude
+   untuned hybrid adds little pool diversity. Counter-argument to weigh:
+   the union candidate set (03 §4) is NOT the cuttable part — it is the
+   thing every later normalization depends on.
+3. **09 Day 18 — chunk→PR aggregation across query chunks.**
+   - SQL MAX aggregates over CANDIDATE chunks. Day 18 aggregates the 13.1
+     per-chunk result lists into one PR-level ranking. 03 §5.
+   - MAX default, mean-of-top-3 behind a flag. Both compared at Day 34 —
+     do not pick a winner now.
+   - Concrete MAX weakness already observed: on query #9032, PR #4132
+     "Test pr" (2019, throwaway) scored 0.70 and outranked three real
+     workflow PRs. Use it in the Phase 6 write-up.
+   - Milestone A is met only after this lands. Tag v0.1-vector-only then.
+4. Run the spike against `neon`. Every number so far is Docker/macOS.
 
-## Why store_chunks commits per PR
-`write_rows` is one transaction because a half-written `pull_requests` makes
-the reconciliation counts describe a corpus that does not exist. `store_chunks`
-is the opposite: embedding is the expensive step, so one transaction around
-3,196 PRs means an interruption rolls back everything and the resume query
-finds nothing. Atomicity there would make the run un-resumable.
-
-The unit of atomicity matches the unit of resumption — any chunk that exists
-is complete, any incomplete PR is redone.
+## Measured — Day 17
+- Local, EXPLAIN ANALYZE: newest PR 48.3 ms (3,195 candidates / 41,885
+  joined rows), mid-history 29.8 ms (1,600 / 22,903). Seq Scan ~10 ms both.
+- Per-chunk wall clock: first 199 ms, median 26.8 ms. First-call overhead is
+  prepare + codec, not network — localhost RTT ~2 ms.
+- 11 chunks = 527 ms. At 13.1 mean chunks, worst case ~630 ms server-side,
+  excluding request-time embedding on Cloud Run x86.
+- Temporal filter with teeth: Rows Removed by Filter 1,596 of 3,196.
 
 ## Open loops
-- **`ON CONFLICT DO NOTHING` verification** — the resume check prevents a
-  conflict from ever reaching Postgres, so the normal path cannot test it.
-  Verify with a self-referential `INSERT ... SELECT ... ON CONFLICT DO
-  NOTHING` expecting `INSERT 0 0` if not already done.
-- 09 Day 15 still owes the `docker stats` container memory reading. Host
-  process was 360 MB on macOS arm64/MPS — not the governing number.
-  If the container agrees, Cloud Run gets 512 MiB, not 1 GiB.
-- `Use pytorch device_name: mps` — 39 chunks/s local is Apple GPU. Cloud Run
-  is CPU-only x86. The query path embeds at request time on that CPU. Do not
-  carry 39/s (or Neon's 5/s) into any latency estimate.
-- test_embedding.py sits in tests/unit and costs ~10s. Fast loop was 0.08s.
-  Decide: move to tests/integration, or accept.
-- constants.py: EMBEDDING_DIM line 8, EMBEDDING_MODEL 23, EMBED_BATCH_SIZE
-  27 — four constants for one model in three places. Group them.
+- **Ties in the ranking (D-P6-1).** Three PRs at +0.7237, two at +0.6568.
+  Duplicate chunk content. Affects Recall@3 and MRR ordering.
+- Spike prints the LAST chunk's ranking, not an aggregate. Day 18 fixes.
+- `ON CONFLICT DO NOTHING` verification still unrun.
+- 09 Day 15 `docker stats` container memory still owed. 512 MiB vs 1 GiB.
+- Cloud Run is CPU-only x86. Never carry 39 chunks/s (MPS) or 5/s (Neon).
+- test_embedding.py in tests/unit costs ~10 s. Move or accept.
 - index_repo.py prints `no_source_content 470 predicted 220` every run.
-  Permanent noise. Update to 470 or drop the line.
-- Local DB is 147 MB against Neon's 133 MB for identical rows — dead tuples
-  from repeated UPSERT runs. `VACUUM FULL` closes it. Cite Neon's figure.
-- README owes: no_source_content 470 (12.8% of fetched), and truncation
-  23.3% corpus-wide (02 §5).
-- Fixture does not cover .map/.obj/.mtl/.stl exclusions (30 appearances).
+- Local DB 147 MB vs Neon 133 MB — dead tuples. VACUUM FULL. Cite Neon.
+- README owes: no_source_content 470 (12.8%), truncation 23.3% (02 §5).
+- Fixture misses .map/.obj/.mtl/.stl exclusions (30 appearances).
 - `build_all_rows` reaches `gh._diff_cache_path`. Private-attribute debt.
 - 12 Day-4 spike diffs still use the unreachable naming scheme.
-- zsh: inline `#` becomes a filename argument. Save files before
-  `ruff format`. Adjacent string literals concatenate with NO space — the
-  cause of the `pull requestsWHERE` syntax error today.
+- Spike invocation is `python -m spikes.x`, not `python spikes/x.py` —
+  check day3/day4 for a second convention before it sets.
+- zsh: bare SQL is not a command. Always `psql "$URL" -c "..."`.
+  Adjacent string literals concatenate with NO space.
 
 ## Doc 12
-- chunking.py ritual COMPLETE (Day 14). No lag.
-- embedding.py, chunk_rows.py, db.py, pr_rows.py, index_repo.py are NOT on
-  the seven-module list (12 §1). Normal review only.
-- Remaining six: normalize.py, signals.py, scoring.py, reasons.py,
-  eval/pool.py, eval/score.py. None built yet.
+- chunking.py COMPLETE (Day 14). No lag.
+- signals.py has 1 of 3 signals. Ritual is owed at Phase 4 close, not now.
+- Remaining: normalize.py, signals.py, scoring.py, reasons.py, eval/pool.py,
+  eval/score.py.
 
 ## Schedule
-- Day 21 of 50. Phase 3 (days 15-20) overran; Phase 4's window (21-24) is
-  being spent on Phase 3 work. Day 17 and 18 of Phase 3 remain.
-- Day 20 Milestone A (vector-only retrieval returning results) not met.
-- **Day 24 HARD deadline: temporal filter test.** 07 §9 — the binding
-  constraint is ORDER, not date: it lands before Phase 5 pooling, because a
-  leak found after labeling means relabeling ~300 judgments. Do not compress
-  Phase 4 to recover calendar and let this slide past pooling.
-- Phase 4 (three signals crude) has not started.
+- Day 21 of 50. Phase 3 Day 18 remains. Phase 4 (21-24) has not started.
+- **Day 24 HARD deadline: temporal filter test (07 §9).** Binding constraint
+  is ORDER — it lands before Phase 5 pooling. A leak found after labeling
+  means relabeling ~300 judgments. Day 17's spike assertion is a smoke test,
+  not that test.
+- Milestone A (vector-only retrieval returning results) NOT yet met.
 
 ## Open decisions
+- **PHASE 4 CUT — decide at open.** See step 2.
+- D-P6-1 OPEN: ranking ties. Before Day 34.
 - D-P2-12 OPEN: LIST_STATE="all" admits 126 open PRs. Phase 4.
-- D-P2-18, D-P2-22 OPEN: doc-revision batch. Now includes 02 §9 storage
-  (133 MB not ~50 MB), 02 §5 chunk count (41,899 not ~10,000), 02 §5
-  truncation (23.3%), and 03 §3's wrong `normalize_embeddings` rationale.
-- D-P2-24 UPDATED, still OPEN: 4.2× off, not ~2.5×. Closes at Day 17 with
-  EXPLAIN ANALYZE. Criterion is latency, not chunk count.
+- D-P2-18, D-P2-22 OPEN: doc-revision batch. Now includes 02 §5's no-ANN
+  rationale and 03 §5's alias + redundant cast.
 - D-P3-2 OPEN: Neon pooled + create_pool() under Cloud Run churn. Phase 7.
 - D-P5-2 OPEN: 01 §7 anchors / §8 subsystems. Day 25.
 - D-P5-3 OPEN: 8497/8498 both confirmed in corpus. Before Day 25.
 
 ## Decisions log watermark
-- Current through D-P3-3. D-P3-1 resolved this session.
+- Current through D-P6-1. D-P2-24 closed this session.

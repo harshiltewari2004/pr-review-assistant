@@ -196,27 +196,27 @@ async def write_rows(target: str, repo_meta: dict, rows: list[PRRow]) -> int:
             )
     return repo_id
 
+
 async def store_chunks(target: str, full_name: str, diff_path, limit: int | None) -> None:
     """04 §5 steps 5-6. Commits per PR — see the resumability note above."""
     async with connect(target) as conn:
-        repo_id = await conn.fetchval(
-            "SELECT id FROM repos WHERE full_name = $1", full_name
-        )
+        repo_id = await conn.fetchval("SELECT id FROM repos WHERE full_name = $1", full_name)
         if repo_id is None:
             raise SystemExit(f"{full_name} not in repos on {target} — run the PR write first")
-        #RESUME check sits before the embed. ON CONFLICT DO NOTHING makes
-        #the write idempotent but not resumable:without this,a restart
-        #re-embeds everything discards it
+        # RESUME check sits before the embed. ON CONFLICT DO NOTHING makes
+        # the write idempotent but not resumable:without this,a restart
+        # re-embeds everything discards it
         pending = await conn.fetch(
-            "SELECT id, number FROM pull_requests "
-            "WHERE repo_id = $1 AND in_corpus ORDER BY number",
+            "SELECT id, number FROM pull_requests WHERE repo_id = $1 AND in_corpus ORDER BY number",
             repo_id,
         )
-        done = {r["pr_id"]for r in await conn.fetch(SELECT_CHUNKED_PR_IDS,repo_id)}
-        todo = [(r["id"],r["number"])for r in pending if r["id"]not in done]
+        done = {r["pr_id"] for r in await conn.fetch(SELECT_CHUNKED_PR_IDS, repo_id)}
+        todo = [(r["id"], r["number"]) for r in pending if r["id"] not in done]
 
-        print(f"repo_id {repo_id}  in_corpus {len(pending)}  "
-              f"already chunked {len(done)}  todo {len(todo)}")
+        print(
+            f"repo_id {repo_id}  in_corpus {len(pending)}  "
+            f"already chunked {len(done)}  todo {len(todo)}"
+        )
         if limit:
             todo = todo[:limit]
             print(f"--limit {limit}: processing {len(todo)}")
@@ -227,9 +227,7 @@ async def store_chunks(target: str, full_name: str, diff_path, limit: int | None
             try:
                 hunks = parse_hunks(diff_path(number).read_text())
                 texts = [h.content for h in hunks]
-                rows = build_chunk_rows(
-                    pr_id, repo_id, hunks, count_tokens(texts), embed(texts)
-                )
+                rows = build_chunk_rows(pr_id, repo_id, hunks, count_tokens(texts), embed(texts))
                 async with conn.transaction():
                     await conn.executemany(INSERT_CHUNK, [r.as_params() for r in rows])
             except Exception:

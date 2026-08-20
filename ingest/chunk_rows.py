@@ -30,9 +30,16 @@ class ChunkRow:
     def as_params(self) -> tuple:
         """Positional order must match INSERT_CHUNK's $1..$10."""
         return (
-            self.pr_id, self.repo_id, self.file_path, self.hunk_index,
-            self.content, self.token_count, self.was_truncated,
-            self.additions, self.deletions, self.embedding,
+            self.pr_id,
+            self.repo_id,
+            self.file_path,
+            self.hunk_index,
+            self.content,
+            self.token_count,
+            self.was_truncated,
+            self.additions,
+            self.deletions,
+            self.embedding,
         )
 
 

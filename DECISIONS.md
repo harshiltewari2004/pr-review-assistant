@@ -1006,3 +1006,36 @@ criterion.
 - `02 §9` storage table: measured 133 MB, not the estimated ~50 MB.
 - `02 §5` chunk-count premise: 41,899 measured.
 - `02 §5` truncation rate: 23.3% corpus-wide.
+
+### D-P2-24 — CLOSED (2026-08-17)
+No ANN index on chunks.embedding (invariant 11) stands at 41,899 chunks.
+
+Measured, local Docker, EXPLAIN ANALYZE on VECTOR_SIGNAL_SQL:
+  newest query PR (3,195 candidates, 41,885 joined rows) — 48.3 ms
+  mid-history PR  (1,600 candidates, 22,903 joined rows) — 29.8 ms
+  Seq Scan on chunks ~10 ms in both; the remainder is <=> arithmetic
+  in the HashAggregate, over join output rather than the full table.
+
+Rationale REPLACED, not confirmed. 02 §5 argued "single-digit milliseconds
+at ~10,000 chunks" — wrong on chunk count, wrong on time, and silent on the
+per-query-chunk fan-out. The decision survives on a different basis: the
+sequential scan is ~20% of execution time, so an ANN index would trade
+perfect recall for a fraction of a third of the cost.
+
+Caveat carried forward: 03 §5 runs the query once per query chunk. At the
+measured 13.1 chunks/PR the worst case is ~630 ms of server-side vector work
+per query PR, excluding request-time embedding on Cloud Run's x86 CPU.
+Revisit if a Phase 7 measurement pushes end-to-end past ~2 s, or beyond
+02 §5's documented 100,000-chunk HNSW threshold.
+
+### D-P2-18 / D-P2-22 — doc-revision batch, appended
+- 02 §5 no-ANN rationale: replace with the measured basis above.
+- 03 §5 SQL: alias is vector_score (violates invariant 6) and carries a
+  $1::vector cast made redundant by D-P3-1.
+
+### D-P6-1 — OPEN (2026-08-17)
+Exact score ties in the vector ranking. Day 17 produced three PRs at
++0.7237 and two at +0.6568 — duplicated chunk content across 2015 merge PRs
+yields identical MAX values. Recall@3 and MRR both depend on rank order,
+which is arbitrary inside a tie. Decide a deterministic tie-break before
+weight tuning (Phase 6, Day 34).
