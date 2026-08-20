@@ -9,12 +9,14 @@ app/,and eval/ can reach supply their own without app/ importing ingest/
 
 from __future__ import annotations
 
+from collections import defaultdict
+from dataclasses import dataclass
 from datetime import datetime
 
 import asyncpg
 import numpy as np
 
-from app.retrieval.constants import EMBEDDING_DIM, VECTOR_TOP_K
+from app.retrieval.constants import EMBEDDING_DIM, MEAN_TOP_K, VECTOR_AGGREGATION, VECTOR_TOP_K
 
 # 03 §5. Invariant 1 lives in the WHERE clause below.
 #
@@ -86,3 +88,84 @@ async def vector_signal(
     )
 
     return [(r["pr_id"], r["vector_score_raw"]) for r in rows]
+
+
+@dataclass(frozen=True, slots=True)
+class VectorAggregate:
+    """One candidate PR's vector signal, collapsed across the query PR's chunks.
+
+    chunk_hints is not decoration. Each per-chunk query is capped at
+    VECTOR_TOP_K, so a candidate absent from a chunk's result list did NOT
+    score zero - it scored below that list's cutoff. Aggregating over
+    observed values only is therefore biased, and chunk_hits is the evidence
+    count that makes the bias measurable at Day 34 instead of silent.
+    """
+
+    score_raw: float
+    chunk_hits: int
+
+
+def aggregate_chunk_scores(
+    per_candidate: dict[int, list[float]],
+    strategy: str = VECTOR_AGGREGATION,
+) -> dict[int, VectorAggregate]:
+    """Collapses per-query-chunk scores into one score per candidate PR.
+
+    Pure:no I/O, no async. The DB loops lives in the caller so this stays
+    unit-testable without a database.
+
+    MAX is order-independent and associative, so composing it with the SQL's
+    candidates chunks is exactly MAX over all(query chunk,candidate chunk) pairs -— 03 §5.
+    mean_to_k is not associative, so it averages the top MEAN_TOP_K *query-chunk* values, not pair
+    values; the pair-level version would need a second query without GROUP BY.
+    Deviation recorded as D-P3-3.
+    """
+
+    if strategy not in ("max", "mean_top_k"):
+        raise ValueError(f"unknown aggregation strategy:{strategy!r}")
+
+    out: dict[int, VectorAggregate] = {}
+    for pr_id, scores in per_candidate.items():
+        if not scores:
+            raise ValueError(f"candidate {pr_id} collected with no scores")
+        if strategy == "max":
+            value = max(scores)
+        else:
+            top = sorted(scores, reverse=True)[:MEAN_TOP_K]
+            value = sum(top) / len(top)
+        out[pr_id] = VectorAggregate(score_raw=value, chunk_hits=len(scores))
+
+    return out
+
+async def vector_signal_for_pr(
+    conn:asyncpg.Connection,
+    query_embeddings:list[np.ndarray],
+    repo_id:int,
+    query_created_at:datetime,
+    query_pr_id:int,
+    strategy:str = VECTOR_AGGREGATION,
+)->dict[int, VectorAggregate]:
+    """The vector signal for one query PR, across all of its chunks.
+
+    Returns every candidates the per-chunk queries surfaced, uncut and
+    unranked. CANDIDATE_TOP_N and the union with the other two signals are
+    scoring.py's job (03 §4)-06 §10 keeps ranking out of this module.
+
+    Queries run sequentially: an asyncpg Connection cannot carry concurrent 
+    operations, so overlapping them needs a pool, not a loop change. At ~13 
+    chunks x ~27 ms median this is ~350 ms server-side(Day 17 measurement).
+    """
+
+    if not query_embeddings:
+        raise ValueError(f"query PR{query_pr_id} has no chunk embeddings") 
+
+    per_candidate:dict[int ,list[float]]=defaultdict(list)
+    for embedding in query_embeddings:
+        rows = await vector_signal(
+            conn,embedding,repo_id,query_created_at,query_pr_id
+        )
+
+        for pr_id, score_raw in rows:
+            per_candidate[pr_id].append(score_raw)
+
+    return aggregate_chunk_scores(dict(per_candidate),strategy)

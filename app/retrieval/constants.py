@@ -29,3 +29,9 @@ EMBED_BATCH_SIZE = 32
 # 03 §4 step 2 — the vector signal's contribution to the candidate set.
 # Not the display count: 09's "top 10" for Day 17 is a parameter, not this.
 VECTOR_TOP_K = 50
+
+# Chunk → PR aggregation across the query PR's chunks (03 §5).
+# "max" is v1; "mean_top_k" is the flagged alternative. Both are compared on
+# the tune split at Day 34 — do not pick a winner here.
+VECTOR_AGGREGATION = "max"
+MEAN_TOP_K = 3

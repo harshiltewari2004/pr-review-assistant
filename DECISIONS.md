@@ -1039,3 +1039,11 @@ Exact score ties in the vector ranking. Day 17 produced three PRs at
 yields identical MAX values. Recall@3 and MRR both depend on rank order,
 which is arbitrary inside a tie. Decide a deterministic tie-break before
 weight tuning (Phase 6, Day 34).
+
+D-P3-3 — mean-of-top-3 operates on query chunks, not (query, candidate) chunk pairs. (2026-08-20)
+Context: 03 §5 specifies aggregation over all pairs. VECTOR_SIGNAL_SQL collapses candidate chunks with MAX in GROUP BY, so pair-level scores never reach Python.
+Options: (a) mean-of-top-3 over the 14 per-query-chunk values; (b) a second SQL without GROUP BY returning pair-level rows, ~13× volume.
+Decision: (a).
+Reasoning: the weakness 03 §5 names — one coincidental hunk inflating a PR — produces one high query-chunk value, which averaging the top 3 still dilutes. (a) addresses the actual failure mode at zero query cost.
+Trade-off: not literal compliance with 03 §5. MAX composes exactly across both levels; mean does not, so the flagged variant means something slightly different from the doc's wording.
+Consequence: 03 §5 joins the doc-revision batch. If Day 34 shows mean beating MAX materially, (b) becomes worth measuring.

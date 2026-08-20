@@ -852,3 +852,10 @@ Closed after the measurement rather than starting Day 18.
 
 Also noted: three PRs tied at exactly +0.7237. Duplicate chunk content
 across 2015 merge PRs. Logged D-P6-1.
+
+Day 21 (2026-08-20). Teeth check on aggregate_chunk_scores: break 1 (scores[-1]) predicted 3 failures, got exactly 3 — and the predicted pass held, test_single_score_is_not_a_special_case cannot distinguish max from last with one element. Break 2 (/ MEAN_TOP_K) predicted 1 failure, got 2 — prediction missed; the single-element test fails there too. The two tests are blind to opposite defects. Also: first teeth run had both breaks live simultaneously; attribution only survived because the branches are disjoint. Revert between breaks.
+Spike predictions: #4132 top-3 → miss, rank 29/138; union 150–250 → miss, 138; overlap max/mean 8/10; top result chunk_hits 14/14.
+Correction to the record: Day 17's "#4132 outranks real PRs" was an artifact of printing one chunk's ranking, not a MAX weakness. Aggregation promoted 28 real matches past it.
+Correction to D-P2-24: fan-out is 920 ms / 14 chunks at production VECTOR_TOP_K=50, not ~630 ms. Day 17's figure used the spike's display TOP_K=10.
+Open: #7810 / #7906 tie at +0.7899 with unrelated titles — suspect a byte-identical shared chunk. Feeds D-P6-1.
+Open: day17_vector_query.py applies OFFSET 1600 to both ASC and DESC, so the recorded "newest PR / 3,195 candidates" figure may not be reproducible from that script.

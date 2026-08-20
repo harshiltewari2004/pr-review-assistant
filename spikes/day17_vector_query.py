@@ -22,9 +22,7 @@ TOP_K = 10
 
 async def main(target: str) -> None:
     async with connect(target) as conn:
-        repo_id = await conn.fetchval(
-            "SELECT id FROM repos WHERE full_name = $1", REPO
-        )
+        repo_id = await conn.fetchval("SELECT id FROM repos WHERE full_name = $1", REPO)
         if repo_id is None:
             sys.exit(f"no repo row for {REPO} on {target}")
         print(f"target={target}  repo_id={repo_id}")
@@ -54,9 +52,7 @@ async def main(target: str) -> None:
         timings = []
         for v in vectors:
             t0 = time.perf_counter()
-            results = await vector_signal(
-                conn, v, repo_id, q["created_at"], q["id"], top_k=TOP_K
-            )
+            results = await vector_signal(conn, v, repo_id, q["created_at"], q["id"], top_k=TOP_K)
             timings.append((time.perf_counter() - t0) * 1000)
 
         meta = {
@@ -69,8 +65,10 @@ async def main(target: str) -> None:
         }
         for rank, (pr_id, score) in enumerate(results, 1):
             m = meta[pr_id]
-            print(f"{rank:2}. {score:+.4f}  #{m['number']:5}  "
-                  f"{m['created_at']:%Y-%m-%d}  {m['title'][:55]}")
+            print(
+                f"{rank:2}. {score:+.4f}  #{m['number']:5}  "
+                f"{m['created_at']:%Y-%m-%d}  {m['title'][:55]}"
+            )
 
         # --- golden assertion: invariant 1 ---
         leaks = [
@@ -80,14 +78,20 @@ async def main(target: str) -> None:
         ]
         print(f"\ntemporal filter: {len(results)} results, {len(leaks)} leaks {leaks}")
         assert not leaks, f"TEMPORAL LEAK: {leaks}"
-        
+
         print(f"\nper-chunk ms: {' '.join(f'{t:.0f}' for t in timings)}")
-        print(f"first={timings[0]:.1f}  median={sorted(timings)[len(timings) // 2]:.1f}"
-              f"  total={sum(timings):.0f} ms for {len(timings)} chunks")
+        print(
+            f"first={timings[0]:.1f}  median={sorted(timings)[len(timings) // 2]:.1f}"
+            f"  total={sum(timings):.0f} ms for {len(timings)} chunks"
+        )
 
         plan = await conn.fetch(
             "EXPLAIN ANALYZE " + VECTOR_SIGNAL_SQL,
-            vectors[0], repo_id, q["created_at"], q["id"], TOP_K,
+            vectors[0],
+            repo_id,
+            q["created_at"],
+            q["id"],
+            TOP_K,
         )
         print()
         for line in plan:
