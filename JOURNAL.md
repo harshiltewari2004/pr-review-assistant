@@ -859,3 +859,7 @@ Correction to the record: Day 17's "#4132 outranks real PRs" was an artifact of 
 Correction to D-P2-24: fan-out is 920 ms / 14 chunks at production VECTOR_TOP_K=50, not ~630 ms. Day 17's figure used the spike's display TOP_K=10.
 Open: #7810 / #7906 tie at +0.7899 with unrelated titles — suspect a byte-identical shared chunk. Feeds D-P6-1.
 Open: day17_vector_query.py applies OFFSET 1600 to both ASC and DESC, so the recorded "newest PR / 3,195 candidates" figure may not be reproducible from that script.
+
+Predicted && fan-out 300–800 from #9032; got 44. Wrong sample, not a wrong model — #9032's workflow-YAML files are edited a few times a year. The same property that made its cosines unrepresentative made its fan-out unrepresentative, in the opposite direction. A single query PR cannot estimate per-query cost; fan-out is a property of the files touched.
+Distribution over 20 recent queries: median 103, max 1,835, 18× spread. Cap at 100 binds on 12/20. #9014 and #9002 both touch exactly 1 file — 103 vs 16 overlaps. A single-file PR's fan-out varies 6× by which file it touches. That is 03 §6's documented bias, measured. README number.
+ORDER BY overlaps is a syntax error — OVERLAPS is a reserved SQL temporal operator. Same class as the existing zsh: bare SQL is not a command loop. Avoid overlaps, end, user, order, limit as identifiers anywhere that reaches SQL.

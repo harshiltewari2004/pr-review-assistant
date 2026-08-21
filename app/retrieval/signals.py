@@ -185,3 +185,18 @@ def jaccard(a: Sequence[str], b: Sequence[str]) -> float:
     if not set_a or not set_b:
         return 0.0
     return len(set_a & set_b) / len(set_a | set_b)
+
+# 03 §4 step 4. `&&` is array-overlap: true iff the intersection is
+# non-empty. Uses idx_pr_files (GIN, 02 §4). The prefilter is lossless —
+# a PR it drops has an empty intersection, so J = 0.0 by definition.
+# Contrast VECTOR_TOP_K, where exclusion means "below the cutoff",
+# an unknown value. Jaccard itself is computed in Python (03 §6).
+FILE_CANDIDATES_SQL="""
+    SELECT p.id,p.files_changed
+    FROM pull_requests p
+    WHERE p.repo_id=$2
+        AND p.in_corpus
+        AND p.created_at <$3
+        AND p.id<>$4
+        AND p.files_changed && $1::text[]
+""" 

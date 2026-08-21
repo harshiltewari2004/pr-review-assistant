@@ -1047,3 +1047,9 @@ Decision: (a).
 Reasoning: the weakness 03 §5 names — one coincidental hunk inflating a PR — produces one high query-chunk value, which averaging the top 3 still dilutes. (a) addresses the actual failure mode at zero query cost.
 Trade-off: not literal compliance with 03 §5. MAX composes exactly across both levels; mean does not, so the flagged variant means something slightly different from the doc's wording.
 Consequence: 03 §5 joins the doc-revision batch. If Day 34 shows mean beating MAX materially, (b) becomes worth measuring.
+
+### D-P4-4 — OPEN (2026-08-21):
+ Bulk and prose PRs distort exactly one signal each while carrying no semantic relation. #9032 (workflow YAML, 7 files) produced 0.9945 cosines on near-duplicate text; #9027 (docs(Vector):, 74 files, +944/−237, no labels) overlaps 1,835 of 3,196 in-corpus PRs — 57% of the corpus. Both passed step 4b legitimately: p5.js keeps JSDoc inside src/**/*.js, so a docs-only PR produces real source hunks and no label rule can see it (labels = {}). Two instances found by measurement, not design. Decide before Day 25 whether this is a corpus-filter exclusion or a documented limitation. Also supplies the disqualification rule for the pending cluster re-run: file count far above the corpus median, or a docs(/workflow-path prefix.
+
+### D-P2-12 — still OPEN,
+ evidence attached. #9027 has outcome = 'open'. 03 §10's reason templates and 05's --flag colour both branch on merged vs. closed-unmerged; an open PR is neither and has nothing to report about itself. 126 such candidates can reach the top 3. Hard requirement before Day 25 — an open PR in a pool is a judgment a labeler cannot make.
