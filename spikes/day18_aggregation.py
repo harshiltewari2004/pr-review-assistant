@@ -110,8 +110,10 @@ async def main(target: str, pr_number: int) -> None:
         ]
         if watch:
             rank, a = watch[0]
-            print(f"\n#{WATCH_PR}: rank {rank} of {len(top_max)}, "
-                  f"score {a.score_raw:.4f}, hits {a.chunk_hits}")
+            print(
+                f"\n#{WATCH_PR}: rank {rank} of {len(top_max)}, "
+                f"score {a.score_raw:.4f}, hits {a.chunk_hits}"
+            )
         else:
             print(f"\n#{WATCH_PR}: not in the union")
 
@@ -126,8 +128,10 @@ async def main(target: str, pr_number: int) -> None:
 
         # --- chunk_hits distribution: how much cutoff bias is in play ---
         hits = Counter(a.chunk_hits for a in agg_max.values())
-        print(f"chunk_hits: seen once={hits[1]}  all {len(vectors)}={hits[len(vectors)]}  "
-              f"max observed={max(hits)}")
+        print(
+            f"chunk_hits: seen once={hits[1]}  all {len(vectors)}={hits[len(vectors)]}  "
+            f"max observed={max(hits)}"
+        )
 
         # --- GOLDEN ASSERTION 1: invariant 1, over the FULL union ---
         leaks = [
@@ -148,9 +152,7 @@ async def main(target: str, pr_number: int) -> None:
         # --- GOLDEN ASSERTION 3: independent recomputation of the wiring ---
         collected: dict[int, list[float]] = defaultdict(list)
         for v in vectors:
-            for pr_id, score_raw in await vector_signal(
-                conn, v, repo_id, q["created_at"], q["id"]
-            ):
+            for pr_id, score_raw in await vector_signal(conn, v, repo_id, q["created_at"], q["id"]):
                 collected[pr_id].append(score_raw)
         assert aggregate_chunk_scores(dict(collected)) == agg_max, "orchestrator wiring drift"
         print("recomputed from raw rows: identical")

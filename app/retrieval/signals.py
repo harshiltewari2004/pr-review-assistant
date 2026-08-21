@@ -10,6 +10,7 @@ app/,and eval/ can reach supply their own without app/ importing ingest/
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -137,35 +138,50 @@ def aggregate_chunk_scores(
 
     return out
 
+
 async def vector_signal_for_pr(
-    conn:asyncpg.Connection,
-    query_embeddings:list[np.ndarray],
-    repo_id:int,
-    query_created_at:datetime,
-    query_pr_id:int,
-    strategy:str = VECTOR_AGGREGATION,
-)->dict[int, VectorAggregate]:
+    conn: asyncpg.Connection,
+    query_embeddings: list[np.ndarray],
+    repo_id: int,
+    query_created_at: datetime,
+    query_pr_id: int,
+    strategy: str = VECTOR_AGGREGATION,
+) -> dict[int, VectorAggregate]:
     """The vector signal for one query PR, across all of its chunks.
 
     Returns every candidates the per-chunk queries surfaced, uncut and
     unranked. CANDIDATE_TOP_N and the union with the other two signals are
     scoring.py's job (03 §4)-06 §10 keeps ranking out of this module.
 
-    Queries run sequentially: an asyncpg Connection cannot carry concurrent 
-    operations, so overlapping them needs a pool, not a loop change. At ~13 
+    Queries run sequentially: an asyncpg Connection cannot carry concurrent
+    operations, so overlapping them needs a pool, not a loop change. At ~13
     chunks x ~27 ms median this is ~350 ms server-side(Day 17 measurement).
     """
 
     if not query_embeddings:
-        raise ValueError(f"query PR{query_pr_id} has no chunk embeddings") 
+        raise ValueError(f"query PR{query_pr_id} has no chunk embeddings")
 
-    per_candidate:dict[int ,list[float]]=defaultdict(list)
+    per_candidate: dict[int, list[float]] = defaultdict(list)
     for embedding in query_embeddings:
-        rows = await vector_signal(
-            conn,embedding,repo_id,query_created_at,query_pr_id
-        )
+        rows = await vector_signal(conn, embedding, repo_id, query_created_at, query_pr_id)
 
         for pr_id, score_raw in rows:
             per_candidate[pr_id].append(score_raw)
 
-    return aggregate_chunk_scores(dict(per_candidate),strategy)
+    return aggregate_chunk_scores(dict(per_candidate), strategy)
+
+
+def jaccard(a: Sequence[str], b: Sequence[str]) -> float:
+    """Jaccard similarity between two file-path sets.
+
+    Exact path matching (03 §6) - no directory-prefix credit.
+
+    Either side empty returns 0.0 rather than raising:an in-corpus PR
+    always has source files, so an empty side means bad input, and a
+    silent 0.0 is the right answer for a signal that carries no
+    information  about that pair.
+    """
+    set_a, set_b = set(a), set(b)
+    if not set_a or not set_b:
+        return 0.0
+    return len(set_a & set_b) / len(set_a | set_b)
