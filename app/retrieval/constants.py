@@ -35,3 +35,5 @@ VECTOR_TOP_K = 50
 # the tune split at Day 34 — do not pick a winner here.
 VECTOR_AGGREGATION = "max"
 MEAN_TOP_K = 3
+
+BM25_TOP_K = 50

@@ -19,7 +19,13 @@ import asyncpg
 import numpy as np
 from rank_bm25 import BM25Okapi
 
-from app.retrieval.constants import EMBEDDING_DIM, MEAN_TOP_K, VECTOR_AGGREGATION, VECTOR_TOP_K
+from app.retrieval.constants import (
+    BM25_TOP_K,
+    EMBEDDING_DIM,
+    MEAN_TOP_K,
+    VECTOR_AGGREGATION,
+    VECTOR_TOP_K,
+)
 
 # 03 §5. Invariant 1 lives in the WHERE clause below.
 #
@@ -320,3 +326,40 @@ async def build_bm25_index(conn: asyncpg.Connection, repo_id: int) -> Bm25Index:
         pr_ids=[r["id"] for r in rows],
         created_ats=[r["created_at"] for r in rows],
     )
+
+
+def bm25_signal(
+    index: Bm25Index,
+    query_tokens: list[str],
+    query_created_at: datetime,
+    query_pr_id: int,
+    top_k: int = BM25_TOP_K,
+) -> list[tuple[int, float]]:
+    """One query PR->(pr_id,bm25_score_raw),best first. 03 §7.
+
+    Invariant 1 is enforced HERE, in Python, because BM25 has no SQL to
+    put it in. get_scores() returns one float document in the corpus,
+    including PRs created after the query - the library knows nothing
+    about dates.
+
+    FILTER BEFORE THE CUT. Scoring all,cutting to top_k,then filtering
+    yields fewer than top_k candidates and fails silently - worse the
+    older the query PR is. 03 §4 step 3.
+
+    Score is unbounded and non-negative (03 §8). Do not clamp or scale:
+    normalize.py's per-query min-max needs the raw spread.
+    """
+
+    if query_created_at.tzinfo is None:
+        raise ValueError("query created_at must be timezone-aware (02 §2)")
+
+    scores = index.bm25.get_scores(query_tokens)
+
+    eligible = [
+        (pr_id, float(score))
+        for pr_id, created_at, score in zip(index.pr_ids, index.created_ats, scores, strict=True)
+        if created_at < query_created_at and pr_id != query_pr_id and score > 0.0
+    ]
+
+    eligible.sort(key=lambda pair: (-pair[1], pair[0]))
+    return eligible[:top_k]
