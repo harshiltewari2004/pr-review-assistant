@@ -1,6 +1,6 @@
 import pytest
 
-from app.retrieval.signals import jaccard
+from app.retrieval.signals import jaccard, tokenize
 
 
 def test_jaccard_identical_sets():
@@ -20,3 +20,21 @@ def test_jaccard_empty_side_returns_zero_not_error():
     assert jaccard([], ["a.js"]) == 0.0
     assert jaccard(["a.js"], []) == 0.0
     assert jaccard([], []) == 0.0
+
+
+def test_tokenize_snake_case_keeps_whole_and_parts():
+    # 07 §4: the whole identifier AND its sub-tokens.
+    assert tokenize("jsonable_encoder") == ["jsonable_encoder", "jsonable", "encoder"]
+
+
+def test_tokenize_camel_case_splits_on_boundaries():
+    assert tokenize("formatSseEvent") == ["formatsseevent", "format", "sse", "event"]
+
+
+def test_tokenize_plain_word_emits_once():
+    # len(parts) > 1 guard: emitting both would double the term frequency.
+    assert tokenize("encoder") == ["encoder"]
+
+
+def test_tokenize_preserves_repeats_for_term_frequency():
+    assert tokenize("vector vector") == ["vector", "vector"]

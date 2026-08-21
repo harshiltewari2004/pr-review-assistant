@@ -9,6 +9,7 @@ app/,and eval/ can reach supply their own without app/ importing ingest/
 
 from __future__ import annotations
 
+import re
 from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -186,12 +187,13 @@ def jaccard(a: Sequence[str], b: Sequence[str]) -> float:
         return 0.0
     return len(set_a & set_b) / len(set_a | set_b)
 
+
 # 03 §4 step 4. `&&` is array-overlap: true iff the intersection is
 # non-empty. Uses idx_pr_files (GIN, 02 §4). The prefilter is lossless —
 # a PR it drops has an empty intersection, so J = 0.0 by definition.
 # Contrast VECTOR_TOP_K, where exclusion means "below the cutoff",
 # an unknown value. Jaccard itself is computed in Python (03 §6).
-FILE_CANDIDATES_SQL="""
+FILE_CANDIDATES_SQL = """
     SELECT p.id,p.files_changed
     FROM pull_requests p
     WHERE p.repo_id=$2
@@ -199,4 +201,43 @@ FILE_CANDIDATES_SQL="""
         AND p.created_at <$3
         AND p.id<>$4
         AND p.files_changed && $1::text[]
-""" 
+"""
+
+# 03 §7 tokenization. The spec's numbered list describes the OUTPUT, not
+# an execution order: lowercasing first would destroy the camelCase
+# boundaries step 3 needs, and treating `_` as non-alphanumeric would
+# destroy the whole identifier step 4 requires.
+#
+# _IDENTIFIER keeps `_` and case so both survive to the split.
+# _SUBTOKEN alternatives, in order:
+#   [A-Z]+(?=[A-Z][a-z])  acronym run before a capitalized word:
+#                         parseHTTPResponse -> HTTP, not HTTPR
+#   [A-Z]?[a-z]+          optional capital + lowercase run: Sse, format
+#   [A-Z]+                trailing all-caps run: parseURL -> URL
+#   \d+                   digit runs split off: p5Vector -> p5 ... see below
+
+_IDENTIFIER = re.compile(r"[A-Za-z0-9_]+")
+_SUBTOKEN = re.compile(r"[A-Z]+(?=[A-Z][a-z])|[A-Z]?[a-z]+|[A-Z]+|\d+")
+
+
+def tokenize(text: str) -> list[str]:
+    """Text ->BM25 terms. 03 §7.
+
+    Emits the whole identifier AND its sub-tokens:`jsonable_encoder`
+    yields all three of jsonable_encoder,jsonable,encoder. A PR whose
+    title says "encoder" then partially matches one that says
+    `jsonable_encoder`,while an exact reference to the full identifier
+    still scores highest.Losing either behavior loses real matches.
+
+    Returns a list, not a set:BM25 weighs by term frequency,so
+    repeated terms must stay repeated.
+    """
+    tokens: list[str] = []
+    for identifier in _IDENTIFIER.findall(text):
+        whole = identifier.lower()
+        tokens.append(whole)
+        parts = [p.lower() for p in _SUBTOKEN.findall(identifier)]
+        if len(parts) > 1:
+            tokens.extend(parts)
+
+    return tokens
