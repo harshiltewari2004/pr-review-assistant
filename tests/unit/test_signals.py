@@ -1,6 +1,6 @@
 import pytest
 
-from app.retrieval.signals import jaccard, tokenize
+from app.retrieval.signals import build_document, jaccard, tokenize
 
 
 def test_jaccard_identical_sets():
@@ -38,3 +38,14 @@ def test_tokenize_plain_word_emits_once():
 
 def test_tokenize_preserves_repeats_for_term_frequency():
     assert tokenize("vector vector") == ["vector", "vector"]
+
+
+def test_build_document_uses_basenames_not_paths():
+    doc = build_document("fix", None, ["src/webgl/p5.Shader.js"])
+    assert "src" not in doc
+    assert "webgl" not in doc
+    assert "shader" in doc
+
+
+def test_build_document_handles_none_body():
+    assert build_document("fix vector", None, []) == ["fix", "vector"]

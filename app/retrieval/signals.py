@@ -241,3 +241,23 @@ def tokenize(text: str) -> list[str]:
             tokens.extend(parts)
 
     return tokens
+
+
+def build_document(
+    title: str,
+    body: str | None,
+    files_changed: Sequence[str],
+) -> list[str]:
+    """One PR -> its BM25 term list.03 §7.
+
+    title+body+basenames of files_changed. Basenames, not full paths:
+    full paths would put src/core/webgl in nearly every document, which is
+    directory structure rather than content - and path-level similarity is
+    already the file-overlap signal's job (03 §6).
+
+    body is optional because Github permits an empty PR description;a
+    None here is ordinary,not an error.
+    """
+    parts = [title, body or ""]
+    parts.extend(path.rsplit("/", 1)[-1] for path in files_changed)
+    return tokenize("\n".join(parts))
