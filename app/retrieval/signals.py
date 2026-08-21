@@ -17,6 +17,7 @@ from datetime import datetime
 
 import asyncpg
 import numpy as np
+from rank_bm25 import BM25Okapi
 
 from app.retrieval.constants import EMBEDDING_DIM, MEAN_TOP_K, VECTOR_AGGREGATION, VECTOR_TOP_K
 
@@ -261,3 +262,61 @@ def build_document(
     parts = [title, body or ""]
     parts.extend(path.rsplit("/", 1)[-1] for path in files_changed)
     return tokenize("\n".join(parts))
+
+
+@dataclass(frozen=True, slots=True)
+class Bm25Index:
+    """A built BM25 index plus the metadata needed to score against it.
+
+    rank-bm25 returns scorse POSITIONALLY-get_scores() gives one float
+    per document in the order the corpus was constructed. pr_ids and
+    created_ats are parallel arrays into the same order; nothing else
+    recovers which score belongs to which PR.
+
+    Frozen because rebuilding is a batch operation (03 §7),not an
+    incremental one. A mutated index and a stale parallel array is a
+    silent wrong-answer bug.
+    """
+
+    bm25: BM25Okapi
+    pr_ids: list[int]
+    created_ats: list[datetime]
+
+
+# 03 §7 document construction. No temporal filter here — the index spans
+# the whole corpus and eligibility is applied at score time (D-P4-6).
+# ORDER BY p.id is not cosmetic: BM25Okapi scores POSITIONALLY, and the
+# harness must build a byte-identical index from the same snapshot on
+# every run. An unordered fetch makes that irreproducible.
+BM25_CORPUS_SQL = """
+SELECT p.id,p.title,p.body,p.files_changed,p.created_at
+FROM pull_requests p
+WHERE p.repo_id=$1
+    AND p.in_corpus
+ORDER BY p.id
+"""
+
+
+async def build_bm25_index(conn: asyncpg.Connection, repo_id: int) -> Bm25Index:
+    """Load the corpus and build the BM25 index.03 §7.
+
+    Built once - at service startup via lifespan , or once per harness run.
+    rank-bm25 has no on-disk index, so this is the only construction path
+    and newly indexed PRs require a full rebuild.
+
+    Raises on an empty corpus rather than returning the index that scores
+    everything zero: an empty result here means a wrong repo_id or an
+    unindexed database,and both should fail loudly at startup
+    """
+
+    rows = await conn.fetch(BM25_CORPUS_SQL, repo_id)
+    if not rows:
+        raise ValueError(f"no in-corpus PRs for repo_id={repo_id}")
+
+    corpus = [build_document(r["title"], r["body"], r["files_changed"]) for r in rows]
+
+    return Bm25Index(
+        bm25=BM25Okapi(corpus),
+        pr_ids=[r["id"] for r in rows],
+        created_ats=[r["created_at"] for r in rows],
+    )
