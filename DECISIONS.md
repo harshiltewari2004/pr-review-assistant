@@ -1053,3 +1053,207 @@ Consequence: 03 §5 joins the doc-revision batch. If Day 34 shows mean beating M
 
 ### D-P2-12 — still OPEN,
  evidence attached. #9027 has outcome = 'open'. 03 §10's reason templates and 05's --flag colour both branch on merged vs. closed-unmerged; an open PR is neither and has nothing to report about itself. 126 such candidates can reach the top 3. Hard requirement before Day 25 — an open PR in a pool is a judgment a labeler cannot make.
+
+ ### D-P4-3 — RESOLVED (2026-08-21)
+
+**Context.** 03 §4 step 4 says "take every PR with file overlap > 0
+(capped at 100)" but does not specify a cap ORDERING. SQL cannot
+`ORDER BY jaccard` because SQL does not compute the Jaccard.
+
+**Options.**
+1. Arbitrary SQL LIMIT with no ORDER BY — planner-dependent
+2. Fetch all `&&` matches, score in Python, sort descending, cap at 100
+3. Recency-ordered cap in SQL — cheap, no transfer waste
+
+**Decision.** Option 2.
+
+**Reasoning.** Options 1 and 3 can silently drop a PERFECT-overlap
+candidate, which directly contradicts 03 §4's stated rationale for the
+union: "a PR with perfect file overlap but weak embedding similarity must
+be able to enter the ranking." A cap that can drop the best-overlapping
+candidate defeats the reason the union exists. Option 1 is additionally
+non-deterministic across runs — the same reproducibility hazard as the
+open dict-insertion-order loop.
+
+**Measured (20 most recent in-corpus PRs, temporal filter and
+self-exclusion enforced).** Median 103 overlaps, max 1,835 (#9027, a
+74-file docs sweep), 18x spread. Cap binds on 12 of 20. Worst-case
+payload 247 kB; median ~103 rows is under 30 kB.
+
+**Trade-off accepted.** We transfer rows we discard. The vector signal's
+~920 ms fan-out dominates this by orders of magnitude.
+
+**Revisit if.** Corpus exceeds ~20k PRs, or payload exceeds ~2 MB.
+
+---
+
+### D-P4-4 — OPEN (2026-08-21, extended 2026-08-22)
+
+**Bulk and prose PRs distort exactly one signal each while carrying no
+semantic relation. Three instances, one per signal, all found by
+measurement rather than design.**
+
+| PR | Shape | Signal distorted |
+|---|---|---|
+| #9032 | workflow YAML, 7 files | vector — 0.9945 cosines on near-duplicate text |
+| #9027 | `docs(Vector):`, 74 files, +944/-237, labels={} | file overlap — 1,835 of 3,196 = 57% of corpus |
+| #7930 | `chore: enable eslint rules`, only 2 files, 3,428-token body | BM25 — length normalization |
+
+#7930 is NOT the bulk-file shape. Its length is entirely in the body.
+
+**Why they passed step 4b legitimately.** p5.js keeps its reference docs
+in JSDoc blocks INSIDE `src/**/*.js`, so a docs-only PR produces real
+source hunks. #9027 carries no labels, so no label rule could see it
+either. 07 §4 already asserts the inverse case (Documentation label +
+substantive .js change stays in corpus); this is the same rule cutting
+the other way.
+
+**Decide before Day 25:** corpus-filter exclusion, or documented
+limitation?
+
+**Also supplies the disqualification rule for the pending
+day18_aggregation cluster re-run:** file count far above the corpus
+median, or a `docs(` / workflow-path prefix.
+
+---
+
+### D-P4-2 — RESOLVED (2026-08-22)
+
+**Context.** 09 schedules pooling at Day 25 and normalize.py at Day 32,
+so the "hybrid" variant feeding the Day 25 pool would be 03 §8's naive
+unnormalized sum — the one the spec calls arithmetically meaningless,
+where BM25's unbounded scale silently dominates a 0.2 weight.
+
+**Why it cannot be deferred.** 01 §9 draws the pool from the top 6 of
+each of four variants, and NOTHING outside the pool is ever judged. If
+the hybrid variant is BM25-in-disguise, the pool comes from three
+distinct signals, not four. Any PR that only a properly normalized hybrid
+would surface never enters the pool, never gets a grade, and is counted
+as irrelevant when Day 36 scores the holdout. That is a hole in the
+ground truth, unrecoverable after labeling without redoing ~300
+judgments.
+
+**Decision.** Pull normalize.py forward from Day 32 to before Day 25.
+
+**Reasoning — and this was decided BLIND.** At Day 23 open the agreed
+plan was measure-then-decide: once BM25 existed, compute naive-hybrid
+top-6 against BM25-only top-6 across several queries and count the
+overlap. That was explicitly CONDITIONAL on BM25 finishing with time
+left. It did not. Per the condition agreed in advance, the decision
+falls to the default: a hole in the ground truth costs ~300 judgments,
+a slipped module costs a day.
+
+**Registered prediction, still unmeasured.** Naive-hybrid top-6 overlaps
+BM25-only top-6 by >=4 of 6 on most queries. Worth measuring after
+normalize.py lands, as a check on the reasoning rather than as an input
+to it.
+
+---
+
+### D-P4-5 — OPEN (2026-08-21, confirmed worse 2026-08-22)
+
+**Numeric tokenization. TWO problems with different fixes.**
+
+**(a) Mixed alphanumeric.** `p5` -> `p5`, `p`, `5`. Every PR in this
+corpus says p5 — titles, bodies, basenames (`p5.Vector.js`).
+Fix: drop `\d+` from _SUBTOKEN.
+  - `p5`: parts=['p'], len 1, guard suppresses -> only `p5` emitted ✅
+  - `9030`: parts=[], len 0, guard suppresses -> `9030` survives ✅
+  - Cost: `500ms` loses its `ms` sub-token. Marginal.
+
+**(b) Dotted numerics.** `2.3.2` in a title becomes three separate whole
+identifiers, and `2` is emitted TWICE, inflating its own term frequency.
+NOT fixed by (a). Needs a minimum-length rule on bare numerics — a
+threshold, therefore constants.py per "no magic numbers in logic." Must
+sit above version components (1-2 digits) and below issue numbers
+(4 digits).
+
+**TRAP.** `Resolves #9030` produces the bare token `9030`. Two PRs
+resolving the same issue is one of the most valuable signals BM25 can
+have, and no embedding will ever catch it. Any rule stripping bare
+numbers destroys it.
+
+**CONFIRMED WORSE (2026-08-22).** `p5`, `p`, and `5` are THREE OF THE
+THIRTEEN negative-IDF floored terms. The tokenizer does not merely add
+noise — it TRIPLES the corpus's worst-behaved term, each copy drawing
+1.765 IDF, each multiplied by query term frequency.
+
+**DO NOT fix after Day 25.** Changing BM25 scores post-pooling means the
+pool was drawn from a different system than the one evaluated. Decide
+WITH the pooling variants.
+
+---
+
+### D-P4-6 — RESOLVED (2026-08-21)
+
+**Context.** Vector and Jaccard enforce `created_at < query.created_at`
+in SQL. BM25 has no SQL — BM25Okapi is an in-memory list of token lists,
+and get_scores() returns a score for every document including ones
+created after the query. The library knows nothing about dates.
+
+**Options.**
+- **A.** One index over the full corpus; filter results before the cut.
+- **B.** Rebuild the index per query over eligible documents only.
+- **C.** Precomputed snapshot indexes at intervals.
+
+All three produce the SAME candidate set. They differ in what IDF sees.
+
+**The subtlety.** IDF is a CORPUS statistic. Under A it is computed over
+documents that post-date the query, so a term appearing in 3 PRs before
+the query date and 200 after is scored as df=203 — under-weighted
+because of documents that did not exist yet. That is leakage of a second
+kind.
+
+**The two leaks are not equally severe.**
+
+| | Candidate-set leak (invariant 1) | IDF leak |
+|---|---|---|
+| What leaks | WHICH PRs can be returned | HOW legitimate PRs are weighted |
+| Effect | A future PR can count as a correct answer — inflates the number directly | Legitimate candidates are mis-ordered |
+| Recoverable | No — invalidates every published number | Bounded, measurable, disclosable |
+
+**Decision.** A.
+
+**Reasoning.** B is exactly correct on IDF but makes the harness compute
+BM25 differently from the deployed service, violating invariant 13 — and
+the distortion it corrects DOES NOT EXIST in production, where every
+indexed PR predates an incoming one. The IDF leak is an artifact of
+evaluating on a frozen historical corpus, not a property of the system.
+Fixing it only in the harness makes the harness measure a system that was
+never shipped; fixing it in both makes production pay hundreds of ms per
+request, on a scale-to-zero instance, for a problem production does not
+have. C rejected on 06 §9's memory budget.
+
+**Bounded.** IDF is logarithmic, and the same distortion applies to every
+candidate within a query, so it shifts magnitudes far more than it
+reorders. Reordering requires two candidates matching on DIFFERENT terms
+whose IDFs are distorted by different amounts — real, but second-order.
+
+**Measured.** 20 most recent in-corpus PRs: max 0.59% of the corpus
+post-dates any of them (19 of 3,196).
+
+⚠️ **THAT IS A LOWER BOUND.** 01 §8 requires stratification across >=6
+subsystems, so the Day 25 query set will be SELECTED for cluster
+coverage, not taken off the top. A framebuffer PR from six months back
+could be 9%.
+
+🎯 **RE-RUN the contamination query against the Day 25 SELECTED query set
+and publish THAT number, not this one. Reopen if it exceeds ~5%.**
+
+---
+
+### D-P2-12 — OPEN, evidence attached (2026-08-21, third instance 2026-08-22)
+
+LIST_STATE="all" admits 126 open PRs. 03 §10's reason templates and 05's
+--flag colour BOTH branch on merged vs closed-unmerged. **An open PR is
+neither, and has nothing to report about itself** — while the outcome is
+the highest-value signal the product produces.
+
+**Three instances, and the pattern is not coincidence:** #9027 (open,
+1,835 file overlaps, highest fan-out in the sample), #7930 (open, 3,428
+tokens, longest document in the corpus). Open PRs are disproportionately
+the ones that sprawled and stalled — which makes them disproportionately
+the outliers in every signal.
+
+**HARD REQUIREMENT before Day 25.** An open PR in a pool is a judgment a
+labeler cannot make.

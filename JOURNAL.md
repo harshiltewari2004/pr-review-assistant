@@ -863,3 +863,169 @@ Open: day17_vector_query.py applies OFFSET 1600 to both ASC and DESC, so the rec
 Predicted && fan-out 300–800 from #9032; got 44. Wrong sample, not a wrong model — #9032's workflow-YAML files are edited a few times a year. The same property that made its cosines unrepresentative made its fan-out unrepresentative, in the opposite direction. A single query PR cannot estimate per-query cost; fan-out is a property of the files touched.
 Distribution over 20 recent queries: median 103, max 1,835, 18× spread. Cap at 100 binds on 12/20. #9014 and #9002 both touch exactly 1 file — 103 vs 16 overlaps. A single-file PR's fan-out varies 6× by which file it touches. That is 03 §6's documented bias, measured. README number.
 ORDER BY overlaps is a syntax error — OVERLAPS is a reserved SQL temporal operator. Same class as the existing zsh: bare SQL is not a command loop. Avoid overlaps, end, user, order, limit as identifiers anywhere that reaches SQL.
+
+## 2026-08-21 — Day 22. Jaccard.
+
+- **ruff check is not ruff format.** They are separate commands and the
+  commit gate has only ever run the linter. Caught when hand-typed
+  `jaccard()` passed `ruff check` with no spaces around `:`, `,`, `=`,
+  `->`, `&`, `|`. `len(set_a&set_b)/len(set_a|set_b)` — unspaced bitwise
+  operators next to a division is exactly the shape where a misread
+  produces a bug that reads fine. Full-tree format was a 3-file diff, so
+  the tree was in better shape than the missing command suggested.
+  Both commands in the gate from now on.
+
+- **Predicted `&&` fan-out 300-800 from a single query (#9032); got 44.**
+  Wrong SAMPLE, not a wrong model. #9032's workflow-YAML files are edited
+  a few times a year. The same property that made its cosines
+  unrepresentative (0.9945) made its fan-out unrepresentative in the
+  OPPOSITE direction. **Fan-out is a property of the files touched, not
+  of the corpus. One query PR cannot estimate per-query cost.**
+
+- **Then predicted median 150-400 / max >1,200; got median 103 / max
+  1,835.** Distribution more skewed than modelled at BOTH ends.
+  Cap binds on 12 of 20.
+
+- **#9014 and #9002 both touch exactly 1 file: 103 vs 16 overlaps.**
+  A single-file PR's fan-out varies 6x by WHICH file it touches. That is
+  03 §6's documented bias, measured. README number.
+
+- **`ORDER BY overlaps` is a syntax error.** OVERLAPS is a reserved SQL
+  temporal operator; Postgres accepts it as an alias with explicit AS but
+  parses a bare one in ORDER BY as the operator. Avoid overlaps, end,
+  user, order, limit as identifiers anywhere reaching SQL. Same class as
+  `zsh: bare SQL is not a command`.
+
+- **Teeth-check, jaccard(), `&` -> `|`. Predicted 2 of 4 catch. EXACT.**
+  identical passes (intersection == union on equal sets), disjoint fails,
+  partial fails, empty passes (guard short-circuits before the operator).
+  The two passes are STRUCTURAL, not weak assertions: no equal-set input
+  can distinguish `&` from `|`, and no guarded input reaches the operator.
+  Same class as pick_keeper()'s documented one-member limitation.
+  Scope caveat: proves sensitivity to THIS break only. `&` -> `-` would
+  produce identical failures; `|` -> `^` in the denominator would fail
+  partial but pass disjoint.
+
+- `echo ${#VAR}` passes on a shell variable whether or not it is
+  exported. `set -a` does export, so the gate is fine — but a check
+  reconstructing a code path is a different code path. The check that
+  matches what Python does is
+  `python -c "import os; print(len(os.environ['VAR']))"`.
+
+- Fatigue: 2 one-token errors (`raising:an`, a trailing comma in SQL).
+  Session closed per 06 §13, resumed after a 5-hour break.
+
+
+## 2026-08-22 — Day 23. BM25, complete.
+
+- **03 §7's numbered tokenization list is an OUTPUT description, not an
+  execution order — and following it literally is impossible.**
+  Lowercasing at step 1 destroys the camelCase boundaries step 3 needs.
+  Treating `_` as non-alphanumeric at step 2 destroys the whole
+  identifier step 4 requires. Working order: extract preserving case
+  and `_` -> emit lowered whole -> split while case is intact -> emit
+  lowered parts IF the split produced more than one. Doc-revision batch.
+
+- **A regex without a quantifier is legal Python and a valid pattern.**
+  `_IDENTIFIER` shipped first without `+`, then without `_`.
+  `ruff format` reformatted it. `ruff check` passed it. **Regex patterns
+  are STRINGS — the linter, the formatter and the type checker all treat
+  them as opaque text. The only thing that inspects a regex is running
+  it.** New instance of the reference-location defect class: correctly
+  written, syntactically legal, semantically wrong, invisible to tooling.
+  Caught in 4 seconds by printing output on 3 inputs (invariant 20), on
+  the module 07 §2 flags as the silent one.
+
+- **`def build_bm_25_index` vs the spec's `build_bm25_index`.** This one
+  would have been SILENT had the call site been typed to match the
+  definition — a legal function whose name disagrees with the spec and
+  every other reference. Mitigation already on record:
+  `grep -rn SYMBOL .` after moving any name.
+
+- **`score > 0.0` guard: discussed, agreed, never reached the file.**
+  53 tests passed and 53 was CORRECT — no test existed that could see
+  the difference. **Sibling of the reference-location class: the
+  decision-never-landed class.** Both are legal code, both invisible to
+  tooling, both caught only by an assertion that encodes the intent.
+
+- **Document lengths, 3,196 docs.** mean 146.2, median 102, p90 303,
+  max 3,428 (#7930), min 4 (#1148), zero-token docs 0.
+  Predicted mean ~200 / median ~150 — both ~30% high. Carried an
+  intuition from a 3-document sample that happened to contain a 432.
+  **Third instance this week of small samples pulling the estimate
+  toward whatever landed in them.**
+  Mean sits 43% above median. **avgdl is DEFINED as mean document length
+  — BM25's length correction is a sum-normalizing term, not a
+  description of a typical document. This is the median/mean lesson
+  appearing where MEAN is correct.** With b=0.75, more than half the
+  corpus receives a length BONUS and the top decile absorbs the penalty.
+
+- **BM25 index build: 7,558 ms for 3,196 docs. Predicted 400-900 ms —
+  8-19x, the worst gap of the session.** 03 §7 claims "at ~1,000 PRs
+  this takes well under a second"; scaling linearly predicts ~3 s, so
+  the corpus-size ratio does not explain it. Either BM25Okapi
+  construction is superlinear in practice or the claim was never
+  measured. Push-back protocol: measured, does not hold, reopened.
+  40.9 MB tracemalloc peak — Python allocations only, no numpy buffers,
+  so a floor. 7.6 s is also a floor: macOS ARM, localhost, warm Postgres.
+
+- **rank-bm25's negative-IDF floor is `epsilon * average_idf`, NOT zero.
+  Confirmed from source after I asserted otherwise from memory.**
+  `_calc_idf`: idf = log(N - df + 0.5) - log(df + 0.5); negatives are
+  replaced by eps. Measured: average_idf 7.0609, epsilon 0.25,
+  **floor 1.765**. A df=1 term scores 7.66, so **the floor is 23% of a
+  maximally rare term** — handed to words BM25's own formula says carry
+  no information. The floor is set by how rare the AVERAGE vocabulary
+  term is (19,442 terms, mostly rare), which is why it lands so high.
+  **13 floored: the to of and in is for a this js p5 p 5.**
+
+- **This broke 5 of 6 new tests before it was understood.** A 2-document
+  fixture where the query term appears in both gives df = N, so
+  log(N - df + 0.5) = log(0.5), negative — and with every IDF negative,
+  average_idf is negative, so the floor is negative too. Everything
+  scored <= 0 and the `score > 0.0` guard emptied the result.
+  **The guard was correct; the fixtures were degenerate.** Fixed by
+  padding to 20+ unrelated documents, which is the regime BM25 is
+  defined for.
+
+- **get_scores iterates the RAW query list** (`for q in query:`), and
+  tokenize preserves repeats. **Query term frequency MULTIPLIES the
+  score.** A query document saying p5 six times contributes 6 x 1.765
+  before length normalization. Confirmed from source.
+
+- **`score > 0.0` drops only 3 of 3,196** on a real query (#9031).
+  Nearly a no-op. Correct, free, provably lossless — but the top-50 cut
+  does all the work, not the guard.
+
+- **Teeth-check, bm25_signal(), cut-then-filter. Predicted 1 of 6.
+  EXACT** — returned 1 candidate where 3 were available.
+  **Five reasonable-looking assertions were blind to the one bug in this
+  function that produces no traceback**, because each used a corpus
+  smaller than its cut, making the cut a no-op. The one that caught it
+  was built so the INELIGIBLE documents scored HIGHEST — which required
+  knowing BM25's length normalization favours short documents.
+  **A suite does not catch a bug class by having many tests. It catches
+  it by having the one designed against the mechanism.**
+
+- **Corpus cases worth keeping for the write-up.**
+  **#1148**: title `Fixes #1145`, no body, 1 file -> 4 tokens, one of
+  which is the issue number. At b=0.75 against avgdl=146 that document
+  gets ~1.8x the score of an average-length one for the same single term
+  match. Not a bug — length normalization doing its job — but a terse PR
+  sharing an issue number can outrank a substantive one.
+  **URLs are ~28% of #9032's tokens.** One GitHub permalink becomes 12
+  tokens. IDF kills their relevance contribution, but BM25 divides by
+  |D|/avgdl — so a PR cross-referencing three issues is penalized on
+  LENGTH for tokens carrying no information. **The penalty tracks the
+  author's linking habits, not the content.** `4586205003` appears in
+  exactly one document: maximal IDF, zero matching power, pure
+  length-divisor weight.
+  **The p5.js PR template appears verbatim in bodies.** Same mechanism:
+  a PR that kept the checklist is penalized relative to one that deleted
+  it.
+
+- Fatigue: 4 one-token errors across the evening, all in linter-blind
+  positions — an import list, two regex strings, a function name.
+  Comprehension was fine throughout; the p5 fragmentation and the 03 §7
+  build-time gap were both diagnosed from output immediately. Typing
+  degraded, understanding did not.
