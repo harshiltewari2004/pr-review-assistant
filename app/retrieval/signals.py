@@ -210,6 +210,44 @@ FILE_CANDIDATES_SQL = """
         AND p.files_changed && $1::text[]
 """
 
+
+async def file_overlap_signal(
+    conn: asyncpg.Connection,
+    query_files: Sequence[str],
+    repo_id: int,
+    query_created_at: datetime,
+    query_pr_id: int,
+) -> dict[int, float]:
+    """One query PR ->{pr_id:file_overlap_score_raw},UNCAPPED.03 §4 step 4, 03 §6.
+
+    Return every temporally-eligible PR sharing atleast one file.No sort,
+    no cap:03 §4 step 4's cap at 100 is an ADMISSION device and belongs in
+    scoring.py.Capping here would discard real scores for candidates that
+    enter C via another signal , and scoring.py would have to invent 0.0 for
+    them-a fabricated minimum that rescales the whole normalization (03 §8).
+
+    A PR absent from this dict has an empty intersection , so J=0.0 by
+    definition and scoring.py may fill it safely. Contrast VECTOR_TOP_K,
+    where absence means "below a cutoff"-an unknown not a zero.
+    """
+
+    if query_created_at.tzinfo is None:
+        raise ValueError("query_created_at must be timezone-aware  (02 §2)")
+
+    if not query_files:
+        raise ValueError(f"query PR{query_pr_id}has no files_changed")
+
+    rows = await conn.fetch(
+        FILE_CANDIDATES_SQL,
+        list(query_files),
+        repo_id,
+        query_created_at,
+        query_pr_id,
+    )
+
+    return {r["id"]: jaccard(query_files, r["files_changed"]) for r in rows}
+
+
 # 03 §7 tokenization. The spec's numbered list describes the OUTPUT, not
 # an execution order: lowercasing first would destroy the camelCase
 # boundaries step 3 needs, and treating `_` as non-alphanumeric would

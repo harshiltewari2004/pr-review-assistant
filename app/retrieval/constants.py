@@ -30,6 +30,11 @@ EMBED_BATCH_SIZE = 32
 # Not the display count: 09's "top 10" for Day 17 is a parameter, not this.
 VECTOR_TOP_K = 50
 
+# 03 §4 step 4 — the file-overlap signal's contribution to the candidate set.
+# Higher than VECTOR_TOP_K/BM25_TOP_K because `&&` fan-out is unbounded:
+# median 103, max 1,835 (Day 22); 148 on #8994 (Day 24). Binds on 12 of 20.
+FILE_OVERLAP_TOP_K = 100
+
 # Chunk → PR aggregation across the query PR's chunks (03 §5).
 # "max" is v1; "mean_top_k" is the flagged alternative. Both are compared on
 # the tune split at Day 34 — do not pick a winner here.
