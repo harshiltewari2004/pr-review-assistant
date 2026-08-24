@@ -1257,3 +1257,157 @@ the outliers in every signal.
 
 **HARD REQUIREMENT before Day 25.** An open PR in a pool is a judgment a
 labeler cannot make.
+
+### D-P2-12 — Open PRs in the corpus — RESOLVED (keep)
+
+**Context.** 105 in-corpus PRs (not 126 — see JOURNAL, ledger drift) carry
+`outcome = 'open'`. Flagged as blocking Phase 5 on the grounds that `03 §10`
+templates and `05` frontend colouring lacked a branch for them.
+
+**Both stated concerns turned out not to exist.** `03 §10`'s outcome suffix
+appends only for `closed_unmerged`; an open PR falls through rules 1–5 with no
+suffix. `05`'s `OutcomeBadge` already specifies three states, and `--flag` is
+scoped to the closed-unmerged badge alone.
+
+**The real question** — should an open PR be a *result* — is unanswered by
+`01`, which never mentions open PRs.
+
+**Decision: keep.** `01 §3`'s third valid completion of the relevance test is
+"…duplicate work that B already did, or already attempted and abandoned." An
+open PR is work in progress: the purest case of that completion in the corpus,
+and `00 §2` names duplicated review effort as the first problem the tool solves.
+
+**Trade-offs accepted.**
+1. An open PR's diff is mutable. Merged/closed PRs are frozen artifacts.
+   Invariant 13 protects the numbers (frozen snapshot); it does not protect the
+   judgments — `01 §11` verification assumes a third party can re-read the
+   cited diff.
+2. `01 §2` describes the corpus as "approximately 4,175 **closed** PRs." The
+   105 sit outside the document's own characterisation. **`01 §2` needs
+   amending**; added to the doc-revision batch.
+
+**Consequence.** Measured span: 2021-03-25 → 2026-08-02. "Open" conflates
+active work with five-year-abandoned PRs that were never closed. The second
+group is semantically closer to `closed_unmerged` but renders with a plain
+badge and no "worth checking why" hint. Candidate for a `03 §10` template
+variant. Logged, not built.
+
+---
+
+### D-P4-7 — Nomination and scoring are separate operations — NEW
+
+**Context.** `03 §4` step 5 unions three signals; step 6 says "compute all
+three raw signals for every member of C." Step 6 was not in any prior plan.
+
+**The problem.** The intuitive union keeps whatever score each candidate
+arrived with. That leaves candidates with no score for signals whose top-K
+they missed — so vector normalises over vector's top 50, BM25 over its top 50,
+file overlap over its top 100. Three populations summed as if one: invariant 2
+violated. Filling `0.0` is worse: it is not "no similarity," it is "below the
+cutoff," and it becomes the min-max floor, rescaling every other candidate.
+
+**Decision.** Each signal has two paths. **Nominate** (top-K, builds C) and
+**score** (complete over C). Signals return uncapped; `scoring.py` owns every
+cap. `FILE_OVERLAP_TOP_K` lives in `scoring.py`'s import list, not
+`signals.py`.
+
+**Cost is asymmetric.** BM25 free (`get_scores()` already computes all 3,196;
+the cut discards work). File overlap free (`&&` returns all non-zero overlaps;
+absence is a true 0.0). Vector needs a second query — the SQL `LIMIT` genuinely
+discards data.
+
+**Generalisable.** A top-K cut is an admission device. Reusing admission output
+as score output leaks an arbitrary cutoff into a published number — same class
+as a temporal leak.
+
+**Validated Day 24 on #8994:** `file_overlap_signal()` returned 148 candidates
+against a cap of 100. Those 48 have real scores available for backfill.
+
+---
+
+### D-P4-8 — `VECTOR_TOP_K` is used at two layers — NEW, needs disambiguation
+
+`signals.py` uses it as the per-chunk SQL `LIMIT` (50 per query chunk; Day 18:
+14 chunks → 138 distinct after aggregation). `03 §4` step 2 specifies a cut of
+50 on the **aggregated** score. These are different cuts.
+
+The doc's own estimate settles which is meant: 50 + 50 + 100 with overlap gives
+"typically 100–150 PRs"; 138 + 50 + 100 gives ~250. Vector contributes 50 at
+the aggregate layer.
+
+**Decision.** `scoring.py` applies a second top-50 over the aggregate.
+`constants.py`'s comment describes the layer it is *not* used at in
+`signals.py` and must be corrected. Doc-revision batch.
+
+---
+
+### D-P4-4 — Bulk/prose PR distortion — AMENDED
+
+Three amendments, all from Day 24 measurement.
+
+**1. The ratio rule has no teeth.** Rule reads "file count far above the corpus
+median." **Measured median = 1** (p90 = 7, max = 274, n = 3,196). Two files is
+100% above the median; seven is 600%. Needs an absolute threshold or a
+percentile, in `constants.py`, not prose. p90 = 7 is the natural candidate.
+
+**2. The prefix rule misses documentation PRs.** `docs(` / workflow-path
+prefixes assume conventional commits. p5.js does not use them consistently:
+`#8895`, `#8892`, `#8816` are documentation PRs titled in plain English and
+pass the filter.
+
+**3. Sprawl is a category, not three instances.** Top 10 by file count:
+`#2622` (274, lint manual test examples), `#2621` (273), `#1126` (179, file
+paths), `#3922` (123, DOM cleanup), `#8063` (105, eslint), `#2336` (102,
+prettier), `#6922` (100, Swedish translation). **Seven of ten are mechanical
+sweeps** — file count driven by an automated operation, not by the scope of an
+idea. `#9027` at 74 does not reach the top 10; the ledger's figure was correct.
+
+**Asymmetry worth keeping.** As a *candidate*, sprawl is self-limiting:
+`J = 1/(3+274−1) = 0.0036`. Jaccard's denominator punishes the breadth that
+caused the match. As a *query*, it is not: `#9027`'s 74 files overlap 57% of
+the corpus. **Cosine has no such defence** — MAX-over-chunks gives a 274-file
+PR 274 chances to produce one high hunk and keeps the best. Same outlier,
+opposite behaviour in two signals: a measured argument for hybrid retrieval.
+
+**Open item.** `#6922` (Swedish translation, 100 files, `in_corpus = TRUE`) —
+`07 §4` permits translation PRs touching `translations/dev.js` or
+`translations/index.js`. Confirm which files, don't assume.
+
+---
+
+### D-P6-1 — Ranking ties — EXTENDED to two sites
+
+Logged as ranking ties. There is a second, load-bearing site: **the cap.**
+
+Jaccard's value space is small rationals. Measured on #8994: 25 candidates at
+exactly 0.6667, 48 at exactly 0.3333 — **49% of 148 candidates on two values.**
+With `&&` fan-out at median 103 and a cap of 100, the boundary lands inside a
+tie cluster on a typical query.
+
+**Nondeterministic admission is worse than nondeterministic ranking.** A
+ranking tie shuffles two displayed results. An admission tie changes C, which
+changes what all three signals normalise over, which changes every score for
+every candidate — breaking invariant 13's premise that the harness rebuilds the
+same thing from the same snapshot. `FILE_CANDIDATES_SQL` has no `ORDER BY`, so
+physical row order could shift after a `VACUUM FULL`.
+
+**Resolution.** `_nominate()` sorts on `(-score, pr_id)`. Load-bearing, not
+cosmetic. Documented in the function.
+
+---
+
+### D-P5-4 — `outcome` is snapshot-time, not query-time — OPEN
+
+`outcome` is read at ingest (August 2026). The temporal filter guards
+`created_at`; nothing guards `merged_at`. A PR created in March and merged in
+July is eligible for a May query and displays as **merged** — a fact the May
+reviewer could not have known.
+
+**Not a retrieval leak.** `outcome` is not a signal input; published numbers are
+safe.
+
+**It does reach labelling.** `01 §4` rule 4 grades "a superseded or abandoned
+attempt" — an outcome-dependent grade informed by snapshot-date knowledge.
+
+**Scope: the whole corpus**, not the 105 open PRs. Must resolve before
+labelling; does not block pooling.

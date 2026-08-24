@@ -179,6 +179,38 @@ async def vector_signal_for_pr(
     return aggregate_chunk_scores(dict(per_candidate), strategy)
 
 
+# 03 §4 step 6. Scores a KNOWN set of candidates; contrast VECTOR_SIGNAL_SQL,
+# which discovers an unknown one.
+#
+# No ORDER BY, no LIMIT. A top-K cut is an admission device (03 §4 steps 2-4)
+# and admission is already decided by the time this runs. Reusing a cut here
+# would reintroduce the cutoff bias this query exists to remove.
+#
+# c.pr_id = ANY($5) filters BEFORE the distance computation and is served by
+# idx_chunks_pr (02 §5). Invariant 11 means there is no ANN index, so
+# VECTOR_SIGNAL_SQL must compute all ~41,899 distances and discard all but 50
+# after sorting. This touches ~150 PRs' chunks instead. It should be FASTER
+# than the nominate query, not slower — if it is slower, the ANY is not being
+# used as an index condition and EXPLAIN is the next step.
+#
+# The temporal filter and id <> $4 are retained even though every id in $5 is
+# already eligible by construction: invariant 1 is enforced in code at every
+# site that can produce a candidate score, not assumed from a caller.
+
+VECTOR_BACKFILL_SQL = """
+SELECT c.pr_id,
+    MAX(1-(c.embedding<=>$1))AS vector_score_raw
+FROM chunks c
+JOIN pull_requests p on p.id = c.pr_id
+WHERE c.repo_id=$2
+    AND p.in_corpus
+    AND p.created_at <$3
+    AND p.id<>$4
+    AND c.pr_id = ANY($5::bigint[])
+GROUP BY c.pr_id
+"""
+
+
 def jaccard(a: Sequence[str], b: Sequence[str]) -> float:
     """Jaccard similarity between two file-path sets.
 
@@ -366,6 +398,36 @@ async def build_bm25_index(conn: asyncpg.Connection, repo_id: int) -> Bm25Index:
     )
 
 
+def bm25_scores(
+    index: Bm25Index,
+    query_tokens: list[str],
+    query_created_at: datetime,
+    query_pr_id: int,
+) -> dict[int, float]:
+    """Every temporarily-eligible PRs raw BM25 score. 03 §4 step 6. UNCUT.
+
+    No top_k and no `score>0.0`guard.Both are dimension devices and both
+    destroy values invariant 2 needs:a candidate that entered C via vector
+    while scoring 0.0 on BM25 has a True zero - it shares no terms - and a
+    candidate below rank 50 has real positive score.Only the first is a
+    zero , and only the cut can tell them apart , so the cut belongs upstream.
+
+    get_scores() already computes all ~3,196 scores.the cut in bm25_signal()
+    discards work that is already done;this returns it instead.
+    """
+
+    if query_created_at.tzinfo is None:
+        raise ValueError("query created_at must be timezone-aware (02 §2)")
+
+    scores = index.bm25.get_scores(query_tokens)
+
+    return {
+        pr_id: float(score)
+        for pr_id, created_at, score in zip(index.pr_ids, index.created_ats, scores, strict=True)
+        if created_at < query_created_at and pr_id != query_pr_id
+    }
+
+
 def bm25_signal(
     index: Bm25Index,
     query_tokens: list[str],
@@ -391,13 +453,72 @@ def bm25_signal(
     if query_created_at.tzinfo is None:
         raise ValueError("query created_at must be timezone-aware (02 §2)")
 
-    scores = index.bm25.get_scores(query_tokens)
-
     eligible = [
-        (pr_id, float(score))
-        for pr_id, created_at, score in zip(index.pr_ids, index.created_ats, scores, strict=True)
-        if created_at < query_created_at and pr_id != query_pr_id and score > 0.0
+        (pr_id, score)
+        for pr_id, score in bm25_scores(index, query_tokens, query_created_at, query_pr_id).items()
+        if score > 0.0
     ]
-
     eligible.sort(key=lambda pair: (-pair[1], pair[0]))
     return eligible[:top_k]
+
+
+async def vector_backfill_for_pr(
+    conn: asyncpg.Connection,
+    query_embeddings: list[np.ndarray],
+    repo_id: int,
+    query_created_at: datetime,
+    query_pr_id: int,
+    candidate_ids: list[int],
+    strategy: str = VECTOR_AGGREGATION,
+) -> dict[int, VectorAggregate]:
+    """Vector scores for a KNOWN candidate set. 03 §4 step 6.
+
+    vector_signal_pr() answers "which PR's should enter C";this answers
+    "what is vector's value for every member of C".Invariant 2 requires the
+    second, and top-k cut cannot supply it: a candidate that entered C via
+    BM25 while ranking 63rd on vector has a real score of ~0.6,not 0.0
+    and fillng 0.0 would become the min-max floor and rescale every other
+    candidate (03 §8).
+
+    Returns EVERY id in candidate_ids. D-P2-3 marks zero-hunk PRs out of
+    corpus, so every in-corpus PR has atleast one hunk and a missing id is
+    an anomally, not a normal case - it raise rather than leaving a hole.
+
+    Duplicates vector_signal_for_pr()'s loop deliberately.Merging them behind a flag
+    would put nomination and scoring in one function ,which is
+    the exact conflation this pair exists to separate.
+    """
+
+    if not query_embeddings:
+        raise ValueError(f"query PR{query_pr_id} has no chunk embeddings")
+
+    if not candidate_ids:
+        raise ValueError("candidate_ids is empty;build_candidate_set produced no C")
+
+    if query_created_at.tzinfo is None:
+        raise ValueError("query_created_at must be timezone aware (02 §2)")
+
+    per_candidate: dict[int, list[float]] = defaultdict(list)
+    for embedding in query_embeddings:
+        if embedding.shape != (EMBEDDING_DIM,):
+            raise ValueError(f"expected one{EMBEDDING_DIM}--dim vector,got shape {embedding.shape}")
+
+        rows = await conn.fetch(
+            VECTOR_BACKFILL_SQL,
+            embedding,
+            repo_id,
+            query_created_at,
+            query_pr_id,
+            candidate_ids,
+        )
+
+        for row in rows:
+            per_candidate[row["pr_id"]].append(row["vector_score_raw"])
+
+    missing = set(candidate_ids) - set(per_candidate)
+    if missing:
+        raise ValueError(
+            f"backfill returned no rows for {len(missing)}candidates:{sorted(missing)[:5]}"
+        )
+
+    return aggregate_chunk_scores(dict(per_candidate), strategy)

@@ -1029,3 +1029,119 @@ ORDER BY overlaps is a syntax error — OVERLAPS is a reserved SQL temporal oper
   Comprehension was fine throughout; the p5 fragmentation and the 03 §7
   build-time gap were both diagnosed from output immediately. Typing
   degraded, understanding did not.
+
+  ## Day 24 — Session A (2026-08-22)
+
+**Reference-location defect, 3rd instance.** `FILE_CANDIDATES_SQL` and
+`jaccard()` both existed, both documented, both correct — and nothing called
+them. No production path for the file-overlap signal existed. Handoff recorded
+Jaccard as "fully implemented" on Day 21; true of the pieces, false of the
+signal. `grep -rn SYMBOL .` found it in four seconds. **Mitigation works when
+run.**
+
+**`ruff check` passes an import of a symbol that does not exist.** `scoring.py`
+imported `FILE_OVERLAP_TOP_K` before it was added to `constants.py`. F401 is a
+purely local check — "bound at module scope, never referenced here." It never
+opens the imported module. Three consecutive clean `ruff check` runs; caught by
+`pytest` collection. **Same axis all day: absence and redundancy are invisible;
+only wrongness that executes gets caught.**
+
+**Corpus file-count distribution measured for the first time.** median 1,
+p90 7, max 274, n 3,196.
+
+**⚠️ Jaccard partially degenerates on this corpus.** Half of all PRs touch
+exactly one file. For a 1-file query, the intersection is always exactly 1, so
+`J = 1/|B|` — the numerator is a constant and Jaccard stops measuring *which*
+files are shared, measuring only how focused the candidate is. `03 §6`
+documents the hot-file bias; it does not document this. **New named limitation.**
+
+**PREDICTION (mine, unregistered — process failure, logged as such).** Distinct
+Jaccard values for #8994: "well under 30." **ACTUAL 48.** Wrong by 60%. Cause:
+reasoned from the median-of-1 degeneracy after deliberately picking a 3-file PR
+to escape it. `|A|=3` gives three possible numerators. **Same error class as
+the last three misses — reasoning from a distribution that did not apply to the
+sample.**
+
+**Fan-out for #8994: 148** (Day 22 median 103). Histogram: 0.3333 ×48,
+0.6667 ×25, 0.2500 ×10, 0.1429 ×6, then a long thin tail.
+
+**25-way tie for first place.** All at exactly 0.6667 = 2/3, all `files=2`
+source+test pairs. Under `03 §8` all 25 normalise to 1.0 and receive an
+identical 0.30 of final score, with `RESULTS_RETURNED = 3`. **File overlap
+cannot rank this query — it can only nominate.** Which three surface is decided
+entirely by vector and BM25. This is a stronger argument for hybrid retrieval
+than `03 §4`'s hypothetical, and it is measured.
+
+**Uncapped-return decision validated on first run.** 148 fetched, 100 admitted;
+48 retain real scores for backfill instead of a fabricated 0.0.
+
+**Hypothesis withdrawn.** Predicted only #8994 touches
+`src/math/patch-vector.js` → "a file created by the query PR is pure
+denominator." **Actual: 6 PRs.** Query omitted `in_corpus` and `created_at`, so
+it counted PRs the signal never sees. Why no candidate reached k=3 is
+**unexamined**. Reasoning was sound; the premise was invented.
+
+**Teeth-check, `build_candidate_set()`, union → intersection: 1 of 2 caught.**
+`test_union_...` fired. `test_query_pr_never_retrieves_itself` cannot fail —
+`42` is in no input dict, so the assertion is unfalsifiable by construction. It
+documents the invariant; it does not defend it. **Known-weak, recorded as such.**
+
+**Fatigue.** Two-error threshold passed by mid-session. Prose garbles through
+piece 1–3, then a 5-space indent on `scoring.py:28` — first crossing from
+linter-blind prose into the parser. Comprehension stayed intact all day;
+typing degraded monotonically.
+
+---
+
+## Day 24 — Session B (2026-08-25, +2 days, emergency)
+
+**Ledger drift.** Handoff and `DECISIONS.md` recorded **126** open PRs.
+Measured: **105**. Unexplained. Caught before it reached the `01 §2` amendment.
+
+**PREDICTION (mine) miss.** Predicted open PRs cluster in the last two months
+→ eligible for almost no queries → D-P2-12 nearly moot. **Actual span
+2021-03-25 → 2026-08-02.** The miss was informative: "open" conflates active
+work with long-abandoned-but-never-closed, and the second group is eligible for
+five years of queries.
+
+**`normalize.py` written and tested.** 5 tests, 61 → 66. Teeth-check on three
+mutations, **1 of 5 caught each, no overlap, none uncaught** — clean separation,
+unlike `test_scoring.py`.
+
+- `values = list(raw.values())` → `test_extra_keys` only. Output `0.005, 0.01`
+  instead of `0.5, 1.0`: **one outlier at 1000.0 compressed the real range into
+  the bottom 1% of the scale.** With `&&` fan-out reaching 1,835, this would be
+  most queries, silently.
+- `hi == lo → 1.0` → `test_degenerate` only.
+- delete the `missing` block → `test_missing_candidate` only.
+
+**⚠️ Mutation C failed with `KeyError: 3`, not `ValueError`.** Deleting the
+entire `missing` block still refuses to run — `raw[pr_id]` raises on the first
+absent key regardless. **The block is not what makes invariant 2 enforceable;
+it is what makes it legible.** `KeyError: 3` says nothing; "missing 1 of 3
+candidates: [3] — 03 §4 step 6 backfill did not run" says which stage failed.
+The test caught the mutation for a reason other than the one it documents —
+noteworthy because that usually goes the other way.
+
+**Float trap avoided by checking rather than assuming.** `0.50+0.30+0.20 == 1.0`
+exactly, as do 0.45/0.35/0.20, 0.55/0.25/0.20, 0.40/0.35/0.25. But
+`0.7+0.2+0.1 == 0.9999999999999999`. An `== 1.0` guard on invariant 5 would
+pass today and **fail at Day 34 after weights are locked**, as a crash that
+looks like a scoring bug. Used `math.isclose(..., abs_tol=1e-9)`.
+
+**66 tests passed while `scoring.py` carried seven F821s.** `rank_candidates()`
+was valid Python with an undefined name and no caller. **A green test count
+describes the code that runs, not the code that doesn't.** Invariant 20's
+"never infer correctness from the absence of an error" applies to test counts.
+
+**Naming slip, the safe kind.** `def rank_candidates(candidate: ...)` with six
+body references to `candidates`. Unresolvable → ruff sees it instantly.
+Contrast Day 21's `values = max(scores)` — bound and referenced consistently,
+wrong anyway, invisible. **A name wrong everywhere is safe; a name wrong
+nowhere but meaning the wrong thing is the dangerous one.**
+
+**⚠️ `--fix` refused three times.** F401s on `BM25_TOP_K`, `FILE_OVERLAP_TOP_K`,
+`VECTOR_TOP_K`, then `min_max_normalize`. All were pending-use, not dead.
+**A linter reports the current state; it has no model of the intended one.**
+Mirror image of the `FILE_CANDIDATES_SQL` defect — same tool, opposite error,
+neither carrying information about correctness.

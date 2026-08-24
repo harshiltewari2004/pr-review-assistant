@@ -6,9 +6,19 @@ module is the only place that knows about all three at once.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
-from app.retrieval.constants import BM25_TOP_K, FILE_OVERLAP_TOP_K, VECTOR_TOP_K
+from app.retrieval.constants import (
+    BM25_TOP_K,
+    FILE_OVERLAP_TOP_K,
+    RESULTS_RETURNED,
+    VECTOR_TOP_K,
+    WEIGHT_BM25,
+    WEIGHT_FILE_OVERLAP,
+    WEIGHT_VECTOR,
+)
+from app.retrieval.normalize import min_max_normalize
 
 
 @dataclass(frozen=True, slots=True)
@@ -82,3 +92,40 @@ def build_candidate_set(
         file_overlap_raw=file_overlap_raw,
         bm25_raw=bm25_raw,
     )
+
+
+def rank_candidates(
+    candidates: CandidateSet,
+    top_n: int = RESULTS_RETURNED,
+) -> list[tuple[int, float]]:
+    """Candidate set -> rank(pr_id,final_score). 03 §8, §9.
+
+    Pure:no I/O, no async.All three signals are normalized here,over
+    candidates.id over nowhere else, so invariant 2 holds by construction
+    rather than by the caller remembering to.
+
+    Tie-break on pr_id ascending,matching_nominate().Different concern
+    though:this one. is DP-6-1's presentation order,not membership.
+
+    Returns top_n,best first.
+    """
+
+    total = WEIGHT_VECTOR + WEIGHT_FILE_OVERLAP + WEIGHT_BM25
+    if not math.isclose(total, 1.0, abs_tol=1e-9):
+        raise ValueError(f"weights must sum to 1.0 (invariant 5),got{total}")
+
+    vector_norm = min_max_normalize(candidates.vector_raw, candidates.ids)
+    file_norm = min_max_normalize(candidates.file_overlap_raw, candidates.ids)
+    bm25_norm = min_max_normalize(candidates.bm25_raw, candidates.ids)
+
+    final = {
+        pr_id: (
+            WEIGHT_VECTOR * vector_norm[pr_id]
+            + WEIGHT_FILE_OVERLAP * file_norm[pr_id]
+            + WEIGHT_BM25 * bm25_norm[pr_id]
+        )
+        for pr_id in candidates.ids
+    }
+
+    ranked = sorted(final.items(), key=lambda kv: (-kv[1], kv[0]))
+    return ranked[:top_n]
