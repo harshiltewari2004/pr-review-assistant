@@ -129,3 +129,20 @@ def test_bm25_signal_requires_timezone_aware_datetime():
     idx = _index([(1, 1, "vector")])
     with pytest.raises(ValueError):
         bm25_signal(idx, tokenize("vector"), datetime(2026, 1, 5), query_pr_id=99)
+
+
+def test_tokenize_drops_single_char_subtokens():
+    # D-P4-5: 'p' and '5' are floored near-universal terms; the whole
+    # identifier survives, the one-character fragments do not.
+    assert tokenize("p5Vector") == ["p5vector", "vector"]
+
+
+def test_tokenize_keeps_letter_run_before_digit():
+    # The gate is computed on UNFILTERED parts — filtering first would
+    # collapse len(parts) to 1 and lose 'webgl' entirely.
+    assert tokenize("webgl2") == ["webgl2", "webgl"]
+
+
+def test_tokenize_keeps_bare_digit_run_as_whole_identifier():
+    # #1148: 'Fixes #1145' — a maximally discriminative issue reference.
+    assert tokenize("Fixes #1145") == ["fixes", "1145"]

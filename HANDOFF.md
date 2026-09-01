@@ -1,7 +1,7 @@
 # Handoff — 2026-08-25, Day 24 close (Sessions A + B)
 
 ## State
-- HEAD: `<new hash>` on `main`, pushed, clean tree
+- HEAD: `ce51b93` on `main`, pushed, clean tree
 - Tests: **66** passing (`pytest tests/unit -q`)
 - `ruff check` clean, `ruff format` clean
 - Local Docker Postgres; Neon untouched this session

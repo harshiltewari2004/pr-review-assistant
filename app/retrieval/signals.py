@@ -291,7 +291,9 @@ async def file_overlap_signal(
 #                         parseHTTPResponse -> HTTP, not HTTPR
 #   [A-Z]?[a-z]+          optional capital + lowercase run: Sse, format
 #   [A-Z]+                trailing all-caps run: parseURL -> URL
-#   \d+                   digit runs split off: p5Vector -> p5 ... see below
+#   \d+                   digit runs split off: p5Vector -> p,5,vector.
+#                         The one-character parts are then dropped in
+#                         tokenize() - D-P4-5.
 
 _IDENTIFIER = re.compile(r"[A-Za-z0-9_]+")
 _SUBTOKEN = re.compile(r"[A-Z]+(?=[A-Z][a-z])|[A-Z]?[a-z]+|[A-Z]+|\d+")
@@ -306,6 +308,14 @@ def tokenize(text: str) -> list[str]:
     `jsonable_encoder`,while an exact reference to the full identifier
     still scores highest.Losing either behavior loses real matches.
 
+    Single character subtokens are dropped (D-P4-5).The digit-run
+    alternative splits p5Vector into p/5/vector, manufacturing two
+    near-universal terms that rank-bm25 floors at epsilon*average_idf
+    = 1.7635, not zero.The filter runs AFTER the len(parts)>1 gate:
+    filtering first collapses p5Vector's parts to ['vector'],fails the
+    gate and looses `vector` entirely.
+
+
     Returns a list, not a set:BM25 weighs by term frequency,so
     repeated terms must stay repeated.
     """
@@ -315,7 +325,7 @@ def tokenize(text: str) -> list[str]:
         tokens.append(whole)
         parts = [p.lower() for p in _SUBTOKEN.findall(identifier)]
         if len(parts) > 1:
-            tokens.extend(parts)
+            tokens.extend(p for p in parts if len(p) > 1)
 
     return tokens
 
