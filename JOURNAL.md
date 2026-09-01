@@ -1182,3 +1182,15 @@ so the 1.765 floor rises with it. Floored set 13 -> 11: `p` and `5` gone,
 `p5` survives as a whole identifier and stays near-universal.
 Falsifier: if `average_idf` moves more than ~2%, the
 "2 of 19,442 terms" reasoning is wrong and something larger changed.
+
+**Day 25 — BM25 re-measurement after D-P4-5. Prediction held 4 of 4.**
+avgdl 146.2 -> 135.66 (-7.2%), median 102 -> 94, p90 303 -> 282,
+max 3,428 -> 3,418, min 4 unchanged, zero-token docs 0.
+average_idf 7.0609 -> 7.0636 (+0.04%), floor 1.765 -> 1.766.
+Floored 13 -> 11: `p` and `5` gone, `p5` retained. Max idf 7.66 unchanged.
+**Vocabulary 19,442 -> 19,441 — one term, not two.** One of `p`/`5` still
+occurs as a standalone whole identifier, which the filter never touches
+by design. Trade-off line in D-P4-5 confirmed by measurement.
+⚠️ "average_idf rises slightly" was under-specified — direction-only
+claims are nearly unfalsifiable. The +/-2% falsifier did the work.
+Apply to the Day-34 weight-tuning predictions.
