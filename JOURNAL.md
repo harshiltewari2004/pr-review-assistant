@@ -1145,3 +1145,40 @@ nowhere but meaning the wrong thing is the dangerous one.**
 **A linter reports the current state; it has no model of the intended one.**
 Mirror image of the `FILE_CANDIDATES_SQL` defect — same tool, opposite error,
 neither carrying information about correctness.
+
+**Day 25 — `rank_bm25.get_scores` verified from source (flagged unverified
+Day 23).** Confirmed: `for q in query:` iterates the raw list. No `k3`
+query-saturation term exists in the library. Document TF saturates, query
+TF does not. The Day-23 flag was correct. D-P4-9 opened.
+
+**Day 25 — D-P4-5 severity re-derived, and my first framing today was
+wrong.** I asserted that floored near-universal terms contribute ~zero and
+that the harm was document-length inflation. The Day-23 measurement already
+refuted this: the floor is `epsilon * average_idf = 1.765`, not zero. The
+first-order harm is term-weight manufacture; length inflation is
+second-order. Caught by searching the record instead of reasoning from
+scratch. **Second time this project that a stated fact about `rank-bm25`
+was wrong from memory** (Day 23: "floors negative IDF at zero").
+
+**Day 25 — teeth check, D-P4-5 tokenizer. PREDICTION EXACT, 3 of 3.**
+Break: `len(p) > 1` -> `len(p) > 0`. Predicted 2 of 3 tokenizer tests fail,
+`keeps_bare_digit_run` blind, 0 of 6 BM25 golden assertions fire, 67
+passing. All four held. Diffs were the intended diffs
+(`['p5vector','p','5','vector']`, `['webgl2','webgl','2']`), so the tests
+fail for the reason written, not incidentally. Contrast Day 18, where the
+same ritual predicted 1 and got 2.
+
+**Day 25 — the six BM25 golden assertions were structurally blind to this
+defect.** 0 of 6 fired under the break because no fixture contains a
+digit-bearing identifier. They "survived" the Day-24 `bm25_scores` refactor
+without ever being able to see tokenizer output shape. Green results reveal
+nothing about what a test cannot see — third instance of complementary
+blindness (Day 18, Day 23, Day 25).
+
+**Day 25 — prediction, BM25 re-measurement after D-P4-5.**
+`avgdl` 146.2 -> 130–138. `average_idf` 7.06 -> rises slightly (two
+near-universal terms removed from a 19,442-term vocabulary lifts the mean),
+so the 1.765 floor rises with it. Floored set 13 -> 11: `p` and `5` gone,
+`p5` survives as a whole identifier and stays near-universal.
+Falsifier: if `average_idf` moves more than ~2%, the
+"2 of 19,442 terms" reasoning is wrong and something larger changed.

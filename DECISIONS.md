@@ -1411,3 +1411,53 @@ attempt" — an outcome-dependent grade informed by snapshot-date knowledge.
 
 **Scope: the whole corpus**, not the 105 open PRs. Must resolve before
 labelling; does not block pooling.
+
+### D-P4-5 — BM25 sub-token fragmentation. RESOLVED (Day 25).
+
+**Context:** `_SUBTOKEN`'s digit-run alternative splits `p5Vector` into
+`p`/`5`/`vector`, manufacturing two near-universal terms where one would
+have existed. Day 23 measured all three among the 13 terms floored at
+`epsilon * average_idf = 1.765` — 23% of a maximally-rare term, not zero.
+Day 25 confirmed from `rank_bm25.py` source that `get_scores` iterates
+`for q in query:` over the raw list with no query-TF saturation term
+(no `k3`), so query-side repeats amplify linearly and unboundedly.
+
+**Options:** (a) drop `\d+` from `_SUBTOKEN`; (b) require sub-tokens of
+length >= 2; (c) keep `\d+`, filter length-1 parts AFTER the
+`len(parts) > 1` gate.
+
+**Decision:** (c). (a) rejected — the gate stops firing on `webgl2`,
+losing `webgl`, a real corpus term. (b) rejected and STRUCK from the
+ledger — filtering before the gate collapses `p5Vector`'s parts to
+`['vector']`, fails the gate, and loses `vector` entirely. Actively
+worse than the status quo.
+
+**Trade-off:** single-character sub-tokens are unrecoverable. Whole
+identifiers are unaffected, so nothing single-character that was ever
+discriminative is lost — `Fixes #1145` still emits `1145`.
+
+**Consequence:** every BM25 score in the corpus changes. `avgdl`,
+`average_idf`, and the floored-term set must be re-measured. Fixed
+inside the Day-25 deadline set at Day 23: changing scores after pooling
+means the pool was drawn from a different system than the one evaluated
+(`01 §9`).
+
+**Follow-on:** D-P4-9 opened.
+
+### D-P4-9 — query-side term-frequency amplification. OPEN.
+
+**Context:** `rank-bm25` implements no `k3` query-saturation term.
+Document TF is damped by `k1`; query TF is linear. `tokenize()` preserves
+repeats deliberately (correct for document TF) and the same function
+builds the query, so a term appearing 8 times in a query document is
+summed 8 times.
+
+**Options:** (a) leave as-is; (b) dedupe query tokens; (c) add `k3`
+saturation over the library.
+
+**Not decided.** D-P4-5 removed two of the three offending tokens, so
+the remaining amplification is smaller than measured on Day 23. Any fix
+changes scores and carries the same pooling deadline.
+
+**Trigger:** measure against the tune split at Day 34, alongside the
+`max` vs `mean_top_k` comparison. Do not decide at the wire.
