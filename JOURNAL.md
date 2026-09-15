@@ -1194,3 +1194,22 @@ by design. Trade-off line in D-P4-5 confirmed by measurement.
 ⚠️ "average_idf rises slightly" was under-specified — direction-only
 claims are nearly unfalsifiable. The +/-2% falsifier did the work.
 Apply to the Day-34 weight-tuning predictions.
+
+**Day 25 — step 9 corrected my own Day-18 framing.** The 38% censoring
+statistic describes NOMINATION, not scoring. `VECTOR_BACKFILL_SQL` has no
+LIMIT, so every candidate returns a row for every query embedding and
+`chunk_hits` is constant in the scoring path. Consequence: the Day-34
+`max` vs `mean_top_k` comparison must run on backfill output, not nomination
+output — otherwise it compares strategies over a censored sample and reaches
+a conclusion that does not hold in the system.
+
+**Day 25 — third instance of complementary blindness.** 0 of 6 BM25 golden
+assertions fired under the tokenizer break; no fixture contains a
+digit-bearing identifier. The same six were 5-of-6 blind to the Day-23
+ordering bug. They "survived" the Day-24 refactor without ever being able to
+see tokenizer output shape.
+
+**Day 25 — the ritual found more than the code did.** Steps 6–9 produced
+D-P4-10 and D-P4-11, neither visible while writing the module. D-P4-11 is
+behaviour-changing. Argues against ever deferring these to an end-of-project
+pass.

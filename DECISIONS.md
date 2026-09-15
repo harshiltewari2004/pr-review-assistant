@@ -1461,3 +1461,31 @@ changes scores and carries the same pooling deadline.
 
 **Trigger:** measure against the tune split at Day 34, alongside the
 `max` vs `mean_top_k` comparison. Do not decide at the wire.
+
+### D-P4-10 — vector backfill issues one query per query chunk. OPEN.
+
+**Context:** `vector_backfill_for_pr` loops over `query_embeddings`, one
+`conn.fetch` per chunk. A 40-chunk PR issues 40 sequential round trips.
+`vector_signal_for_pr` has the same shape and measures ~920 ms.
+
+**Options:** (a) leave; (b) `unnest($1::vector[]) CROSS JOIN chunks`, one query.
+
+**Not decided.** (b) aggregates over pairs rather than per-query-chunk
+maxima. Identical for `strategy="max"` (associative); NOT identical for
+`mean_top_k`, so it would foreclose D-P3-3's Day-34 comparison.
+
+**Trigger:** measure backfill latency on the first orchestrator run. The
+`ANY(candidate_ids)` filter means each query touches ~150 PRs' chunks, not
+41,899 — it may already be fast enough. Do not optimise an unmeasured number.
+
+### D-P4-11 — REASON_HIGH_* thresholds do not name their scale. OPEN.
+
+**Context:** `REASON_HIGH_VECTOR = 0.70` and `REASON_HIGH_BM25 = 0.70` do not
+state whether they threshold raw, normalized, or final scores — an invariant 6
+violation in the constant names. Material because a query with one degenerate
+signal has a maximum achievable `final_score` of 1.0 minus that signal's
+weight: 0.70 with file overlap flat. If these threshold `final_score`, such a
+query can never fire a 0.70 template.
+
+**Trigger:** resolve before `reasons.py`. Behaviour-changing, so it belongs in
+the doc-revision batch ahead of the three wording items.

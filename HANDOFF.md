@@ -1,12 +1,11 @@
-# Handoff — 2026-08-25, Day 24 close (Sessions A + B)
+# Handoff — 2026-09-01, Day 25 close
 
 ## State
-- HEAD: `ce51b93` on `main`, pushed, clean tree
-- Tests: **66** passing (`pytest tests/unit -q`)
+- HEAD: <hash> on `main`, pushed, clean tree
+- Tests: **69** passing (`pytest tests/unit -q`)
 - `ruff check` clean, `ruff format` clean
-- Local Docker Postgres; Neon untouched this session
-- `09` Days 1–23 COMPLETE. Day 24 complete. **26 calendar days used —
-  three days behind, not one.**
+- Day 25 complete. Seven-day hospital gap between Day 24 and Day 25 —
+  **track position in SESSIONS, not calendar days.** 26 sessions remain.
 
 ## Gate before writing code
 ```bash
@@ -14,84 +13,59 @@ cd ~/pr-review-assistant && source .venv/bin/activate
 set -a && source .env && set +a
 docker compose up -d
 git status --porcelain          # expect empty
-git log --oneline -1            # expect <new hash>
-ruff check                      # expect clean
-pytest tests/unit -q            # expect 66
+ruff check && ruff format --check .
+pytest tests/unit -q            # expect 69
 python -c "import os; print(len(os.environ['DATABASE_URL_DIRECT']))"   # expect 140
 ```
-Use the Python check, not `echo ${#VAR}` — echo passes on an unexported shell
-variable. `psql` needs `DATABASE_URL_LOCAL`; repo_id = **2**.
+`ruff format --check` added — Day 25 found drift the old gate missed.
+`psql` needs `DATABASE_URL_LOCAL`; repo_id = **2**.
 
-## ⚠️ Invariant 2 is violated in running code
-Every piece to close it exists. Nothing calls them in sequence.
-`build_candidate_set()` is nomination-only: the three dicts have divergent key
-sets. **The orchestrator is the fix and it is the first thing next session.**
+## ⚠️ Invariant 2 still violated in running code
+Unchanged from Day 24. Every piece exists; nothing calls them in sequence.
 
-## Built this session
-`signals.py`
-- `file_overlap_signal()` — uncapped by design (D-P4-7). Run once on #8994:
-  148 candidates, all J > 0.0. Closes the reference-location gap.
-- `vector_backfill_for_pr()` + `VECTOR_BACKFILL_SQL` — `ANY($5::bigint[])`,
-  no ORDER BY, no LIMIT. **Never executed.**
-- `bm25_scores()` — uncut, no `> 0.0` guard. `bm25_signal()` refactored to a
-  thin cut over it; invariant 1 now enforced once per signal. Six golden
-  assertions survived.
-
-`scoring.py`
-- `CandidateSet`, `_nominate()` with `(-score, pr_id)`, `build_candidate_set()`
-- `rank_candidates()` — pure; normalises all three over `candidates.ids`,
-  weighted sum, top 3. **Never executed.**
-
-`normalize.py`
-- `min_max_normalize(raw, candidate_ids)` — `candidate_ids` explicit, not
-  inferred from `raw.keys()`. Extra keys in `raw` ignored; missing keys raise.
-
-`constants.py` — `FILE_OVERLAP_TOP_K = 100`
-`tests/` — `test_scoring.py` (2), `test_normalize.py` (5)
-`scripts/day24_file_overlap.py` — spike
-
-## 🎯 NEXT SESSION — fixed order
-
-1. **Doc 12 ritual — `signals.py`** (3 days lagged), then **`normalize.py`**.
-   Answer-and-reasoning form, not the quiz in `12 §3` steps 10–12. **Two hours
-   allocated. Do this first.**
+## 🎯 NEXT SESSION — fixed order, no substitutions
+1. **`test_retrieval.py`.** `07 §4`'s temporal filter requirement is
+   HALF-MET and `tests/integration/` is empty. `07 §6` allows exactly two
+   integration files; this is one. **Day-24 deadline, missed, still owed.**
 2. **The orchestrator.** Async, in `scoring.py`. Three signals → union →
-   three backfills → `rank_candidates()`. First run will raise
-   `"backfill did not run"` until wired correctly — **that raise is correct.**
-   Register a `|C|` prediction in `JOURNAL.md` before running.
-   `scoring.py`'s own Doc 12 ritual comes due after this.
-3. **`test_retrieval.py`.** `07 §4`'s temporal filter requirement is
-   **HALF-MET.** The union property is proven in `test_scoring.py`; the
-   end-to-end property — no result post-dates the query, over the fixture
-   corpus — has no test and `tests/integration/` is empty. **Do not record
-   the Day-24 deadline as met.** `07 §6` allows exactly two integration
-   files; this is one of them.
+   three backfills → `rank_candidates()`. Register a `|C|` prediction in
+   `JOURNAL.md` first. The `"backfill did not run"` raise is correct.
+   Measure backfill latency on the first run — that resolves D-P4-10.
+3. Combined Doc 12 ritual: `normalize.py` + `scoring.py`.
+
+**No ritual before item 1.** Day 25 was a full ritual day; a second one
+would make the ritual avoidance rather than review.
+
+## Day 25 output
+- D-P4-5 RESOLVED inside its deadline. `tokenize()` drops length-1
+  sub-tokens after the gate. avgdl 146.2 → 135.66, vocab 19,442 → 19,441,
+  floored 13 → 11 (`p5` retained). Prediction held 4 of 4.
+- `rank-bm25` verified from source: no `k3` query saturation. D-P4-9.
+- Doc 12 ritual COMPLETE for `signals.py`, all 12 steps. Backlog cleared.
+- New: D-P4-9, D-P4-10, D-P4-11, D-M-1.
 
 ## Owed, not blocking
 - `#6922` Swedish translation — confirm which files, `07 §4`
-- `patch-vector.js` — 6 PRs touch it, none reached k=3, unexamined
+- `patch-vector.js` — 6 PRs touch it, none reached k=3
 - Ledger drift: open PRs 126 → 105, cause unknown
-- `_validate_embedding()` — shape check now duplicated in `vector_signal()`
-  and `vector_backfill_for_pr()`
-- `test_query_pr_never_retrieves_itself` is unfalsifiable as written
-- D-P4-5 tokenizer — **"DO NOT fix after Day 25"**, still unfixed
+- `_validate_embedding()` — shape check duplicated in two functions
+- `test_query_pr_never_retrieves_itself` unfalsifiable as written
 - D-P5-2 anchors, D-P5-3 dual-branch port pairs
+- Own-words summary of `signals.py` into `logs/` (D-M-1 mitigation)
 
-## Doc-revision batch (one pass, not piecemeal)
-- `01 §2` "approximately 4,175 **closed** PRs" — 105 open PRs are in corpus
-- `constants.py` `VECTOR_TOP_K` comment — D-P4-8, two layers
-- `CANDIDATE_TOP_N` — names a concept the design does not have; check
-  `git log -S CANDIDATE_TOP_N` then delete
-- `HF_SPACE_URL` in `.env` and `.env.example` — dead since Day 1
-- D-P4-4 threshold — absolute or percentile, in `constants.py`
-- `vector_signal_for_pr()` docstring — "~350 ms (Day 17)", superseded twice,
-  now ~920 ms
-- Docstring garbles: `MEMEBERSHIP`, `memberships list`,
-  **`Union but intersection`** (asserts the opposite of invariant 3),
-  `teh`, `evvery`, `atleast`, `on` vs `ON` in `VECTOR_BACKFILL_SQL`
+## Doc-revision batch
+- **D-P4-11 first — it changes behaviour, the rest are wording**
+- `01 §2` "approximately 4,175 **closed** PRs" — 105 open PRs in corpus
+- `CANDIDATE_TOP_N` — unused; `git log -S` then delete
+- `HF_SPACE_URL` — dead since Day 1
+- `vector_signal_for_pr()` docstring "~350 ms (Day 17)" → ~920 ms
+- **New rule: keep the *why* in docstrings, move *numbers* to JOURNAL.md
+  with a date.** Reasoning is stable; measurements rot.
+- Garbles: `temporarily-eligible`, `scorse`, `anomally`, `fillng`,
+  `vector_signal_pr()`, `atleast` ×2, `Union but intersection`
+  (asserts the opposite of invariant 3), `on` vs `ON`
 
 ## Fatigue note
-Threshold passed mid-Session A; errors ran prose → indentation → naming across
-both sessions. **Comprehension never degraded** — the median-of-1 finding, the
-25-way tie, and the teeth-check reading all came from correct output analysis.
-Typing did. Two type-by-hand modules in one session is over budget.
+Long session, no code-transcription errors. The one hand-typed change was
+one line, verified against six expected outputs before commit. Reading and
+reasoning after a hospital week was the right allocation.
