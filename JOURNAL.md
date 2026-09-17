@@ -1213,3 +1213,16 @@ see tokenizer output shape.
 D-P4-10 and D-P4-11, neither visible while writing the module. D-P4-11 is
 behaviour-changing. Argues against ever deferring these to an end-of-project
 pass.
+
+2026-09-18 (Day 26) — Temporal filter tests landed. Predictions held:
+72 passed / 1 skipped, unit 69.
+
+Three one-token transcription errors in one block: BM250kapi (zero for O),
+a missing trailing comma, and timezone.utc surviving three fix passes.
+Fatigue rule invoked; teeth check deferred rather than breaking
+VECTOR_SIGNAL_SQL after midnight.
+
+Lesson: a SyntaxError's reported line is where the parser gave up, not
+where the fault is. Missing comma on 174 reported at 175.
+
+Unrun: the three deliberate breaks. Nothing here has been seen red.

@@ -1489,3 +1489,28 @@ query can never fire a 0.70 template.
 
 **Trigger:** resolve before `reasons.py`. Behaviour-changing, so it belongs in
 the doc-revision batch ahead of the three wording items.
+
+### D-P4-12 — RESOLVED (2026-09-18)
+Temporal filter test placement. 07 §4 requires the assertion; the code
+enforces it at two layers — SQL (VECTOR_SIGNAL_SQL, FILE_CANDIDATES_SQL)
+and Python (bm25_scores()'s comprehension over index.created_ats).
+
+Options: (a) one integration file covering all three signals; (b) split by
+enforcement layer. Chose (b). (a) pays a database round-trip to exercise a
+list comprehension, and a DB-backed pass would be ambiguous about whether
+the fixture or the filter did the excluding.
+
+Consequence: tests/integration/test_retrieval.py covers vector + file
+overlap + the union; tests/unit/test_signals.py covers BM25. Trade-off is
+that invariant 1's coverage now lives in two files — noted in both
+docstrings so a future reader finds the other half.
+
+Also resolved here: test_query_pr_never_retrieves_itself deleted from
+test_scoring.py. build_candidate_set() takes no query_pr_id and contains
+no temporal comparison; the test asserted 42 was absent from a set built
+without 42 and could not fail under any code change.
+
+07 §6's three structural assertions (exactly 3 results, all three
+normalized scores, non-empty reason) land as a @pytest.mark.skip with a
+stated reason. They need rank_candidates() and reasons.py (blocked on
+D-P4-11). 09 §5's hard deadline is the temporal filter, which is met.

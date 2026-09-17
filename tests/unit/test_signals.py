@@ -1,9 +1,16 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from rank_bm25 import BM25Okapi
 
-from app.retrieval.signals import Bm25Index, bm25_signal, build_document, jaccard, tokenize
+from app.retrieval.signals import (
+    Bm25Index,
+    bm25_scores,
+    bm25_signal,
+    build_document,
+    jaccard,
+    tokenize,
+)
 
 
 def test_jaccard_identical_sets():
@@ -146,3 +153,40 @@ def test_tokenize_keeps_letter_run_before_digit():
 def test_tokenize_keeps_bare_digit_run_as_whole_identifier():
     # #1148: 'Fixes #1145' — a maximally discriminative issue reference.
     assert tokenize("Fixes #1145") == ["fixes", "1145"]
+
+
+def test_bm25_scores_excludes_non_past_candidates():
+    """Invariant 1, BM25's enforcement site -07§4, temporal filter.
+
+    BM25 enforces the filter in python, not SQL: a comprehension over
+    index.created_ats inside bm25_scores(). So this is a unit test. Paying a
+    database round -trip to check a list comprehension would test the fixture,
+    not the filter.
+
+    All four documents are identical,so score cannot be what separates them.
+    Only the comprehension can , `equal` catches a `<=` typo, `after` catches a
+    missing clause, and `query` catches a missing `pr_id!=query_pr_id`.
+
+    Asserting on MEMBERSHIP, not on scores, and that only works because Day 24
+    removed the `score >0.0` guard. With the guard, a zero-scoring candidate
+    would vanish and pass would be ambiguous between "temporal filter held "
+    and "score guard fired",
+    """
+
+    query_time = datetime(2024, 6, 1, 12, 0, 0, tzinfo=UTC)
+    tokens = ["vector", "lerp", "webgl"]
+
+    index = Bm25Index(
+        bm25=BM25Okapi([tokens, tokens, tokens, tokens]),
+        pr_ids=[100, 101, 102, 103],
+        created_ats=[
+            query_time,
+            query_time - timedelta(days=1),
+            query_time,
+            query_time + timedelta(days=1),
+        ],
+    )
+
+    scores = bm25_scores(index, tokens, query_time, query_pr_id=100)
+
+    assert set(scores) == {101}
