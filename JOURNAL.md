@@ -1226,3 +1226,10 @@ Lesson: a SyntaxError's reported line is where the parser gave up, not
 where the fault is. Missing comma on 174 reported at 175.
 
 Unrun: the three deliberate breaks. Nothing here has been seen red.
+
+## Day 27 — teeth check, temporal filter tests (predicted with Claude)
+| Break | Predicted | Actual | Failing tests |
+| 1 vector `<`→`<=` L54 | 2 (vector + candidate-set) | | |
+| 2 file `(p.id<>$4 OR TRUE)` L241 | 0 — strict < already excludes query PR | | |
+| 3 bm25 `<`→`<=` L437 | 1 (bm25_scores test) | | |
+Note: deleting L241 outright would crash on param count — false positive.
