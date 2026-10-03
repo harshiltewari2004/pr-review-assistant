@@ -1514,3 +1514,20 @@ without 42 and could not fail under any code change.
 normalized scores, non-empty reason) land as a @pytest.mark.skip with a
 stated reason. They need rank_candidates() and reasons.py (blocked on
 D-P4-11). 09 §5's hard deadline is the temporal filter, which is met.
+
+## D-P4-13 — Vector backfill covers ALL of C, not only gaps (Day 27, RESOLVED)
+Context: vector_signal_for_pr() scores a PR only from chunks that made a
+query chunk's top-K list (censored); vector_backfill_for_pr() scores all
+chunks (uncensored).
+Options: (a) backfill only ids missing from nomination; (b) backfill all of C.
+Decision: (b). Nomination decides membership; backfill decides score.
+Reasoning: (a) mixes two computations inside one min-max — invariant 2's
+intent broken with nothing raising.
+Trade-off: re-scores ~50 PRs already scored. Measured cost: 136 ms (#8994).
+Also: signals run sequentially on one connection (asyncpg: one query at a
+time per connection); pooling deferred to D-P3-2.
+
+## D-P4-10 — Backfill latency (Day 27, RESOLVED locally)
+Measured #8994: backfill 135.6 ms of 897.2 ms total, |C| = 143, local Docker.
+Decision: no change. Reopen trigger: Neon/Cloud Run measurement in Phase 7,
+where per-round-trip latency dominates.
