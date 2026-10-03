@@ -1233,3 +1233,10 @@ Unrun: the three deliberate breaks. Nothing here has been seen red.
 | 2 file `(p.id<>$4 OR TRUE)` L241 | 0 — strict < already excludes query PR | | |
 | 3 bm25 `<`→`<=` L437 | 1 (bm25_scores test) | | |
 Note: deleting L241 outright would crash on param count — false positive.
+
+Day 27: teeth check 3/3 held (2/0/1). Test docstrings over-claimed
+`query` catching the id clause — false while < is strict. Zero-chunk
+in-corpus PRs: 0 (raise kept). Gotchas: ingest.db.connect is an
+@asynccontextmanager (async with, not await); pgvector decodes to
+pgvector.Vector, not ndarray (.to_numpy()). First orchestrator run #8994:
+|C|=143, V∩F=32 V∩B=12 F∩B=25 all=12, backfill 135.6 ms / 897.2 total.
