@@ -1547,3 +1547,54 @@ Trade-off: a later finish. Risk: an open-ended window drifts, so the
 end date stays fixed.
 Consequence: Day-34 MAX vs mean-of-top-3 experiment stays; it must be
 redesigned for the uncensored backfill (D-P4-13).
+
+## D-P5-5 — Query strata are path-based; reopens D-P5-2 stratification (Day 28)
+Context: D-P5-2 assumed Area:* labels make stratification machine-readable.
+Measured: 215/3,196 in-corpus PRs (6.7%) carry any Area:* label; labels
+effectively stop ~end 2023; FES and p5.strands have no Area:* label; only
+6 labels have >=11 single-label PRs.
+Options: (a) Area:* labels; (b) path strata from changed files; (c) label
+else path (two rules, inconsistent).
+Decision: (b). 7 strata — fes (src/core/friendly_errors/, src/friendly_errors/),
+core (rest of src/core/), webgl (src/webgl/, src/3d/), strands, image, math,
+typography (src/typography/, src/type/). Layout history verified against
+p5.js tags (typography->type in 2.0; 3d->webgl by v0.5.10; FES moved out of
+core in 2.x). Multi-dir PRs -> stratum with most code chunks; ties excluded.
+Trade-off: dirs without a stratum (dom, io, events, color, ...) are
+candidates but never queries — stated limitation.
+
+## D-P5-6 — Query eligibility: code changes only; rules frozen (Day 28)
+Context: first dry run drew ~7/20 docs/comment PRs (p5.js keeps reference
+docs as JSDoc inside src/). 01 §8 requires genuine code-change queries;
+docs PRs also favour MiniLM (English) and would inflate the number.
+Decision: a chunk counts only if it changes non-comment code beyond
+formatting (comment prefixes * // /*; formatter-normalized compare:
+whitespace, quote style, semicolons, trailing commas). Filter removed
+18–42% of the main strata's pools. Also: >= MIN_PAST_PRS (=200, max |C|)
+earlier PRs required.
+Golden check, predicted before running: #6980 code, #7637 code,
+#8459 not code — all matched.
+Commitment: rules frozen after this change. Only REPLACED (readability,
+logged) may alter the draw.
+Known miss: #5460 (contributor docs) passed the filter and was drawn;
+kept per the freeze, disclosed in README limitations.
+
+## D-P5-7 — Query selection procedure and exclusions (Day 28)
+SEED=28, fixed before the first draw. 20 queries: divmod allocation, the
+smallest pool gets 2 (strands). Tune/holdout assigned within each stratum,
+10/10 overall, written once to eval_queries.
+EXCLUDED_NUMBERS and REPLACED are applied post-shuffle.
+Excluded: #8994 (dev spike query); #6922 (studied in this file at
+L1361/L1372, in_corpus open). Contamination checked by grepping all drawn
+and next-in-line PRs against tests/, scripts/, JOURNAL.md, DECISIONS.md.
+All 20 readable; REPLACED empty.
+Script committed in 2fc72cc — rerunning it rebuilds the identical split.
+
+## D-P4-14 — rank_candidates signature (Day 28, OPEN)
+Two gaps found: (1) it returns only (pr_id, final_score), but 03 §10
+reasons need vector_norm and bm25_norm; (2) weights are read from
+constants with no parameter, but 01 §9 pooling variants and Phase 6
+tuning need explicit weights. Must resolve before eval/pool.py.
+Also owed from the Doc 12 ritual: assert all three raw dicts are keyed
+exactly by C inside rank_candidates (the nominated set can currently pass
+silently if its key sets happen to cover C).
