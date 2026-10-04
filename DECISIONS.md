@@ -1531,3 +1531,19 @@ time per connection); pooling deferred to D-P3-2.
 Measured #8994: backfill 135.6 ms of 897.2 ms total, |C| = 143, local Docker.
 Decision: no change. Reopen trigger: Neon/Cloud Run measurement in Phase 7,
 where per-round-trip latency dominates.
+
+## D-M-2 — Schedule re-baseline: extend to Day 57, no cuts (Day 28)
+Context: Day 28, Phase 4 closed 3 days late (planned Day 24, closed Day 27).
+~27.5 sessions of work remain against 23 in the plan. Day 50 was a
+self-set scope target, not an external deadline.
+Options: (a) cut per 09 §7 — effective savings ~4–4.5 sessions from #1,
+#2, #4 (#3 moot: corpus already ingested; #5 never scheduled);
+(b) extend to a new fixed date.
+Decision: (b). Re-baseline to Day 57 (27.5 work + 2 deploy-overrun
+buffer). No cuts. Phase order unchanged. 09 §6 risk markers shift +4 days.
+Reasoning: none of the cuts buys anything without a deadline; #2 is
+itself interview evidence (a measured aggregation choice).
+Trade-off: a later finish. Risk: an open-ended window drifts, so the
+end date stays fixed.
+Consequence: Day-34 MAX vs mean-of-top-3 experiment stays; it must be
+redesigned for the uncensored backfill (D-P4-13).
