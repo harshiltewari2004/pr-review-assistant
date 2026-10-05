@@ -1,11 +1,10 @@
-# Handoff — Day 27 close
+# Handoff — Day 28 close
 
 ## State
-- HEAD: <hash after ledger commit> on `main`, pushed, clean tree
-- Tests: 72 passed, 1 skipped (`pytest -q`)
-- ruff check / format clean
-- 23 sessions remain. ⚠️ Day-26 estimate was 28–32 sessions of work —
-  reconcile against `09` cut order before Phase 5.
+- HEAD: <ledger commit hash> on `main`, pushed, clean tree
+- Tests: 72 passed, 1 skipped (no app/ changes today)
+- eval_queries: 20 rows, 7 strata, 10 tune / 10 holdout (2fc72cc)
+- Target: Day 57 (D-M-2). Phase 5: Days 28–34.
 
 ## Gate
 ```bash
@@ -15,27 +14,23 @@ docker compose up -d
 git status --porcelain
 ruff check && ruff format --check .
 pytest -q
-python -m scripts.day27_orchestrator_spike
+python -m eval.select_queries   # must reproduce the same 20 (dry run)
 ```
-Expected: clean tree, 72/1, and the spike prints |C|=143 and golden PASS.
-
-## ✅ Invariant 2 now held in running code
-find_similar_prs() in scoring.py: nominate → union → full backfill → rank.
-D-P4-13 (full vector backfill), D-P4-10 resolved locally.
 
 ## 🎯 NEXT SESSION — fixed order
-1. Doc 12 ritual: normalize.py + scoring.py (combined). Due within 2 days.
-2. Schedule reconciliation vs `09` cut order.
-3. Phase 5 entry.
+1. Decide D-P4-14: rank_candidates gets a `weights` parameter (default =
+   constants) and returns per-signal norms, plus the key-set assert.
+   Blocks pool.py.
+2. eval/pool.py — typed, piece by piece. 01 §9: 4 variants (vector,
+   BM25, file, hybrid × 2 weight settings), top-6 each, temporal
+   filter, union, ~15 per query.
+3. Doc 12 ritual on pool.py when its golden assertion passes.
 
-## Owed / doc-revision batch (additions today)
-- Test docstrings: `query` does NOT catch a missing id clause while `<`
-  is strict — reword in test_retrieval.py and test_signals.py
-- `bm25_signal()` has no production call site (orchestrator uses
-  bm25_scores) — reference-location pattern #5
-- `<$3` spacing on signals.py L207, L240
-- 04 §10 JSON log formatter doesn't exist — every script drops `extra`
-- /analyze: no query_pr_id for a new PR; query_created_at = now (Phase 7)
-- Garbles in scoring.py docstrings: `teh`, `MEMEBERSHIP`, `memberships`,
-  `Nominate ,union`, `candidates.id over nowhere`
+## Owed (additions today)
+- Per-stage timing in find_similar_prs (860 ms total, only backfill timed)
+- normalize.py docstring: the degenerate-0.0 reason is the 03 §10 thresholds
+- 03 §8: BM25 "0 to 15+" is stale (measured 52–298)
+- 01 §8: replace the FastAPI-era subsystem list with the D-P5-5 path strata
+- #6922: in_corpus open item (DECISIONS L1372)
+- README limitations: label coverage, docs-only queries excluded, #5460
 - (all prior items still owed)

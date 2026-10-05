@@ -1240,3 +1240,11 @@ in-corpus PRs: 0 (raise kept). Gotchas: ingest.db.connect is an
 @asynccontextmanager (async with, not await); pgvector decodes to
 pgvector.Vector, not ndarray (.to_numpy()). First orchestrator run #8994:
 |C|=143, V∩F=32 V∩B=12 F∩B=25 all=12, backfill 135.6 ms / 897.2 total.
+
+- Day 28: Doc 12 ritual on normalize.py + scoring.py. Sharpest point: the degenerate-case 0.0 matters for 03 §10 reason thresholds, not for ranking. The docstring undersells this.
+- Day 28: Area:* labels cover 6.7% of the corpus and stop around 2023. D-P5-2 failed on contact with the data.
+- Day 28: about 1/3 of src/ PRs in the main strata change only comments (JSDoc lives in src/). A real fact about p5.js; one README line.
+- Day 28: formatter-only PRs (#8459) passed the first code filter. Fixed with a normalized compare. Golden predictions matched.
+- Day 28: #5460 (docs PR) slipped through the frozen filter. Kept, not re-picked. The freeze matters more than one clean query.
+- Day 28: false alarm on a ledger "deletion". It was the missing final newline. Keep a newline at EOF.
+- Day 28: ingest.db.connect() is an async context manager (use `async with`). Claude guessed the signature wrong.
