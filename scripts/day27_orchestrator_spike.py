@@ -89,7 +89,7 @@ async def main() -> None:
         )
         print(f"find_similar_prs total: {(time.perf_counter() - started) * 1000:.1f} ms")
 
-        ids = [pr_id for pr_id, _ in results]
+        ids = [r.pr_id for r in results]
         meta = {
             r["id"]: r
             for r in await conn.fetch(
@@ -98,14 +98,20 @@ async def main() -> None:
                 ids,
             )
         }
-        for rank, (pr_id, score) in enumerate(results, 1):
+        for rank, r in enumerate(results, 1):
+            pr_id, score = r.pr_id, r.final_score
             m = meta[pr_id]
             print(f"  {rank}. #{m['number']}  {score:.4f}  {m['title']}")
 
         # Golden assertions (rule 20).
         assert len(results) == 3, f"expected 3 results, got {len(results)}"
-        assert all(0.0 <= s <= 1.0 for _, s in results), "invariant 5: score outside [0,1]"
-        scores = [s for _, s in results]
+        assert all(0.0 <= r.final_score <= 1.0 for r in results), "invariant 5: score outside [0,1]"
+        assert all(
+            0.0 <= v <= 1.0
+            for r in results
+            for v in (r.vector_score_norm, r.file_overlap_score_norm, r.bm25_score_norm)
+        ), "norm outside [0,1]"
+        scores = [r.final_score for r in results]
         assert scores == sorted(scores, reverse=True), "results not best-first"
         assert q["id"] not in ids, "query PR retrieved itself"
         assert all(meta[i]["created_at"] < q["created_at"] for i in ids), "invariant 1 LEAK"

@@ -1248,3 +1248,5 @@ pgvector.Vector, not ndarray (.to_numpy()). First orchestrator run #8994:
 - Day 28: #5460 (docs PR) slipped through the frozen filter. Kept, not re-picked. The freeze matters more than one clean query.
 - Day 28: false alarm on a ledger "deletion". It was the missing final newline. Keep a newline at EOF.
 - Day 28: ingest.db.connect() is an async context manager (use `async with`). Claude guessed the signature wrong.
+
+- Day 29: #8994 baseline at default weights: #8259 0.9255, #6222 0.8914, #8821 0.8850 (|C|=143). D-P4-14 refactor must reproduce exactly.

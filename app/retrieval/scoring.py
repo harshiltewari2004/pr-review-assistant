@@ -49,7 +49,7 @@ class CandidateSet:
     Built twice per query by find_similar_prs(): first from each signal's
     uncut scores, where the key sets DIVERGE and only `ids` is used; then via
     replace() with all three dicts backfilled to exactly `ids`. Only the
-    second may reach rank_candidates(); min_max_normalize() raises if the
+    second may reach rank_candidates(); rank_candidates() raises if the
     first ever does.
     """
 
@@ -57,6 +57,7 @@ class CandidateSet:
     vector_raw: dict[int, float]
     file_overlap_raw: dict[int, float]
     bm25_raw: dict[int, float]
+
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Weights:
@@ -84,6 +85,26 @@ DEFAULT_WEIGHTS = Weights(
     file_overlap=WEIGHT_FILE_OVERLAP,
     bm25=WEIGHT_BM25,
 )
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ScoredCandidate:
+    """One ranked candidate: final score plus per-signal norms. 03 §9, §10. D-P4-14.
+
+    Norms are kept because reasons.py branches on them (03 §10:
+    vector_norm > 0.7, bm25_norm > 0.7). Raw scores are not: no consumer.
+
+    All four values are in [0, 1]: norms by min-max (03 §8), final_score
+    because Weights is a convex combination (invariant 5).
+    """
+
+    pr_id: int
+    final_score: float
+    vector_score_norm: float
+    file_overlap_score_norm: float
+    bm25_score_norm: float
+
+
 def _nominate(scores: dict[int, float], k: int) -> list[int]:
     """Top k candidates ids by score,descending.03 §4 steps 2 and 4.
 
@@ -138,23 +159,41 @@ def build_candidate_set(
 
 def rank_candidates(
     candidates: CandidateSet,
+    *,
+    weights: Weights = DEFAULT_WEIGHTS,
     top_n: int = RESULTS_RETURNED,
-) -> list[tuple[int, float]]:
-    """Candidate set -> rank(pr_id,final_score). 03 §8, §9.
+) -> list[ScoredCandidate]:
+    """Candidate set -> ranked ScoredCandidates. 03 §8, §9. D-P4-14.
 
-    Pure:no I/O, no async.All three signals are normalized here,over
-    candidates.id over nowhere else, so invariant 2 holds by construction
+    Pure: no I/O, no async. All three signals are normalized here, over
+    candidates.ids and nowhere else, so invariant 2 holds by construction
     rather than by the caller remembering to.
 
-    Tie-break on pr_id ascending,matching_nominate().Different concern
-    though:this one. is DP-6-1's presentation order,not membership.
+    Raises if any raw dict is not keyed by exactly candidates.ids: missing
+    keys AND extra keys. Extra keys mean the nominated (pre-backfill) set
+    leaked in, ranking on censored vector scores (D-P4-13).
 
-    Returns top_n,best first.
+    Tie-break on pr_id ascending, matching _nominate(). Different concern:
+    this one is D-P6-1's presentation order, not membership.
+
+    Returns top_n, best first.
     """
 
-    total = WEIGHT_VECTOR + WEIGHT_FILE_OVERLAP + WEIGHT_BM25
-    if not math.isclose(total, 1.0, abs_tol=1e-9):
-        raise ValueError(f"weights must sum to 1.0 (invariant 5),got{total}")
+    expected = set(candidates.ids)
+    for name, raw in (
+        ("vector_raw", candidates.vector_raw),
+        ("file_overlap_raw", candidates.file_overlap_raw),
+        ("bm25_raw", candidates.bm25_raw),
+    ):
+        keys = set(raw)
+        if keys != expected:
+            raise ValueError(
+                f"{name} not keyed by candidates.ids (invariant 2): "
+                f"{len(keys - expected)} extra, {len(expected - keys)} missing"
+            )
+
+    if not candidates.ids:
+        return []
 
     vector_norm = min_max_normalize(candidates.vector_raw, candidates.ids)
     file_norm = min_max_normalize(candidates.file_overlap_raw, candidates.ids)
@@ -162,15 +201,24 @@ def rank_candidates(
 
     final = {
         pr_id: (
-            WEIGHT_VECTOR * vector_norm[pr_id]
-            + WEIGHT_FILE_OVERLAP * file_norm[pr_id]
-            + WEIGHT_BM25 * bm25_norm[pr_id]
+            weights.vector * vector_norm[pr_id]
+            + weights.file_overlap * file_norm[pr_id]
+            + weights.bm25 * bm25_norm[pr_id]
         )
         for pr_id in candidates.ids
     }
 
     ranked = sorted(final.items(), key=lambda kv: (-kv[1], kv[0]))
-    return ranked[:top_n]
+    return [
+        ScoredCandidate(
+            pr_id=pr_id,
+            final_score=score,
+            vector_score_norm=vector_norm[pr_id],
+            file_overlap_score_norm=file_norm[pr_id],
+            bm25_score_norm=bm25_norm[pr_id],
+        )
+        for pr_id, score in ranked[:top_n]
+    ]
 
 
 def _raw_range(raw: dict[int, float]) -> tuple[float, float]:
@@ -189,7 +237,7 @@ async def find_similar_prs(
     query_files: Sequence[str],
     query_tokens: list[str],
     top_n: int = RESULTS_RETURNED,
-) -> list[tuple[int, float]]:
+) -> list[ScoredCandidate]:
     """Nominate ,union,backfill,rank.03 §4 steps 1-6, §8, §9.
 
     The index is passed in,never built here:build_bm25_index() reads the
@@ -240,7 +288,7 @@ async def find_similar_prs(
     )
     # 4. Normalize over C, weight, rank. 03 §8, §9. Invariant 2 holds because
     # every dict in `candidates` is keyed by exactly C.
-    results = rank_candidates(candidates, top_n)
+    results = rank_candidates(candidates, top_n=top_n)
 
     log.info(
         "query scored",
@@ -251,7 +299,7 @@ async def find_similar_prs(
             "file_overlap_range": _raw_range(candidates.file_overlap_raw),
             "bm25_range": _raw_range(candidates.bm25_raw),
             "backfill_ms": round(backfill_ms, 1),
-            "top": results,
+            "top": [(r.pr_id, round(r.final_score, 4)) for r in results],
         },
     )
     return results
