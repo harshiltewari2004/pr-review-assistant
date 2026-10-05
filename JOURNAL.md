@@ -1250,3 +1250,11 @@ pgvector.Vector, not ndarray (.to_numpy()). First orchestrator run #8994:
 - Day 28: ingest.db.connect() is an async context manager (use `async with`). Claude guessed the signature wrong.
 
 - Day 29: #8994 baseline at default weights: #8259 0.9255, #6222 0.8914, #8821 0.8850 (|C|=143). D-P4-14 refactor must reproduce exactly.
+
+- Day 29: D-P4-14 shipped. Refactor reproduced #8994 baseline exactly (stash → run HEAD → pop). Day 27 never recorded the top 3; a baseline you didn't record is one you don't have.
+- Day 29: teeth check on key-set test: weakened to subset check → "DID NOT RAISE". Confirms nothing downstream catches extra keys.
+- Day 29: invariant 5 gap: sum-to-1 bounds [0,1] only with non-negative weights. Weights now rejects negatives.
+- Day 29: per-stage timing on #8994: vector nomination 596 ms (71%), backfill 124, BM25 119, file 2, rank 0.2. Hypothesis: one exact scan per query chunk (15). Verify in Phase 7.
+- Day 29: `git add -u` swept in-progress scoring.py into a "style" commit (e8229b3). Stage by path when WIP exists.
+- Day 29: zsh doesn't treat inline `#` as a comment — passed as args to select_queries. No comments in commands.
+- Day 29: gate pasted as one block let commits run past a failed `ruff format --check`. Read gate output before moving on.
