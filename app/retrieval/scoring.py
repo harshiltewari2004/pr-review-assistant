@@ -226,7 +226,12 @@ def _raw_range(raw: dict[int, float]) -> tuple[float, float]:
     return min(raw.values()), max(raw.values())
 
 
-async def find_similar_prs(
+def _ms_since(started: float) -> float:
+    """Milliseconds since a time.perf_counter() reading, 1 dp."""
+    return round((time.perf_counter() - started) * 1000, 1)
+
+
+async def build_backfilled_candidates(
     conn: asyncpg.Connection,
     index: Bm25Index,
     *,
@@ -236,22 +241,36 @@ async def find_similar_prs(
     query_embeddings: list[np.ndarray],
     query_files: Sequence[str],
     query_tokens: list[str],
-    top_n: int = RESULTS_RETURNED,
-) -> list[ScoredCandidate]:
-    """Nominate ,union,backfill,rank.03 §4 steps 1-6, §8, §9.
+) -> CandidateSet:
+    """Nominate, union, backfill. 03 §4 steps 1-6. D-P4-14.
 
-    The index is passed in,never built here:build_bm25_index() reads the
-    whole corpus and belongs at startup , not per query.
+    Returns C with all three raw dicts keyed by exactly C.ids, ready for
+    rank_candidates(). Split from find_similar_prs() so eval/pool.py can
+    build C once per query and rank it under several Weights: every variant
+    then ranks the same C.
+
+    Logs what only this function knows: C's size, raw ranges, and per-stage
+    timings. The index is passed in, never built here: build_bm25_index()
+    reads the whole corpus and belongs at startup, not per query.
     """
+    timings: dict[str, float] = {}
 
     # 1. Raw signals, UNCUT. build_candidate_set() owns the cut (03 §4).
     # Sequential on purpose: one asyncpg connection runs one query at a time.
 
+    started = time.perf_counter()
     vector_aggs = await vector_signal_for_pr(
         conn, query_embeddings, repo_id, query_created_at, query_pr_id
     )
+    timings["vector_ms"] = _ms_since(started)
+
+    started = time.perf_counter()
     file_raw = await file_overlap_signal(conn, query_files, repo_id, query_created_at, query_pr_id)
+    timings["file_overlap_ms"] = _ms_since(started)
+
+    started = time.perf_counter()
     bm25_raw = bm25_scores(index, query_tokens, query_created_at, query_pr_id)
+    timings["bm25_ms"] = _ms_since(started)
     # 2. Nominate and union -> C. Invariant 3: union, never vector-seeded.
     nominated = build_candidate_set(
         {pr_id: agg.score_raw for pr_id, agg in vector_aggs.items()},
@@ -261,7 +280,7 @@ async def find_similar_prs(
     if not nominated.ids:
         # Earliest PRs have no past to retrieve from. Not an error.
         log.info("empty candidate set", extra={"query_pr_id": query_pr_id})
-        return []
+        return CandidateSet(ids=[], vector_raw={}, file_overlap_raw={}, bm25_raw={})
     # 3. Backfill all three signals over ALL of C. 03 §4 step 6, invariant 2.
     # Vector is re-scored for every member, not just the gaps: nomination
     # scores are censored (only chunks that made a top-k list), backfill
@@ -275,7 +294,7 @@ async def find_similar_prs(
         query_pr_id,
         candidate_ids=nominated.ids,
     )
-    backfill_ms = (time.perf_counter() - started) * 1000
+    timings["backfill_ms"] = _ms_since(started)
 
     # File: absent means no shared file, so 0.0 IS the Jaccard, not a guess.
     # BM25: bm25_scores() already scored every past PR, so index directly;
@@ -286,19 +305,56 @@ async def find_similar_prs(
         file_overlap_raw={i: file_raw.get(i, 0.0) for i in nominated.ids},
         bm25_raw={i: bm25_raw[i] for i in nominated.ids},
     )
-    # 4. Normalize over C, weight, rank. 03 §8, §9. Invariant 2 holds because
-    # every dict in `candidates` is keyed by exactly C.
-    results = rank_candidates(candidates, top_n=top_n)
-
     log.info(
-        "query scored",
+        "candidates built",
         extra={
             "query_pr_id": query_pr_id,
             "candidate_count": len(candidates.ids),
             "vector_range": _raw_range(candidates.vector_raw),
             "file_overlap_range": _raw_range(candidates.file_overlap_raw),
             "bm25_range": _raw_range(candidates.bm25_raw),
-            "backfill_ms": round(backfill_ms, 1),
+            **timings,
+        },
+    )
+    return candidates
+
+
+async def find_similar_prs(
+    conn: asyncpg.Connection,
+    index: Bm25Index,
+    *,
+    repo_id: int,
+    query_pr_id: int,
+    query_created_at: datetime,
+    query_embeddings: list[np.ndarray],
+    query_files: Sequence[str],
+    query_tokens: list[str],
+    top_n: int = RESULTS_RETURNED,
+) -> list[ScoredCandidate]:
+    """Product path: build C, rank at DEFAULT_WEIGHTS. 03 §4, §8, §9.
+
+    No weights parameter on purpose: tuning belongs to eval/, which calls
+    build_backfilled_candidates() and rank_candidates() directly (D-P4-14).
+    """
+    candidates = await build_backfilled_candidates(
+        conn,
+        index,
+        repo_id=repo_id,
+        query_pr_id=query_pr_id,
+        query_created_at=query_created_at,
+        query_embeddings=query_embeddings,
+        query_files=query_files,
+        query_tokens=query_tokens,
+    )
+
+    started = time.perf_counter()
+    results = rank_candidates(candidates, top_n=top_n)
+
+    log.info(
+        "query ranked",
+        extra={
+            "query_pr_id": query_pr_id,
+            "rank_ms": _ms_since(started),
             "top": [(r.pr_id, round(r.final_score, 4)) for r in results],
         },
     )
