@@ -87,7 +87,8 @@ def changes_code(content: str) -> bool:
         if body and not body.startswith(COMMENT_PREFIXES):
             (added if line[0] == "+" else removed).append(body)
     return _normalize("".join(removed)) != _normalize("".join(added))
-    
+
+
 def stratum_of(path: str) -> str | None:
     """Stratum for one file path; 'other:<dir>' for unmapped src dirs."""
     for name, prefixes in STRATA:
@@ -134,7 +135,7 @@ async def main(write: bool) -> None:
         base, extra = divmod(N_QUERIES, len(names))
         by_size = sorted(names, key=lambda s: (len(pools[s]), s))
         k = {s: base for s in names}
-        for s in by_size[len(names) - extra:]:
+        for s in by_size[len(names) - extra :]:
             k[s] += 1
 
         rng = random.Random(SEED)

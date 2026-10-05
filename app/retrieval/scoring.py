@@ -58,7 +58,32 @@ class CandidateSet:
     file_overlap_raw: dict[int, float]
     bm25_raw: dict[int, float]
 
+@dataclass(frozen=True, slots=True, kw_only=True)
+class Weights:
+    """Per-signal weights for the final score. 03 §9, invariant 5. D-P4-14.
 
+    Validated at construction, so an invalid setting cannot reach
+    rank_candidates(). The product uses DEFAULT_WEIGHTS; pool.py and
+    Phase 6 tuning build their own.
+    """
+
+    vector: float
+    file_overlap: float
+    bm25: float
+
+    def __post_init__(self) -> None:
+        total = self.vector + self.file_overlap + self.bm25
+        if not math.isclose(total, 1.0, abs_tol=1e-9):
+            raise ValueError(f"weights must sum to 1.0 (invariant 5), got {total}")
+        if min(self.vector, self.file_overlap, self.bm25) < 0.0:
+            raise ValueError(f"weights must be non-negative, got {self}")
+
+
+DEFAULT_WEIGHTS = Weights(
+    vector=WEIGHT_VECTOR,
+    file_overlap=WEIGHT_FILE_OVERLAP,
+    bm25=WEIGHT_BM25,
+)
 def _nominate(scores: dict[int, float], k: int) -> list[int]:
     """Top k candidates ids by score,descending.03 §4 steps 2 and 4.
 
