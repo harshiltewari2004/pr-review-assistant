@@ -1621,3 +1621,9 @@ vector-only variant is built; a miss would inflate Recall@3.
 - D-P4-14 addendum (Day 29): Weights also rejects negative components.
   Invariant 5's "sum to 1.0, so final ∈ [0,1]" holds only for non-negative
   weights (convex combination). 03 §9 wording owed.
+
+- D-P4-14 addendum 2 (Day 29): find_similar_prs (product path) takes no
+  weights; always DEFAULT_WEIGHTS. eval/ composes build_backfilled_candidates()
+  + rank_candidates(weights=...) so C is built once per query and every
+  variant ranks the same C. Builder logs C size, raw ranges, per-stage
+  timings; find_similar_prs logs results ("log where the fact is born").
