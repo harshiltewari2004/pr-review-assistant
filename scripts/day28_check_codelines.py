@@ -25,7 +25,8 @@ async def main() -> None:
     for row in rows:
         by_pr.setdefault(row["number"], []).append(changes_code(row["content"]))
     for number, flags in sorted(by_pr.items()):
-        print(f"#{number}: code chunks {sum(flags)}/{len(flags)} -> PR counts as code: {any(flags)}")
+        is_code = any(flags)
+        print(f"#{number}: code chunks {sum(flags)}/{len(flags)} -> counts as code: {is_code}")
 
 
 asyncio.run(main())
