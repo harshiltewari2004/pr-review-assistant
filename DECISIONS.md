@@ -1617,3 +1617,7 @@ Trade-off: return type change ripples to find_similar_prs and its tests.
 Open: within-C vector top-6 may differ from global uncensored top-6
 (censored nomination). Measure on the 20 queries before pool.py's
 vector-only variant is built; a miss would inflate Recall@3.
+
+- D-P4-14 addendum (Day 29): Weights also rejects negative components.
+  Invariant 5's "sum to 1.0, so final ∈ [0,1]" holds only for non-negative
+  weights (convex combination). 03 §9 wording owed.
