@@ -1598,3 +1598,22 @@ tuning need explicit weights. Must resolve before eval/pool.py.
 Also owed from the Doc 12 ritual: assert all three raw dicts are keyed
 exactly by C inside rank_candidates (the nominated set can currently pass
 silently if its key sets happen to cover C).
+
+## D-P4-14 — rank_candidates takes Weights, returns per-signal norms (Day 29)
+Context: rank_candidates read WEIGHT_* from constants and returned only
+(pr_id, final). 01 §9 needs 5 rankings per query; 03 §10 needs per-signal
+norms; Day 28 ritual found an un-backfilled C could rank silently.
+Options: (a) duplicate ranking logic in pool.py; (b) three float kwargs;
+(c) weights dict; (d) frozen Weights dataclass.
+Decision: (d). Weights(vector, file_overlap, bm25), sum check in
+__post_init__ (math.isclose, abs_tol=1e-9). DEFAULT_WEIGHTS in scoring.py
+built from constants. Returns list[ScoredCandidate(pr_id, final_score,
+vector_score_norm, file_overlap_score_norm, bm25_score_norm)]. Raw scores
+omitted — no consumer. Key-set equality of all three raw dicts vs
+candidates.ids, raised as ValueError (not assert: stripped under -O).
+Reasoning: one scoring path for product, pool, and tuning. Min-max is
+monotonic, so Weights(1,0,0) is exactly vector-only within C.
+Trade-off: return type change ripples to find_similar_prs and its tests.
+Open: within-C vector top-6 may differ from global uncensored top-6
+(censored nomination). Measure on the 20 queries before pool.py's
+vector-only variant is built; a miss would inflate Recall@3.
