@@ -1258,3 +1258,8 @@ pgvector.Vector, not ndarray (.to_numpy()). First orchestrator run #8994:
 - Day 29: `git add -u` swept in-progress scoring.py into a "style" commit (e8229b3). Stage by path when WIP exists.
 - Day 29: zsh doesn't treat inline `#` as a comment — passed as args to select_queries. No comments in commands.
 - Day 29: gate pasted as one block let commits run past a failed `ruff format --check`. Read gate output before moving on.
+
+- Day 30: #7978 file_overlap contributed 0 — no past PR touches strands_api.js or the new noise3D shader. Verified by SQL before trusting it. The raw > 0 rule fired exactly once in 20 queries.
+- Day 30: censoring check 0/120 — nomination depth 50 vs pool depth 6 absorbed all censoring.
+- Day 30: pool = 345 (not ~300). Variant disagreement drives pool size.- Day 30: teeth check on pool evidence rule: norm-based filter passed 6/7 tests. Raw 0 and norm 0 agree in obvious cases; only a test built for the subtle case catches it.
+- Day 30: pool.json landed in eval/, but 04 §3 says eval/artifacts/. Should have checked the folder layout before choosing a path.
