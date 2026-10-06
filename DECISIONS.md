@@ -1652,3 +1652,9 @@ Decision:
    norm: norm 0 = lowest in C, not "no evidence"). Ties at a positive score
    break by pr_id; known bias toward older PRs, covered by hybrid variants.
 Golden assertion: two runs produce byte-identical pool.json.
+
+- D-P5-8 result (Day 30): pool = 345 candidates (min 11, median 17, max 24)
+  vs 01 §9's ~300. Accepted; depth stays 6 (no evidence 6 is wrong). Large
+  pools = variant disagreement, where pooling matters most. #7978:
+  file_overlap contributed 0 (no past PR shares a file, verified by SQL) —
+  the raw > 0 rule fired once. Two runs byte-identical.
