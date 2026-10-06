@@ -1665,3 +1665,7 @@ embedding change makes it silently stale. Fix before eval/score.py reads it.
 W3: pool covers 5 variants, not the final tuned weights. Phase 6 must report
 the unjudged rate of the tuned top-3; must be 0, else extend pool + judge.
 Also owed: unit tests for variant_picks (raw > 0 rule, empty C, sorted).
+
+- D-P5-9 W1 CLOSED (Day 30): tests/unit/test_pool.py, 7 tests. Teeth check:
+  evidence filter swapped to final_score (= norm) -> only
+  test_evidence_uses_raw_not_norm failed. W2, W3 remain open.
