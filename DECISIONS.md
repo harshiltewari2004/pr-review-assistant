@@ -1634,3 +1634,21 @@ vector-only variant is built; a miss would inflate Recall@3.
   held for every C member. pool.py's vector-only variant ranks within C.
   Exhaustive for this query set (the pool only runs on these 20), not a
   sample. Re-run if queries or POOL_DEPTH change.
+
+## D-P5-8 — Pool design (Day 30)
+Context: 01 §9 fixes variants/depth/union; leaves weights, storage, content,
+temporal step, and degenerate signals unspecified.
+Decision:
+1. Five rankings over one C per query: vector, file_overlap, bm25 (weight 1
+   on one signal), hybrid_default (DEFAULT_WEIGHTS), hybrid_equal (1/3 each).
+   Equal thirds is the conventional untuned point — pragmatic, not derived.
+2. Output: committed eval/pool.json (01 §15 commits eval artifacts as files;
+   02 has no pool table).
+3. Content: candidate pr_ids per query, sorted by id. No variant/rank/score —
+   blindness, per 02 §7's omission of system_rank. Recoverable by re-run.
+4. Temporal step: ASSERT created_at < query and != query; never filter
+   (filtering would hide a signal leak).
+5. Single-signal variants pool only candidates with RAW score > 0 (raw, not
+   norm: norm 0 = lowest in C, not "no evidence"). Ties at a positive score
+   break by pr_id; known bias toward older PRs, covered by hybrid variants.
+Golden assertion: two runs produce byte-identical pool.json.
