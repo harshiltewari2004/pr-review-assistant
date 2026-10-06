@@ -1627,3 +1627,10 @@ vector-only variant is built; a miss would inflate Recall@3.
   + rank_candidates(weights=...) so C is built once per query and every
   variant ranks the same C. Builder logs C size, raw ranges, per-stage
   timings; find_similar_prs logs results ("log where the fact is born").
+
+- D-P4-14 open item CLOSED (Day 30): scripts/day30_censoring_check.py —
+  global uncensored vector top-6 vs within-C top-6 on all 20 eval queries:
+  0/20 queries affected, 0/120 PRs missing; like-for-like score assertion
+  held for every C member. pool.py's vector-only variant ranks within C.
+  Exhaustive for this query set (the pool only runs on these 20), not a
+  sample. Re-run if queries or POOL_DEPTH change.
