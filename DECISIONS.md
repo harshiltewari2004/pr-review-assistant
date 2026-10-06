@@ -1658,3 +1658,10 @@ Golden assertion: two runs produce byte-identical pool.json.
   pools = variant disagreement, where pooling matters most. #7978:
   file_overlap contributed 0 (no past PR shares a file, verified by SQL) —
   the raw > 0 rule fired once. Two runs byte-identical.
+
+## D-P5-9 — Pool weaknesses from Doc 12 ritual (Day 30) — OPEN
+W2: pool.json records no inputs (git HEAD, corpus snapshot); a re-ingest or
+embedding change makes it silently stale. Fix before eval/score.py reads it.
+W3: pool covers 5 variants, not the final tuned weights. Phase 6 must report
+the unjudged rate of the tuned top-3; must be 0, else extend pool + judge.
+Also owed: unit tests for variant_picks (raw > 0 rule, empty C, sorted).
