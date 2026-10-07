@@ -25,6 +25,7 @@ from app.retrieval.scoring import (
     rank_candidates,
 )
 from app.retrieval.signals import build_bm25_index, build_document
+from eval.snapshot import corpus_fingerprint
 from ingest.db import connect
 
 POOL_DEPTH = 6  # 01 §9 step 2
@@ -120,6 +121,7 @@ def pool_for_query(candidates: CandidateSet) -> list[int]:
 async def main() -> None:
     async with connect("local") as conn:
         index = await build_bm25_index(conn, REPO_ID)
+        fingerprint = await corpus_fingerprint(conn, REPO_ID)
         queries = await conn.fetch(QUERIES_SQL)
         assert len(queries) == 20, f"expected 20 eval queries, got {len(queries)}"
 
@@ -166,6 +168,7 @@ async def main() -> None:
             )
 
         payload = {
+            "corpus_fingerprint": fingerprint,  # D-P5-9 W2; must match corpus_snapshot.json
             "pool_depth": POOL_DEPTH,
             "variants": [v.name for v in VARIANTS],
             "queries": entries,
