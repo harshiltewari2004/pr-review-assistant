@@ -1682,3 +1682,18 @@ under either definition (11 authored PRs in corpus). Per D-P5-1: report
 "0 self-authored pairs", publish no subset kappa.
 Schema: migration 002 adds judgments.self_authored (02 §7); 001_init.sql
 predated D-P5-1's spec change. Applied local + Neon.
+
+## D-P5-11 — Labeling batches + re-test timing (Day 31)
+Batch composition: per split, sort eval queries by (subsystem, pr_id);
+batch 1 = even positions, batch 2 = odd. 5 tune + 5 holdout per batch so a
+post-batch-1 rubric revision affects both splits equally (invariant 14);
+subsystem-first sort spreads batch 1 across strata to surface rubric
+ambiguity early (09 §6). Batch 1 = 170 pairs, batch 2 = 175.
+Re-test timing: 09 schedules the self-agreement check the day after
+batch 1; 01 §12 says one week after. 01 wins: a next-day re-test measures
+memory, inflating kappa. Sequence: batch 1 -> ~1 week (score.py, D-P5-9
+W2, Milestone B) -> re-test ~50 from batch 1 -> revise if kappa < 0.6 ->
+batch 2. Tuning waits for all labels. 09 §6 wording owed.
+label.py: author and query outcome hidden (halo bias; query outcome is
+future info); confirm before save (round 1 never overwritten); skips final,
+logged to eval/artifacts/skips.jsonl.
