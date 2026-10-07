@@ -245,7 +245,7 @@ This assumes all three live on the same scale. They do not:
 |---|---|
 | Vector (cosine, normalized) | ≈ `[0, 1]` |
 | File overlap (Jaccard) | `[0, 1]` exactly |
-| **BM25** | **Unbounded** — depends on term frequency, corpus size, document lengths. Observed values range from 0 to 15+ |
+| **BM25** | **Unbounded** — depends on term frequency, corpus size, document lengths. Observed raw values on p5.js span roughly 52 to 298 within one query's candidate set (#8994, Day 28) |
 
 Adding a raw BM25 score to a cosine score is arithmetically meaningless. The `0.2` weight is fiction until the scales match — and because BM25's magnitude dwarfs the others, it silently dominates the ranking while appearing to be the smallest weight.
 
@@ -292,7 +292,7 @@ final = w_v · vector_norm + w_f · file_norm + w_b · bm25_norm
 
 These are a **starting point only**. Final weights are tuned on the tune split per `01_evaluation_protocol.md` §13, locked before the holdout set is examined, and published in the README with the reasoning behind them.
 
-Constraint: weights sum to 1.0, keeping `final` bounded in `[0, 1]` and directly interpretable.
+Constraint: weights are **non-negative and sum to 1.0** (a convex combination), keeping `final` bounded in `[0, 1]` and directly interpretable. The sum alone is not enough: (1.5, −0.5, 0) sums to 1 but can score −0.5. Enforced by `Weights` (D-P4-14 addendum).
 
 Top 3 by `final` are returned.
 

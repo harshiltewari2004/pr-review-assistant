@@ -163,6 +163,7 @@ The README should preempt these; the answers live across the design docs.
 | Why pgvector over a managed vector database? | `02` §1 |
 | Why three signals instead of vectors alone? | `03` §1, with the baseline table as evidence |
 | Why Recall@3 and not precision@3? | `01` §11 — **the strongest technical story the project produces** |
+| Is your recall absolute? | No — **pool-relative**: a relevant PR no variant retrieves is never judged, so never counts as a miss (`01` §11, D-P5-8) |
 | Why normalize per query? | `03` §8 |
 | What happens at 10,000 PRs? | `02` §5 |
 | Why one service instead of two? | `04` §1 |

@@ -188,10 +188,10 @@ Relevance is judged **after** retrieval, not before. Pre-labeling a fixed set of
 1. Run four retrieval variants: vector-only, BM25-only, file-overlap-only, and hybrid at two weight settings.
 2. Take the **top 6** from each.
 3. Apply the temporal filter (§5).
-4. Union and deduplicate → approximately **15 unique candidates**.
+4. Union and deduplicate → approximately **15 unique candidates** (measured: median 17, range 11–24, D-P5-8).
 5. Judge every item in the pool. Nothing is left unjudged.
 
-**Total: 20 queries × ~15 candidates ≈ 300 judgments.**
+**Total: 20 queries × ~15 candidates ≈ 300 judgments.** Measured: **345** (D-P5-8). Larger pools mean the variants disagree, which is where pooling matters.
 
 **Why pool across multiple variants.** Pooling only from the final hybrid system biases the labels toward it, and re-tuning weights would immediately surface unjudged items — putting you back in the invalid state. Pooling across variants means almost any later weight setting is already covered. This is standard TREC-style IR evaluation methodology.
 

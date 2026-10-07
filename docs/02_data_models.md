@@ -149,7 +149,7 @@ That percentage belongs in the README. A limitation you have quantified is a str
 
 No IVFFlat or HNSW index is created.
 
-**Rationale.** At the expected corpus size — roughly 10,000 chunks — pgvector's exact nearest-neighbour scan runs in single-digit milliseconds and returns **perfect recall**. ANN indexes trade recall for speed at a scale this project does not reach. Adding one would degrade result quality to solve a problem that does not exist.
+**Rationale.** At the expected corpus size — roughly 10,000 chunks (measured Day 31: **41,899** on p5.js; vector nomination 596 ms on #8994; re-measure in Phase 7) — pgvector's exact nearest-neighbour scan runs in single-digit milliseconds and returns **perfect recall**. ANN indexes trade recall for speed at a scale this project does not reach. Adding one would degrade result quality to solve a problem that does not exist.
 
 **Documented scale path:** beyond ~100,000 chunks, add HNSW (`vector_cosine_ops`), accept approximate recall, and re-run the evaluation harness to measure what that approximation costs. This is the correct answer to *"what happens at 10,000 PRs?"* — the honest bottleneck is embedding throughput at ingest, not query latency.
 

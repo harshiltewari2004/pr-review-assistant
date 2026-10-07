@@ -126,7 +126,7 @@ The phase most people skip when time gets tight. Do not skip it.
 | 26–31 | **During any labeling break: sketch the contribution bar with fake data** (§4, Milestone B′). One hour, any tool. |
 | 26 | `eval/label.py` — blind CLI, shuffled, records grade + reason + seconds |
 | 27–28 | **Batch 1** — 10 queries, ~150 judgments |
-| 29 | **Self-agreement check on batch 1.** Revise the rubric if agreement is poor. |
+| 29 | **Self-agreement re-test on ~50 batch-1 items, ONE WEEK after batch 1** (`01` §12, D-P5-11) — a next-day re-test measures memory, not reliability. Gap week: `eval/score.py`, corpus snapshot, Milestone B. Revise the rubric if kappa < 0.6. |
 | 30–31 | **Batch 2** — 10 queries, ~150 judgments |
 
 **Deliverable:** ~300 judgments in `judgments.jsonl`, tune/holdout split fixed in the database.
