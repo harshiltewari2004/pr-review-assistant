@@ -41,7 +41,7 @@ log = logging.getLogger(__name__)
 class CandidateSet:
     """The union of all three signals' nominations,plus raw scores.03 §4.
 
-    ids is the authoritative memberships list.The three dicts are keyed by
+    ids is the authoritative membership list. The three dicts are keyed by
     it and must stay keyed by it:invariant 2 requires all three signals
     normalized over the same candidate set, and three dicts with different
     key sets is exactly that invariant is failing without raising.
@@ -109,7 +109,7 @@ def _nominate(scores: dict[int, float], k: int) -> list[int]:
     """Top k candidates ids by score,descending.03 §4 steps 2 and 4.
 
     Tie-break on pr_id ascending.This is not cosmetic and it is not the
-    same concern as D-P6-1's ranking ties:the cut decides MEMEBERSHIP of C,
+    same concern as D-P6-1's ranking ties:the cut decides MEMBERSHIP of C,
     and C is what all three signals normalize over  (03 §8). An arbitrary
     tie-break here changes every candidates normalized score, so a rerun
     against the same snapshot could produce different published numbers
@@ -134,13 +134,13 @@ def build_candidate_set(
     caller cannot accidentally cut twice or forget to.03 §4's per-signal
     caps are admission limits and belong at exactly one place.
 
-    Union but intersection, and not vector-seeded: a PR with perfect file
+    Union, not intersection, and not vector-seeded: a PR with perfect file
     overlap but weak embedding similarity must be able to enter the ranking
     (invariant 3).Measured day 24 on #8994:file overlap alone produced a
     25-way tie for the first, so its ordering came entirely from the other two.
 
     ids is sorted.Set union has no defined iteration order, and the eval
-    harness must rebuild the same C from teh same snapshot every run
+    harness must rebuild the same C from the same snapshot every run
     """
 
     ids = sorted(

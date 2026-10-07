@@ -12,12 +12,12 @@ from app.retrieval.scoring import (
 
 
 def test_union_introduces_no_candidate_absent_from_every_signal():
-    """Invarinat 1, structural half. 07 §4.
+    """Invariant 1, structural half. 07 §4.
 
     Each signal enforces the temporal filter at its own source:p.created_at
     <$3 in VECTOR_SIGNAL_SQL and FILE_CANDIDATES_SQL, and in Python inside
     bm25_signal().Set union cannot produce a number that was in no input,
-    so a temporarlly-clean input gurantess a temporally-clean C.
+    so a temporally-clean input guarantees a temporally-clean C.
 
     This is the assertion that makes the whole filter chain sound :it is why
     the filter does NOT need re-enforcing here, and why re-enforcing it here
