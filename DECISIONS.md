@@ -1669,3 +1669,6 @@ Also owed: unit tests for variant_picks (raw > 0 rule, empty C, sorted).
 - D-P5-9 W1 CLOSED (Day 30): tests/unit/test_pool.py, 7 tests. Teeth check:
   evidence filter swapped to final_score (= norm) -> only
   test_evidence_uses_raw_not_norm failed. W2, W3 remain open.
+
+- D-P5-8 §2 amended (Day 31): pool.json lives at eval/artifacts/pool.json
+  per 04 §3's folder layout. Moved with git mv; re-run byte-identical.
