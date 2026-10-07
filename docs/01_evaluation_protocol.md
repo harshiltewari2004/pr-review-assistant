@@ -130,18 +130,38 @@ These are the calls that would otherwise drift across a multi-hour labeling sess
 ---
 
 ## 7. Worked anchors
-> **STALE — FastAPI-era, pending rewrite (`D-P5-2`).** The anchors below were verified against `fastapi/fastapi` and predate the corpus change to `processing/p5.js` (§2). They still illustrate the *reasoning*, which is why they are kept rather than deleted, but they are not consultable examples for a p5.js judgment. Rewrite before Day 25. One p5.js grade-2 anchor is verified and ready — `#8829 ↔ #8933`, two solutions to the same static-`Vector`-method problem, one superseded (§6 rule 4), different files so Jaccard is 0.0 and the vector signal carries it alone.
-These examples are part of the rubric. Consult them when a judgment feels ambiguous.
+
+p5.js anchors, verified against the corpus (D-P5-12, resolves D-P5-2). Every
+pair is outside the 345-pair pool (anchor queries #8933, #8994 are not eval
+queries). Query is always the later PR (§5). The FastAPI-era anchors are in
+git history. Consult these when a judgment feels ambiguous.
 
 **Grade 2**
-- **#15994 ↔ #15992** — both pass `include`/`exclude` params to `jsonable_encoder`, same author, same week. *Without B: reviewer duplicates a review already performed.*
-- **#15937 ↔ #15813** — both modify the JSONL `StreamingResponse` construction in `fastapi/routing.py`. #15937 replaces the exact `background=...` line that #15813 modifies, so the two conflict. *Without B: reviewer misses an interaction.*
+- **#8994 (lerp, n-dim) ← #8821 (dimension-mismatch warning)** — #8821
+  settled "smaller dimension wins on mismatch"; #8994 builds on it.
+  *Without B: re-litigates a settled design debate.*
+- **#8933 (static-method `_friendlyError`) ← #8829 (`createVector`
+  `_friendlyError`)** — same root cause (the function lives on the class,
+  not where `this` points), two call sites, both merged. Different files,
+  Jaccard 0.0. *Without B: duplicates the diagnosis, risks an inconsistent fix.*
+
 **Grade 1**
-- **#15641 (jsonable_encoder UTF-8 crash) ↔ #15476 (jsonable_encoder set-allocation perf)** — same file, genuinely different concerns. Useful context; would not change the decision.
-- **#16024 (Form with Optional Pydantic model) ↔ #16030 (Pydantic Header field alias)** — both Pydantic field handling, different entry points.
+- **#8933 ← #8590** (closed without merging) — same Vector FES rewiring,
+  closure reason unknown. Becomes a 2 if the thread shows the approach broke.
+- **#8933 ← #4378** — Vector FES, different failure, 2020.
+- **#8933 ← #8809** — Vector perf PR; FES gating is a side note.
+- **#8994 ← #8259** (closed without merging) — n-dim vectors, different feature.
+- **#8994 ← #6222** — sibling interpolation method (slerp), no shared decision.
 
 **Grade 0**
-- Anything in the `jsonable_encoder` cluster paired with anything in the router or SSE clusters.
+- **#8933 ← #8862** — strands friendly error: shared words, not shared concern.
+- **#8994 ← #8964** — WebGL framebuffer density, unrelated to Vector.
+
+**Rules these anchors teach**
+1. Same file ≠ relevant. 2. Same words ≠ relevant. 3. Different files can
+still be a 2. 4. Closed without merging + same mechanism → check why; no
+reason found → 1. 5. A side note in a big PR doesn't raise the grade.
+6. The system's rank is never evidence.
 
 ---
 
