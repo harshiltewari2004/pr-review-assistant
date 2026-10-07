@@ -1697,3 +1697,11 @@ batch 2. Tuning waits for all labels. 09 §6 wording owed.
 label.py: author and query outcome hidden (halo bias; query outcome is
 future info); confirm before save (round 1 never overwritten); skips final,
 logged to eval/artifacts/skips.jsonl.
+
+## D-P5-12 — Labeling blocked on 01 §7 anchors (Day 31)
+First labeling attempt stopped before any judgment (count 0). 01 §7 is
+marked STALE (FastAPI-era, D-P5-2, "rewrite before Day 25") with one p5.js
+anchor (#8829 <-> #8933). 01 §12 step 1 requires worked anchors before the
+first judgment. Next: ~6 p5.js anchors (2 per grade), chosen OUTSIDE the
+345-pair pool so no blind label is pre-judged; write to 01 §7; resolve
+D-P5-2; then batch 1.
