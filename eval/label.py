@@ -16,6 +16,7 @@ import argparse
 import asyncio
 import json
 import random
+import re
 import statistics
 import time
 from datetime import UTC, datetime
@@ -104,7 +105,10 @@ def render(pr, role: str, show_outcome: bool) -> str:
     listed = "\n".join(f"    {f}" for f in files[:FILES_SHOWN])
     if len(files) > FILES_SHOWN:
         listed += f"\n    ... +{len(files) - FILES_SHOWN} more"
-    body = (pr["body"] or "").strip() or "(no description)"
+    # PR templates wrap their instructions in <!-- -->; GitHub never renders
+    # them, so neither do we. Without this, boilerplate eats BODY_CHARS.
+    body = re.sub(r"<!--.*?-->", "", pr["body"] or "", flags=re.DOTALL).strip()
+    body = body or "(no description)"
     if len(body) > BODY_CHARS:
         body = body[:BODY_CHARS] + " [...]"
     outcome = f"  [{OUTCOME_TEXT[pr['outcome']]}]" if show_outcome else ""
