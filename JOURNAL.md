@@ -1265,3 +1265,5 @@ pgvector.Vector, not ndarray (.to_numpy()). First orchestrator run #8994:
 - Day 30: pool.json landed in eval/, but 04 §3 says eval/artifacts/. Should have checked the folder layout before choosing a path.
 - Day 31: schema drift — D-P5-1 (Jul 28) added judgments.self_authored to 02 §7, but 001_init.sql was never updated. A decision that changes a spec needs a migration in the same breath.
 - Day 31: self-authored pairs in the pool: 0/345. The D-P1-2 familiarity cost never reaches the labels.
+- Day 31: reached the first judgment and couldn't grade it — 01 §7 anchors still FastAPI-era (D-P5-2 rewrite owed since Day 25, never carried into a HANDOFF). Caught at count 0, not after 170 labels.
+- Day 31: PR template <!-- --> comments ate the 700-char body budget; stripped before judgment 1.
