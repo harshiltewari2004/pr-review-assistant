@@ -1263,3 +1263,5 @@ pgvector.Vector, not ndarray (.to_numpy()). First orchestrator run #8994:
 - Day 30: censoring check 0/120 — nomination depth 50 vs pool depth 6 absorbed all censoring.
 - Day 30: pool = 345 (not ~300). Variant disagreement drives pool size.- Day 30: teeth check on pool evidence rule: norm-based filter passed 6/7 tests. Raw 0 and norm 0 agree in obvious cases; only a test built for the subtle case catches it.
 - Day 30: pool.json landed in eval/, but 04 §3 says eval/artifacts/. Should have checked the folder layout before choosing a path.
+- Day 31: schema drift — D-P5-1 (Jul 28) added judgments.self_authored to 02 §7, but 001_init.sql was never updated. A decision that changes a spec needs a migration in the same breath.
+- Day 31: self-authored pairs in the pool: 0/345. The D-P1-2 familiarity cost never reaches the labels.
