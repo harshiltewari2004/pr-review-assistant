@@ -1672,3 +1672,13 @@ Also owed: unit tests for variant_picks (raw > 0 rule, empty C, sorted).
 
 - D-P5-8 §2 amended (Day 31): pool.json lives at eval/artifacts/pool.json
   per 04 §3's folder layout. Moved with git mv; re-run byte-identical.
+
+## D-P5-10 — self_authored definition + pool count (Day 31)
+D-P5-1 says "flags the pairs" without naming the side. Pinned: a pair is
+self_authored if EITHER query or candidate author = harshiltewari2004
+(query authorship colours every candidate judged against it; conservative).
+Measured on eval/artifacts/pool.json: 0 of 20 queries mine, 0 of 345 pairs
+under either definition (11 authored PRs in corpus). Per D-P5-1: report
+"0 self-authored pairs", publish no subset kappa.
+Schema: migration 002 adds judgments.self_authored (02 §7); 001_init.sql
+predated D-P5-1's spec change. Applied local + Neon.
