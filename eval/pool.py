@@ -29,7 +29,7 @@ from ingest.db import connect
 
 POOL_DEPTH = 6  # 01 §9 step 2
 REPO_ID = 2
-POOL_PATH = Path(__file__).with_name("pool.json")
+POOL_PATH = Path(__file__).parent / "artifacts" / "pool.json"  # 04 §3
 
 QUERIES_SQL = """
 SELECT p.id, p.number, p.created_at, p.title, p.body, p.files_changed, q.split
