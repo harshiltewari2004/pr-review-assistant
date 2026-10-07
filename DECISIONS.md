@@ -1705,3 +1705,7 @@ anchor (#8829 <-> #8933). 01 §12 step 1 requires worked anchors before the
 first judgment. Next: ~6 p5.js anchors (2 per grade), chosen OUTSIDE the
 345-pair pool so no blind label is pre-judged; write to 01 §7; resolve
 D-P5-2; then batch 1.
+- D-P5-12 RESOLVED (Day 31): 01 §7 rewritten with 9 p5.js anchors (2/5/2
+  across grades 2/1/0), all outside the pool. D-P5-2 anchor rewrite done.
+  #8829<->#8933 corrected: both merged, same bug at two call sites — not
+  "one superseded". Batch 1 unblocked.
