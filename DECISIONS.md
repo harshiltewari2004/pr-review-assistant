@@ -1709,3 +1709,11 @@ D-P5-2; then batch 1.
   across grades 2/1/0), all outside the pool. D-P5-2 anchor rewrite done.
   #8829<->#8933 corrected: both merged, same bug at two call sites — not
   "one superseded". Batch 1 unblocked.
+- D-P5-9 W2 RESOLVED (Day 31): eval/snapshot.py writes 01 §15's
+  corpus_snapshot.json (repo, indexed_at, in-corpus PR numbers) plus a
+  SHA-256 corpus fingerprint over PR metadata + chunk embeddings. pool.json
+  carries the same fingerprint. NOT git HEAD: a commit can't contain its own
+  hash, it would break byte-identical re-runs, and code changes after
+  labeling are expected (tuning) — only corpus changes invalidate judgments.
+  No wall-clock field. score.py must refuse to run on fingerprint mismatch.
+  Snapshot: 4,372 PRs, 3,196 in corpus, 41,899 chunks.
