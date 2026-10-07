@@ -1267,3 +1267,4 @@ pgvector.Vector, not ndarray (.to_numpy()). First orchestrator run #8994:
 - Day 31: self-authored pairs in the pool: 0/345. The D-P1-2 familiarity cost never reaches the labels.
 - Day 31: reached the first judgment and couldn't grade it — 01 §7 anchors still FastAPI-era (D-P5-2 rewrite owed since Day 25, never carried into a HANDOFF). Caught at count 0, not after 170 labels.
 - Day 31: PR template <!-- --> comments ate the 700-char body budget; stripped before judgment 1.
+- Day 31: corpus has 41,899 chunks, not invariant 11's "~10k". Likely explains vector nomination 596 ms (15 query chunks x exact scan). Revisit ANN decision with measurements in Phase 7.
