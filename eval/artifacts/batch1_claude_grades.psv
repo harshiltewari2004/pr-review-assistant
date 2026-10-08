@@ -1,0 +1,170 @@
+7572|770|0|
+7572|811|0|
+7572|2587|0|
+7572|3552|1|both drawing-context setup across renderers
+7572|3621|0|
+7572|4649|1|drawingContext docs fix, side note
+7572|4779|1|global-mode lookup in main.js
+7572|6174|0|
+7572|6559|0|
+7572|6990|0|
+7572|7177|0|
+7572|7295|1|2.0 core module restructure
+7572|7358|0|
+7572|7373|0|
+7572|7406|0|
+7572|7409|0|
+7572|7479|0|
+7572|7567|1|sibling 2.0 restore of lost API
+7572|7568|1|WebGL context recreation on noSmooth
+8099|1287|0|
+8099|1318|1|warns when globals are overwritten
+8099|1519|1|global binding perf, closed, reason unknown
+8099|3228|0|
+8099|3470|0|
+8099|7194|0|
+8099|7291|0|
+8099|7497|0|
+8099|7542|0|
+8099|7563|1|addons override static p5 functions
+8099|7800|1|documents the addon registration API
+8099|7803|0|
+8099|7843|0|
+8099|7872|0|
+8099|8063|0|
+8099|8094|2|introduced global caching; must preserve it
+8099|8098|2|earlier abandoned attempt at same fix
+5460|2592|1|FES test infrastructure, older era
+5460|3874|0|
+5460|4199|0|
+5460|4561|1|FES param validation internals
+5460|4590|1|created the FES file layout
+5460|4622|0|
+5460|4643|1|FES feature the docs describe
+5460|4670|1|FES feature the docs describe
+5460|4730|1|FES limitation, closed, documented later
+5460|4746|1|previous revision of same FES docs
+5460|5163|0|
+5460|5305|1|FES feature the docs describe
+5460|5317|1|FES reporting internals docs cover
+5460|5351|1|sketch_reader feature the docs describe
+8120|2336|0|
+8120|2547|0|
+8120|2589|0|
+8120|2599|0|
+8120|2670|0|
+8120|5310|0|
+8120|5312|0|
+8120|5510|0|
+8120|5517|0|
+8120|7256|0|
+8120|7295|0|
+8120|7582|1|shader hooks that strands targets
+8120|7622|1|original strands generator, pre-refactor
+8120|7956|1|strands transpiler parsing bug
+8120|7961|1|strands uniform and instance-mode fixes
+8120|7978|1|strands builtin, not control flow
+8120|8009|2|settled IR/CFG design this extends
+4366|2336|0|
+4366|2352|1|immediate-mode shape drawing fix
+4366|2620|0|
+4366|3085|1|immediate-mode curve fill drawing
+4366|3213|1|immediate-mode shape drawing fix
+4366|3244|1|immediate-mode shape drawing fix
+4366|3462|0|
+4366|3617|1|LINES mode stroke-only in endShape
+4366|3825|1|immediate-mode shape drawing fix
+4366|4149|0|
+4366|4245|0|
+4366|4247|0|
+4366|4251|0|
+4366|4277|0|
+4366|4326|2|adjacent stroke guard, same call site
+4366|4354|0|
+1518|770|0|
+1518|771|1|2D primitive modes and arguments
+1518|811|0|
+1518|812|0|
+1518|820|1|WebGL drawing modes foundation
+1518|846|0|
+1518|895|1|moved shape modes to renderer
+1518|914|0|
+1518|938|1|arguments-handling perf in 2d_primitives
+1518|939|0|
+1518|1039|0|
+1518|1188|1|WebGL geometry incl. 2D primitives
+1518|1191|1|WebGL 2D primitive additions
+1518|1288|2|introduced WebGL 2D primitives with z
+1518|1370|2|merged WebGL 2D primitives with z
+1518|1387|0|
+1518|1439|2|fixed rect CORNERS bug refactor touches
+4606|1256|1|FES, different error class
+4606|2018|1|early param validation design, closed
+4606|2078|2|surfaced overload false negatives this fixes
+4606|2115|1|param validation for color()
+4606|2122|1|validateParameters v1 implementation
+4606|2177|1|param validation injection, closed
+4606|2592|1|param validation test infrastructure
+4606|2782|1|param validation test infrastructure
+4606|3874|0|
+4606|4164|1|changed rect overloads and FES tests
+4606|4355|0|
+4606|4418|0|
+4606|4561|1|param validation caching and logging
+4606|4580|1|prep fix for the same issue
+4606|4590|1|created validate_params.js
+4606|4602|0|
+8047|432|0|
+8047|433|0|
+8047|496|1|introduced loadImage failureCallback
+8047|634|0|
+8047|1234|0|
+8047|1510|0|
+8047|1765|0|
+8047|1781|0|
+8047|2948|1|loader error handling, closed
+8047|3740|1|introduced omggif GIF decoding
+8047|3874|0|
+8047|4402|0|
+8047|5025|1|GIF decode edge case in loadImage
+8047|5178|1|GIF decode path in loadImage
+8047|5883|0|
+8047|5931|0|
+8047|6081|0|
+8047|6086|0|
+8047|6171|1|GIF decode path in loadImage
+8047|6201|0|
+8047|6674|1|loader error reporting, closed
+8047|6864|0|
+8047|6935|0|
+8047|7365|1|2.0 rewrote loadImage error flow
+7978|875|1|CPU Perlin noise algorithm
+7978|3874|0|
+7978|6806|0|
+7978|6922|0|
+7978|7330|0|
+7978|7622|1|original strands generator
+7978|7675|1|strands generator bug fixes
+7978|7887|1|same p5-to-GLSL bridge pattern
+7978|7921|2|established GLSL noise injection approach
+7978|7961|1|strands uniform and instance-mode fixes
+7978|7964|2|set 4-octave 2D noise to match
+8311|636|0|
+8311|1839|0|
+8311|2395|0|
+8311|3325|0|
+8311|3469|0|
+8311|3732|0|
+8311|7417|1|2.0 text layout incl. alignment
+8311|7440|1|2.0 text layout refactor
+8311|7521|0|
+8311|7523|0|
+8311|7555|0|
+8311|7625|0|
+8311|7657|0|
+8311|7658|0|
+8311|7724|0|
+8311|8014|2|alignment bug on manual line breaks
+8311|8088|1|textWidth vs advance width, closed
+8311|8294|2|competing open PR, same feature
+8311|8297|1|companion to competing JUSTIFIED PR
