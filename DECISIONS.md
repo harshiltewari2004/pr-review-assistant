@@ -1725,3 +1725,26 @@ D-P5-2; then batch 1.
   never overwritten). The .psv is the provenance record of Claude's proposals.
   #7572<-#7295 reason saved with a stray emoji copied from Claude's table;
   left as-is (round 1 never edited, grade unaffected).
+
+## D-P5-13 — Labeling protocol: Claude-proposed, author-entered (Day 32)
+(Main entry. Its two notes above were appended first because this block's
+original append never ran; caught by grep the same session.)
+Batch 1 grades and reasons are proposed by Claude, reading the same blind
+display (no score, rank, variant, or query outcome), and entered by the
+author. Supersedes "hand-labeled" in D-P5-1/D-P5-11. Consequence: the
+D-P5-11 self-agreement re-test no longer measures labeler consistency
+(replaced by D-P5-14). README must describe labels as LLM-proposed, with
+human agreement reported per D-P5-14.
+
+## D-P5-14 — Human agreement subset for LLM labels (Day 32)
+Replaces the D-P5-11 re-test. 30 batch-2 pairs (3 per query, seed 32,
+eval/artifacts/kappa_subset_batch2.json, committed BEFORE any labeling)
+are labeled by the author blind via label.py --pairs, BEFORE Claude
+grades batch 2. Batch 2, not 1: the author has seen Claude's batch-1
+grades. Claude then grades all 175 without seeing the author's 30.
+Metric: unweighted Cohen's kappa over the 3 grades, bootstrap 95% CI,
+confusion matrix published. The author's grades are the official labels
+for those 30. 01 §12 threshold holds: kappa < 0.6 -> stop before
+Phase 6, review disagreement patterns in a new entry.
+Limitation: n=30 gives a wide CI; grade 2 is rare, so agreement on
+strict relevance is weakly measured.
