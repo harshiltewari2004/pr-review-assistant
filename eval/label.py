@@ -3,6 +3,8 @@
 Usage:
     python -m eval.label --batch 1 --plan   # batch composition; writes nothing
     python -m eval.label --batch 1          # label (resumable: q to quit)
+    python -m eval.label --batch 2 --pairs eval/artifacts/kappa_subset_batch2.json
+                                            # label only a subset (D-P5-14)
 
 Blind: candidates shuffled per query; no score, rank, variant, or author is
 shown, and the query's own outcome is hidden (future information). Round 1
@@ -162,6 +164,9 @@ async def main() -> None:
     parser = argparse.ArgumentParser(description="Blind labeling CLI (01 §10)")
     parser.add_argument("--batch", type=int, choices=(1, 2), required=True)
     parser.add_argument("--plan", action="store_true", help="show batch, write nothing")
+    parser.add_argument(
+        "--pairs", type=Path, help="restrict to these [query_pr_id, candidate_pr_id] pairs"
+    )
     args = parser.parse_args()
 
     pool = {
@@ -184,6 +189,11 @@ async def main() -> None:
         done = {(r["query_pr_id"], r["candidate_pr_id"]) for r in await conn.fetch(DONE_SQL, ROUND)}
         skipped = load_skips()
         pairs = [(q, c) for q in batch_ids for c in pool[q]]
+        if args.pairs:
+            subset = {tuple(p) for p in json.loads(args.pairs.read_text())}
+            assert subset <= set(pairs), "subset has pairs outside this batch's pool"
+            pairs = [p for p in pairs if p in subset]
+            pool = {q: [c for c in pool[q] if (q, c) in subset] for q in batch_ids}
         total = len(pairs)
 
         if args.plan:
