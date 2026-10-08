@@ -1717,3 +1717,5 @@ D-P5-2; then batch 1.
   labeling are expected (tuning) — only corpus changes invalidate judgments.
   No wall-clock field. score.py must refuse to run on fingerprint mismatch.
   Snapshot: 4,372 PRs, 3,196 in corpus, 41,899 chunks.
+- D-P5-13 note: seconds_spent now records entry time, not judging time; the
+  45 s box and the summary median no longer describe labeling effort.
