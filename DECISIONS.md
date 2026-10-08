@@ -1719,3 +1719,9 @@ D-P5-2; then batch 1.
   Snapshot: 4,372 PRs, 3,196 in corpus, 41,899 chunks.
 - D-P5-13 note: seconds_spent now records entry time, not judging time; the
   45 s box and the summary median no longer describe labeling effort.
+- D-P5-13 note: batch-1 entry method. 36 pairs entered via label.py, 134
+  inserted by scripts/day32_import_grades.py from the committed
+  eval/artifacts/batch1_claude_grades.psv (one transaction, existing rows
+  never overwritten). The .psv is the provenance record of Claude's proposals.
+  #7572<-#7295 reason saved with a stray emoji copied from Claude's table;
+  left as-is (round 1 never edited, grade unaffected).
