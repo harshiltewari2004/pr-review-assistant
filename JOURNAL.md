@@ -1270,3 +1270,4 @@ pgvector.Vector, not ndarray (.to_numpy()). First orchestrator run #8994:
 - Day 31: corpus has 41,899 chunks, not invariant 11's "~10k". Likely explains vector nomination 596 ms (15 query chunks x exact scan). Revisit ANN decision with measurements in Phase 7.
 - Day 32: manual entry is a transcription channel — first 36 pairs produced one copied-emoji reason. Bulk import from a committed file removed the channel and left a provenance record.
 - Day 32: a heredoc saved into a file instead of run in the terminal put the command lines inside the data; caught by the parser's 4-field split before any DB write.
+- Day 32: kappa subset paused at 0/30 (fatigue). The 30 pairs were dumped to a private text file for offline reading; Claude has not seen the list.
