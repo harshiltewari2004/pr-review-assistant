@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+from pathlib import Path
 
 from eval.label import POOL_PATH, PR_SQL, QUERIES_SQL, batch_query_ids, render
 from ingest.db import connect
@@ -20,6 +21,7 @@ from ingest.db import connect
 async def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--batch", type=int, choices=(1, 2), required=True)
+    parser.add_argument("--pairs", type=Path, help="dump only these pairs (D-P5-14 subset)")
     args = parser.parse_args()
 
     pool = {
@@ -31,6 +33,9 @@ async def main() -> None:
         qrows = await conn.fetch(QUERIES_SQL)
         batch_ids = batch_query_ids(qrows, args.batch)
         assert len(batch_ids) == 10, batch_ids
+        if args.pairs:
+            subset = {tuple(p) for p in json.loads(args.pairs.read_text())}
+            pool = {q: [c for c in pool[q] if (q, c) in subset] for q in batch_ids}
 
         all_ids = set(batch_ids) | {c for q in batch_ids for c in pool[q]}
         prs = {r["id"]: r for r in await conn.fetch(PR_SQL, list(all_ids))}
@@ -50,7 +55,7 @@ async def main() -> None:
                 print(render(prs[c], "CANDIDATE", show_outcome=True))
 
         print(f"\n{n} pairs")
-        assert n in (170, 175), n
+        assert n in (170, 175) or args.pairs, n
 
 
 if __name__ == "__main__":
