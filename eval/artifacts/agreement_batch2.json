@@ -28,6 +28,14 @@
         0.7826
       ],
       "agreement": "25/30"
+    },
+    "qwk": {
+      "kappa": 0.7742,
+      "ci95": [
+        0.6226,
+        0.9011
+      ],
+      "agreement": "23/30"
     }
   },
   "confusion_rows_author_cols_claude": [
