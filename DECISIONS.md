@@ -1759,3 +1759,13 @@ strict relevance is weakly measured.
   Grades in eval/artifacts/batch2_claude_grades.psv; 145 imported, the
   author's 30 kept as official. Agreement computed by eval/agreement.py
   (artifact agreement_batch2.json).
+- D-P5-14 result (Day 33): n=30. Cohen 3-grade kappa 0.628 [0.393, 0.839]
+  (PASS 01 §12); quadratic weighted kappa 0.774 [0.623, 0.901] (01 §12
+  ordinal stat; unweighted was chosen in error, both now reported);
+  lenient 0.865 [0.658, 1.000]; strict 0.380 [0.000, 0.783].
+  Confusion [[12,0,0],[2,9,0],[0,5,2]]: all 7 disagreements adjacent;
+  5 are author 2 vs grader 1.
+  Finding: Claude's grader instruction ("a consequence you have to infer
+  beyond what the candidate shows is a 1") is stricter than 01 §3
+  ("failure mode that B already surfaced"). Over-tightened the 1/2 line;
+  likely affects batch 1 too. Decision on remedy pending (D-P5-15).
