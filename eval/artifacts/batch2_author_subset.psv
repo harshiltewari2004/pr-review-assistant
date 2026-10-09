@@ -1,0 +1,30 @@
+6464|2780|1|same param-validation area
+6464|4590|1|FES file split, same area
+6464|4606|2|empty-variable message pattern, must match
+6171|1234|0|
+6171|1781|0|
+6171|6081|0|
+8676|1418|0|
+8676|2142|2|could reintroduce angleBetween NaN
+8676|8142|2|mismatched-dimension decision set earlier
+6302|1794|1|same textBounds function, different bug
+6302|4426|0|
+6302|6163|0|
+7369|2515|1|line shader origin, background
+7369|5802|2|cap/join line shader design
+7369|7206|2|could reintroduce small-units line bug
+8357|7563|1|same FES core area
+8357|8009|0|
+8357|8061|1|closed modular build, same area
+4824|432|0|
+4824|711|0|
+4824|4402|1|same GIF frame handling area
+3915|1519|1|closed random() perf change
+3915|1849|0|
+3915|3139|1|random() instance refactor, background
+1417|747|1|p5.Font internals, background
+1417|806|1|textWidth trailing spaces, background
+1417|1415|2|use renderer, not font.parent
+6699|2080|0|
+6699|2090|0|
+6699|3987|2|erase blend-state design set here

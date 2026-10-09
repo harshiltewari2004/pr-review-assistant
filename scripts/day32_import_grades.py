@@ -1,13 +1,17 @@
-"""Day 32: import Claude-proposed batch-1 grades (D-P5-13).
+"""Day 32: import a grades file into judgments (D-P5-13, D-P5-14).
 
-Reads eval/artifacts/batch1_claude_grades.psv (query#|candidate#|grade|reason),
-checks it covers exactly the batch-1 pool pairs, skips pairs already judged in
-round 1 (reporting any whose grade/reason differs; never overwrites, invariant
-15), and inserts the rest in one transaction. Dry run unless --apply.
+Reads a .psv (query#|candidate#|grade|reason), checks it covers exactly the
+expected pairs (a whole batch's pool, or a --pairs subset), skips pairs
+already judged in round 1 (reporting any whose grade/reason differs; never
+overwrites, invariant 15), and inserts the rest in one transaction.
+Dry run unless --apply.
 
 Usage:
-    python -m scripts.day32_import_grades           # dry run
-    python -m scripts.day32_import_grades --apply   # write
+    python -m scripts.day32_import_grades                  # batch 1, Claude grades
+    python -m scripts.day32_import_grades --batch 2 \\
+        --file eval/artifacts/batch2_author_subset.psv \\
+        --pairs eval/artifacts/kappa_subset_batch2.json    # author's 30
+    add --apply to write
 """
 
 from __future__ import annotations
@@ -15,6 +19,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+from pathlib import Path
 
 from eval.label import (
     ARTIFACTS,
@@ -28,9 +33,8 @@ from eval.label import (
 )
 from ingest.db import connect
 
-BATCH = 1
 REPO_ID = 2
-GRADES_PATH = ARTIFACTS / "batch1_claude_grades.psv"
+DEFAULT_GRADES_PATH = ARTIFACTS / "batch1_claude_grades.psv"
 
 PRS_BY_NUMBER_SQL = """
 SELECT id, number, author FROM pull_requests
@@ -60,9 +64,12 @@ def load_grades(text: str) -> list[tuple[int, int, int, str | None]]:
 async def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--apply", action="store_true", help="write (default: dry run)")
+    parser.add_argument("--batch", type=int, choices=(1, 2), default=1)
+    parser.add_argument("--file", type=Path, default=DEFAULT_GRADES_PATH)
+    parser.add_argument("--pairs", type=Path, help="expect exactly these pairs")
     args = parser.parse_args()
 
-    grades = load_grades(GRADES_PATH.read_text())
+    grades = load_grades(args.file.read_text())
     pool = {
         e["query_pr_id"]: e["candidate_pr_ids"]
         for e in json.loads(POOL_PATH.read_text())["queries"]
@@ -70,8 +77,12 @@ async def main() -> None:
 
     async with connect("local") as conn:
         qrows = await conn.fetch(QUERIES_SQL)
-        batch_ids = batch_query_ids(qrows, BATCH)
+        batch_ids = batch_query_ids(qrows, args.batch)
         expected = {(q, c) for q in batch_ids for c in pool[q]}
+        if args.pairs:
+            subset = {tuple(p) for p in json.loads(args.pairs.read_text())}
+            assert subset <= expected, "subset has pairs outside this batch's pool"
+            expected = subset
 
         numbers = {n for q, c, _, _ in grades for n in (q, c)}
         prs = await conn.fetch(PRS_BY_NUMBER_SQL, REPO_ID, list(numbers))
@@ -88,8 +99,7 @@ async def main() -> None:
 
         missing, extra = expected - set(pairs), set(pairs) - expected
         assert not missing and not extra, (
-            f"missing {[(num_of.get(q), num_of.get(c)) for q, c in missing]}, "
-            f"extra {[(num_of[q], num_of[c]) for q, c in extra]}"
+            f"missing {len(missing)}, extra {[(num_of[q], num_of[c]) for q, c in extra]}"
         )
 
         existing = {
@@ -106,7 +116,7 @@ async def main() -> None:
                 continue
             to_insert.append((*key, grade, reason, self_authored))
 
-        print(f"file pairs: {len(pairs)} (batch {BATCH} pool: {len(expected)})")
+        print(f"file: {args.file.name}  pairs: {len(pairs)}  expected: {len(expected)}")
         print(f"already judged: {len(pairs) - len(to_insert)}  to insert: {len(to_insert)}")
         print(f"mismatches with saved rows: {len(mismatches)}")
         for q, c, saved, proposed in mismatches:
@@ -119,7 +129,7 @@ async def main() -> None:
         async with conn.transaction():
             for q, c, grade, reason, self_authored in to_insert:
                 await conn.execute(
-                    INSERT_SQL, q, c, grade, reason, ROUND, BATCH, None, self_authored
+                    INSERT_SQL, q, c, grade, reason, ROUND, args.batch, None, self_authored
                 )
         print(f"inserted {len(to_insert)}")
 
