@@ -1271,3 +1271,4 @@ pgvector.Vector, not ndarray (.to_numpy()). First orchestrator run #8994:
 - Day 32: manual entry is a transcription channel — first 36 pairs produced one copied-emoji reason. Bulk import from a committed file removed the channel and left a provenance record.
 - Day 32: a heredoc saved into a file instead of run in the terminal put the command lines inside the data; caught by the parser's 4-field split before any DB write.
 - Day 32: kappa subset paused at 0/30 (fatigue). The 30 pairs were dumped to a private text file for offline reading; Claude has not seen the list.
+- Day 33 prediction (before eval.agreement): confusion [[12,0,0],[2,9,0],[0,5,2]]; three_grade kappa ~0.63, lenient ~0.87, strict ~0.38. Pattern: author grades 2 where the fresh grader grades 1.
