@@ -1753,3 +1753,9 @@ strict relevance is weakly measured.
   The author pasted them into the Claude chat before Claude graded batch 2,
   so that chat's grader is no longer blind to them. Mitigation pending:
   batch 2 graded by a fresh context that has not seen them.
+- D-P5-14 note (Day 33): mitigation applied. Batch 2 graded by a fresh
+  Claude chat outside this project (same model, no access to this chat or
+  the author's 30), given only batch2.txt + 01_evaluation_protocol.md.
+  Grades in eval/artifacts/batch2_claude_grades.psv; 145 imported, the
+  author's 30 kept as official. Agreement computed by eval/agreement.py
+  (artifact agreement_batch2.json).
