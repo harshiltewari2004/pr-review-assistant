@@ -1769,3 +1769,23 @@ strict relevance is weakly measured.
   beyond what the candidate shows is a 1") is stricter than 01 §3
   ("failure mode that B already surfaced"). Over-tightened the 1/2 line;
   likely affects batch 1 too. Decision on remedy pending (D-P5-15).
+
+## D-P5-15 — Strict-line remedy: corrected grader rule, re-grade 1/2 boundary as round 2 (Day 33)
+Context: D-P5-14 strict kappa 0.38; disagreements systematic (5 of 7 =
+author 2 vs grader 1), traced to Claude's over-tight grader instruction.
+Options: A lenient headline, labels unchanged; B strict headline as-is;
+C correct the rule and re-grade. Chosen: C (most accurate).
+Corrected rule: 2 if the candidate itself shows a failure, a decision, or
+the same work AND the query changes the code where it applies (whether the
+query will hit it is the reviewer's judgment); 1 if the failure/decision
+must be imagined because the candidate never showed it.
+Scope: every Claude-graded pair at grade 1 or 2 (batches 1 and 2), the
+author's 30 excluded (always official). Re-graded by a fresh chat outside
+the project, blind to round-1 grades and to the author's 30. Stored as
+round 2; round 1 untouched (invariant 15). Official label = round 2 where
+present, else round 1; author's 30 always official. Grade 0s not re-graded:
+the rule moves only the 1/2 line (lenient agreement 28/30).
+Measurement: recompute kappa (3-grade, QWK, lenient, strict) on the 30.
+Caveat: rule revised after seeing these 30, so kappa is optimistic.
+Headline: strict kappa >= 0.6 after remedy -> strict stays headline
+(01 §11); else lenient headline, strict secondary with its kappa.
