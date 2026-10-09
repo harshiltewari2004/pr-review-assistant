@@ -1748,3 +1748,8 @@ for those 30. 01 §12 threshold holds: kappa < 0.6 -> stop before
 Phase 6, review disagreement patterns in a new entry.
 Limitation: n=30 gives a wide CI; grade 2 is rare, so agreement on
 strict relevance is weakly measured.
+- D-P5-14 note (Day 33): author's 30 subset grades written to
+  eval/artifacts/batch2_author_subset.psv and imported (round 1, batch 2).
+  The author pasted them into the Claude chat before Claude graded batch 2,
+  so that chat's grader is no longer blind to them. Mitigation pending:
+  batch 2 graded by a fresh context that has not seen them.
