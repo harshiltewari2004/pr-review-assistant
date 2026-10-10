@@ -118,6 +118,31 @@ def pool_for_query(candidates: CandidateSet) -> list[int]:
     return sorted(pooled)
 
 
+async def build_query_candidates(conn, index, q) -> CandidateSet:
+    """C for one eval query, built exactly as pooled. 03 §4.
+
+    Shared with eval/score.py so the scorer ranks the same C the pool was
+    drawn from. One source of truth: if these drifted, labels would judge a
+    different candidate set than the one being scored.
+    """
+    rows = await conn.fetch(
+        "SELECT embedding FROM chunks WHERE pr_id = $1 ORDER BY file_path, hunk_index",
+        q["id"],
+    )
+    embeddings = [r["embedding"].to_numpy().astype(np.float32) for r in rows]
+    tokens = build_document(q["title"], q["body"], q["files_changed"])
+    return await build_backfilled_candidates(
+        conn,
+        index,
+        repo_id=REPO_ID,
+        query_pr_id=q["id"],
+        query_created_at=q["created_at"],
+        query_embeddings=embeddings,
+        query_files=q["files_changed"],
+        query_tokens=tokens,
+    )
+
+
 async def main() -> None:
     async with connect("local") as conn:
         index = await build_bm25_index(conn, REPO_ID)
@@ -127,23 +152,7 @@ async def main() -> None:
 
         entries = []
         for q in queries:
-            rows = await conn.fetch(
-                "SELECT embedding FROM chunks WHERE pr_id = $1 ORDER BY file_path, hunk_index",
-                q["id"],
-            )
-            embeddings = [r["embedding"].to_numpy().astype(np.float32) for r in rows]
-            tokens = build_document(q["title"], q["body"], q["files_changed"])
-
-            c = await build_backfilled_candidates(
-                conn,
-                index,
-                repo_id=REPO_ID,
-                query_pr_id=q["id"],
-                query_created_at=q["created_at"],
-                query_embeddings=embeddings,
-                query_files=q["files_changed"],
-                query_tokens=tokens,
-            )
+            c = await build_query_candidates(conn, index, q)
             picks = variant_picks(c)
             pool = pool_for_query(c)
             assert set(pool) == set().union(*picks.values()), q["number"]
