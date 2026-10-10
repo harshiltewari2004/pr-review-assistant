@@ -1807,3 +1807,16 @@ Consequence: no Doc 12 lag flags; D-M-1 does not apply to the diagnostic.
   contains the author's 30 (unmarked) so kappa can be recomputed; their
   round-2 grades go to the .psv only, never to judgments. Manifest:
   eval/artifacts/regrade_round2_pairs.json (regrade | measure per pair).
+
+## D-P5-16 — Round-2 import policy: corrected rule moves only the 1/2 line (Day 34)
+Context: round-2 dry run (121 regrade pairs): 1->1 66, 1->2 14, 2->1 2,
+2->2 16, 1->0 23. The corrected rule (D-P5-15) changes only the 1/2
+boundary; the 0/1 line was validated in round 1 (lenient kappa 0.865 vs
+the author's 30). The 23 1->0 moves are grader-to-grader drift, not the fix.
+Decision (made BEFORE any round-2 kappa is computed): accept round-2 grades
+1 or 2; reject a round-2 0 on a round-1 1/2 pair (round-1 grade stands, no
+round-2 row written). The author's 30 are measured under the same policy:
+final = 0 if round-1 LLM grade was 0, else max(round-2 grade, 1).
+Report both policy kappa (headline for D-P5-15) and raw round-2 kappa.
+Finding for README limitations: two LLM graders disagreed on 0 vs 1 for
+23/103 round-1 grade-1 pairs; the human subset is the arbiter.
