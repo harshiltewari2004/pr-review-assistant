@@ -1789,3 +1789,21 @@ Measurement: recompute kappa (3-grade, QWK, lenient, strict) on the 30.
 Caveat: rule revised after seeing these 30, so kappa is optimistic.
 Headline: strict kappa >= 0.6 after remedy -> strict stays headline
 (01 §11); else lenient headline, strict secondary with its kappa.
+
+## D-M-3 — Doc 12 ritual suspended; replaced by post-completion learning track (Day 34)
+(Drafted in a separate chat on Day 33; appended here the next session.)
+Context: Doc 12 backlog (normalize, scoring, reasons, eval/pool, eval/score)
+contributes to the session gap. A post-completion learning track
+(diagnostic -> blank-repo builds -> delayed rebuild) targets the same goal
+with stronger evidence (delayed recall, independent implementation).
+Options: (a) keep per-module rituals; (b) batch all five at project end;
+(c) suspend and fold into the learning-track diagnostic.
+Decision: (c). Rituals for chunking.py and signals.py stand as completed.
+Unaffected: typing rule (06 §13), golden assertions (07 §3), code-review mode.
+Trade-off: lose fresh-context review per module; gaps in normalize/scoring
+are caught only by golden assertions, the harness, or review.
+Consequence: no Doc 12 lag flags; D-M-1 does not apply to the diagnostic.
+- D-P5-15 note (Day 34): scope clarified. The fresh-grader dump also
+  contains the author's 30 (unmarked) so kappa can be recomputed; their
+  round-2 grades go to the .psv only, never to judgments. Manifest:
+  eval/artifacts/regrade_round2_pairs.json (regrade | measure per pair).
