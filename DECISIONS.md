@@ -1830,3 +1830,15 @@ Finding for README limitations: two LLM graders disagreed on 0 vs 1 for
   (doc edit owed). Caveats: kappa optimistic (rule revised after seeing
   these 30); strict CI wide (n=30, ~7 author grade-2s).
   Round 2 applied: 98 rows. Official label = latest round per pair.
+
+## D-P5-17 — score.py design (Day 34)
+Official labels: DISTINCT ON (pair) ORDER BY round DESC. MRR is MRR@3:
+the product shows 3, and ranks below the pool depth may be unjudged (W3).
+Unjudged PRs in a top 3 count as not relevant and are counted; must be 0
+for any reported number. Queries with no relevant PR at a threshold are
+excluded from that metric and counted (None, not 0). Bootstrap CI over
+QUERIES, 1,000 rounds, seed 32 (01 §14). Holdout guard (invariant 14):
+requires --holdout-once, only at DEFAULT_WEIGHTS, writes
+holdout_scored.json, refuses if it exists. build_query_candidates() moved
+into pool.py and shared, so the scorer ranks the same C that was pooled
+(pool.json byte-identical after the move).
