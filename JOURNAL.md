@@ -1273,3 +1273,5 @@ pgvector.Vector, not ndarray (.to_numpy()). First orchestrator run #8994:
 - Day 32: kappa subset paused at 0/30 (fatigue). The 30 pairs were dumped to a private text file for offline reading; Claude has not seen the list.
 - Day 33 prediction (before eval.agreement): confusion [[12,0,0],[2,9,0],[0,5,2]]; three_grade kappa ~0.63, lenient ~0.87, strict ~0.38. Pattern: author grades 2 where the fresh grader grades 1.
 - Day 33: agreement analysis turned "labels disagree" into a cause. Disagreements were systematic (adjacent, one direction), traced to a grader instruction stricter than 01 §3. Fix the instruction, not the labels by hand.
+- Day 34 prediction (before round-2 kappa, policy D-P5-16 committed): policy strict kappa rises from 0.380 to >= 0.6; policy lenient stays ~0.86; raw round-2 lenient falls below 0.86 (the 0/1 drift).
+- Day 34 actual: policy strict kappa 0.586 (predicted >= 0.6, missed narrowly); policy lenient 0.865 (held); raw lenient 0.800 (held, drift confirmed). Followed the pre-registered rule: lenient headline. The near-miss is exactly when rounding up is tempting.
