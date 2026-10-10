@@ -1820,3 +1820,13 @@ final = 0 if round-1 LLM grade was 0, else max(round-2 grade, 1).
 Report both policy kappa (headline for D-P5-15) and raw round-2 kappa.
 Finding for README limitations: two LLM graders disagreed on 0 vs 1 for
 23/103 round-1 grade-1 pairs; the human subset is the arbiter.
+- D-P5-15 result (Day 34): on the author's 30 under D-P5-16 policy:
+  3-grade 0.688 [0.446, 0.893], QWK 0.829 [0.676, 0.939], lenient 0.865
+  [0.658, 1.000], strict 0.586 [0.143, 0.902]. Raw round 2: 3-grade 0.687,
+  QWK 0.748, lenient 0.800, strict 0.586 (policy correctly held the 0/1
+  line). Strict improved from 0.380 but is below the pre-registered 0.6
+  bar, so per D-P5-15: LENIENT Recall@3 is the headline; strict reported
+  as secondary with its kappa. Supersedes 01 §11 "strict is the headline"
+  (doc edit owed). Caveats: kappa optimistic (rule revised after seeing
+  these 30); strict CI wide (n=30, ~7 author grade-2s).
+  Round 2 applied: 98 rows. Official label = latest round per pair.
