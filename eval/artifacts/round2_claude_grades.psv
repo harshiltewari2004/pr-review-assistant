@@ -1,0 +1,151 @@
+1518|771|1|arc fixes, same primitives code
+1518|820|1|WebGL drawing modes, origin design
+1518|895|2|modes live on renderer object
+1518|938|1|arguments perf pattern, broad PR
+1518|1188|1|WebGL geometry refactor
+1518|1191|1|WebGL 2D primitives additions
+1518|1288|1|introduced WebGL 2D primitives
+1518|1370|1|WebGL 2D primitives merge
+1518|1439|2|rect CORNERS argument bug fixed
+4366|2352|0|
+4366|3085|0|
+4366|3213|0|
+4366|3244|0|
+4366|3617|1|endShape fill/stroke per mode
+4366|3825|0|
+4366|4326|2|guarded immediate stroke drawing before
+4606|1256|0|
+4606|2018|1|early param validation, closed
+4606|2078|2|multi-format false negatives noted
+4606|2115|1|FES for color()
+4606|2122|1|validateParameters initial implementation
+4606|2177|1|FES injection, closed
+4606|2592|1|param validation tests, closed
+4606|2782|1|param validation tests
+4606|4164|0|
+4606|4561|2|argument-type cache in validateParameters
+4606|4580|2|prerequisite doc fix for #4571
+4606|4590|1|FES file split
+5460|2592|0|
+5460|4561|1|FES feature the docs describe
+5460|4590|1|FES file structure
+5460|4643|1|FES feature the docs describe
+5460|4670|1|FES feature the docs describe
+5460|4730|1|known limitation documented
+5460|4746|2|prior FES docs update
+5460|5305|1|FES feature the docs describe
+5460|5317|1|FES feature the docs describe
+5460|5351|1|FES feature the docs describe
+7572|3552|0|
+7572|4649|1|drawingContext documentation fix
+7572|4779|0|
+7572|7295|0|
+7572|7567|1|2.0 canvas property restoration
+7572|7568|0|
+7978|875|0|
+7978|7622|1|strands shader generation API
+7978|7675|1|strands API bug fixes
+7978|7887|1|same fallback pattern, lerp
+7978|7921|2|introduced strands noise(vec2)
+7978|7961|1|strands API fixes
+7978|7964|2|noise(x,y) wrapper and octaves
+8047|496|2|introduced loadImage failureCallback
+8047|2948|1|loader error handling, closed
+8047|3740|1|added omggif decoding
+8047|5025|0|
+8047|5178|0|
+8047|6171|0|
+8047|6674|1|loader error reporting, closed
+8047|7365|1|promise-based loading redesign
+8099|1318|1|global function binding warnings
+8099|1519|1|global binding perf, closed
+8099|7563|0|
+8099|7800|1|addon API docs
+8099|8094|2|introduced cached global binding clash
+8099|8098|2|earlier attempt, same FES binding
+8120|7582|0|
+8120|7622|1|original strands generation API
+8120|7956|0|
+8120|7961|0|
+8120|7978|0|
+8120|8009|2|same issue #7868, prior refactor
+8311|7417|1|text alignment architecture
+8311|7440|0|
+8311|8014|2|fixed alignment for broken lines
+8311|8088|0|
+8311|8294|2|competing open JUSTIFIED PR
+8311|8297|1|follow-up wrap modes, same issue
+1417|732|2|introduced textBounds memoization
+1417|747|1|p5.Font internals, background
+1417|790|1|p5.Font reorg
+1417|806|2|trailing-space fix in textBounds
+1417|895|2|alignment state lives on renderer
+1417|1168|1|renderer passed to font paths
+1417|1415|2|font.parent alignment bug
+3915|1330|1|random() docs
+3915|1456|1|random(Array) overload
+3915|1519|1|random() global perf, closed
+3915|1520|2|random() avoids arguments for speed
+3915|1849|0|
+3915|2340|2|benchmarks FES cost on random()
+3915|3139|0|
+4824|432|0|
+4824|711|0|
+4824|3740|1|original GIF timing implementation
+4824|4177|1|GIF frame delay structure
+4824|4402|0|
+6171|1234|0|
+6171|1781|0|
+6171|3740|1|original GIF decoding implementation
+6171|4177|1|GIF frame structure
+6171|4402|2|disposal blit edge in _createGif
+6171|4824|1|GIF playback, different bug
+6171|5025|2|zero-delay frame fix in decoder
+6171|5106|1|same loadImage function
+6171|5178|2|disposal handling in GIF decoder
+6171|5484|1|GIF playback timing
+6171|6081|0|
+6302|1417|1|textBounds alignment design
+6302|1794|1|same textBounds function
+6302|3438|1|textBounds cache changes
+6302|4426|0|
+6302|6163|0|
+6302|6301|2|same input check, closed
+6464|2592|1|param validation, test infra
+6464|2780|1|param validation tests
+6464|4590|1|created validate_params.js
+6464|4606|2|received-type wording for undefined
+6464|4629|2|param message format decided
+6464|5846|1|NaN check, unmerged alternative
+6464|6095|2|NaN rejection introduced here
+6699|2080|0|
+6699|2090|0|
+6699|3987|2|erase/noErase design introduced
+6699|4136|1|introduced GL state caching
+6699|4267|1|WebGL blend state logic
+6699|4559|2|diagnosed cached blend-mode conflict
+6699|6524|2|erase cache workaround, could regress
+7369|2515|1|line shader origin
+7369|2657|2|stroke depth offset approach set
+7369|5802|1|line shader cap/join design
+7369|5906|1|line.vert geometry
+7369|5981|1|similar depth fix, closed
+7369|7064|2|current depth-offset approach set
+7369|7206|0|
+8357|466|1|non-browser runtime support
+8357|7203|1|2.0 build and init structure
+8357|7563|1|FES core error handling
+8357|7791|1|window checks in init
+8357|8009|0|
+8357|8061|1|modular build, closed
+8676|1418|0|
+8676|2142|1|angleBetween NaN fix, background
+8676|4322|2|vector-vector mult/div semantics
+8676|7277|1|n-dim vector, closed attempt
+8676|7376|1|n-dim vector, closed attempt
+8676|7405|1|n-dim vector foundation
+8676|8094|1|vector perf optimizations
+8676|8142|2|mismatch handling decided here
+8676|8240|1|2D-only vector method, closed
+8676|8255|1|dimension-specific vector behaviour
+8676|8259|1|n-dim vectors, different feature

@@ -1,0 +1,30 @@
+1417|747|1|p5.Font internals, background
+1417|806|2|trailing-space fix in textBounds
+1417|1415|2|font.parent alignment bug
+3915|1519|1|random() global perf, closed
+3915|1849|0|
+3915|3139|0|
+4824|432|0|
+4824|711|0|
+4824|4402|0|
+6171|1234|0|
+6171|1781|0|
+6171|6081|0|
+6302|1794|1|same textBounds function
+6302|4426|0|
+6302|6163|0|
+6464|2780|1|param validation tests
+6464|4590|1|created validate_params.js
+6464|4606|2|received-type wording for undefined
+6699|2080|0|
+6699|2090|0|
+6699|3987|2|erase/noErase design introduced
+7369|2515|1|line shader origin
+7369|5802|1|line shader cap/join design
+7369|7206|1|line.vert precision fix
+8357|7563|1|FES core error handling
+8357|8009|0|
+8357|8061|1|modular build, closed
+8676|1418|0|
+8676|2142|1|angleBetween NaN fix, background
+8676|8142|2|mismatch handling decided here

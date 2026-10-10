@@ -16,6 +16,7 @@ Usage: python -m eval.agreement
 
 from __future__ import annotations
 
+import argparse
 import json
 import random
 from collections.abc import Callable
@@ -83,8 +84,13 @@ def bootstrap_ci(
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--llm", type=Path, default=LLM_PATH)
+    parser.add_argument("--out", type=Path, default=OUT_PATH)
+    args = parser.parse_args()
+
     human = read_grades(HUMAN_PATH)
-    llm = read_grades(LLM_PATH)
+    llm = read_grades(args.llm)
     missing = set(human) - set(llm)
     assert not missing, f"{len(missing)} subset pairs missing from the LLM grades"
 
@@ -134,7 +140,7 @@ def main() -> None:
     verdict = "PASS" if passed else "FAIL -> stop before Phase 6"
     print(f"\n01 §12 threshold {KAPPA_THRESHOLD} (three_grade): {verdict}")
 
-    OUT_PATH.write_text(
+    args.out.write_text(
         json.dumps(
             {
                 "n": n,

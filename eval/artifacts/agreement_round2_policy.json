@@ -1,0 +1,96 @@
+{
+  "n": 30,
+  "seed": 32,
+  "bootstrap_rounds": 10000,
+  "threshold": 0.6,
+  "passed": true,
+  "views": {
+    "three_grade": {
+      "kappa": 0.6875,
+      "ci95": [
+        0.4465,
+        0.8929
+      ],
+      "agreement": "24/30"
+    },
+    "lenient_ge1": {
+      "kappa": 0.8649,
+      "ci95": [
+        0.6575,
+        1.0
+      ],
+      "agreement": "28/30"
+    },
+    "strict_eq2": {
+      "kappa": 0.5862,
+      "ci95": [
+        0.1429,
+        0.902
+      ],
+      "agreement": "26/30"
+    },
+    "qwk": {
+      "kappa": 0.8286,
+      "ci95": [
+        0.6763,
+        0.939
+      ],
+      "agreement": "24/30"
+    }
+  },
+  "confusion_rows_author_cols_claude": [
+    [
+      12,
+      0,
+      0
+    ],
+    [
+      2,
+      8,
+      1
+    ],
+    [
+      0,
+      3,
+      4
+    ]
+  ],
+  "disagreements": [
+    {
+      "query": 1417,
+      "candidate": 806,
+      "author": 1,
+      "claude": 2
+    },
+    {
+      "query": 3915,
+      "candidate": 3139,
+      "author": 1,
+      "claude": 0
+    },
+    {
+      "query": 4824,
+      "candidate": 4402,
+      "author": 1,
+      "claude": 0
+    },
+    {
+      "query": 7369,
+      "candidate": 5802,
+      "author": 2,
+      "claude": 1
+    },
+    {
+      "query": 7369,
+      "candidate": 7206,
+      "author": 2,
+      "claude": 1
+    },
+    {
+      "query": 8676,
+      "candidate": 2142,
+      "author": 2,
+      "claude": 1
+    }
+  ]
+}
