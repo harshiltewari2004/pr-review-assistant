@@ -19,7 +19,6 @@ import numpy as np
 
 from app.retrieval.constants import VECTOR_AGGREGATION
 from app.retrieval.scoring import (
-    DEFAULT_WEIGHTS,
     CandidateSet,
     Weights,
     build_backfilled_candidates,
@@ -77,7 +76,13 @@ VARIANTS = (
         weights=Weights(vector=0.0, file_overlap=0.0, bm25=1.0),
         evidence="bm25_raw",
     ),
-    Variant(name="hybrid_default", weights=DEFAULT_WEIGHTS, evidence=None),
+    # Pinned: the pool was built at the pre-lock defaults. Using DEFAULT_WEIGHTS
+    # here would silently change pool.json once the weights lock (D-P6-2).
+    Variant(
+        name="hybrid_default",
+        weights=Weights(vector=0.5, file_overlap=0.3, bm25=0.2),
+        evidence=None,
+    ),
     Variant(
         name="hybrid_equal",
         weights=Weights(vector=1 / 3, file_overlap=1 / 3, bm25=1 / 3),

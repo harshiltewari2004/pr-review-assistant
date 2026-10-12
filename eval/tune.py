@@ -17,7 +17,7 @@ import asyncio
 import json
 import random
 
-from app.retrieval.scoring import DEFAULT_WEIGHTS, Weights
+from app.retrieval.scoring import Weights
 from eval.pool import POOL_PATH
 from eval.score import SEED, load_eval_set, score_split
 from ingest.db import connect
@@ -26,6 +26,8 @@ AGGREGATIONS = ("max", "mean_top_k")  # order is the D-P6-1 tie-break
 GRID_STEPS = 10  # 0.1 simplex -> 66 settings
 DECIMALS = 6
 OUT_PATH = POOL_PATH.parent / "tune_grid.json"
+# The D-P6-1 prior, pinned so a re-run after the lock reproduces this grid (D-P6-2).
+PRIOR_WEIGHTS = Weights(vector=0.5, file_overlap=0.3, bm25=0.2)
 
 
 def weight_grid() -> list[Weights]:
@@ -42,7 +44,7 @@ def weight_grid() -> list[Weights]:
 
 
 def l1_to_default(w: Weights) -> float:
-    d = DEFAULT_WEIGHTS
+    d = PRIOR_WEIGHTS
     return round(
         abs(w.vector - d.vector) + abs(w.file_overlap - d.file_overlap) + abs(w.bm25 - d.bm25),
         DECIMALS,
