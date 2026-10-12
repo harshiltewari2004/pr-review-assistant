@@ -30,8 +30,14 @@ import numpy as np
 import pytest
 import pytest_asyncio
 
-from app.retrieval.scoring import build_candidate_set
-from app.retrieval.signals import file_overlap_signal, vector_signal_for_pr
+from app.retrieval.reasons import explain
+from app.retrieval.scoring import build_candidate_set, find_similar_prs
+from app.retrieval.signals import (
+    build_bm25_index,
+    build_document,
+    file_overlap_signal,
+    vector_signal_for_pr,
+)
 
 QUERY_TIME = datetime(2024, 6, 1, 12, 0, 0, tzinfo=UTC)
 SHARED_FILES = ["src/core/main.js", "src/math/p5.Vector.js"]
@@ -164,13 +170,52 @@ async def test_candidate_set_inherits_the_temporal_filter(
     assert corpus.query not in candidates.ids
 
 
-@pytest.mark.skip(reason="needs rank_candidates() and reasons.py — 07 §6 structural half")
-def test_results_carry_all_three_normalized_scores_and_a_reason() -> None:
-    """07 §6's remaining three assertions: exactly 3 results, all three
-    normalized signal scores present, non-empty reason string.
+REAL_REPO_ID = 2  # processing/p5.js
+STRUCTURE_QUERY_NUMBER = 8994  # 07 §6 smoke query; not an eval query
 
-    Deliberately skipped, not omitted. These need the orchestrator (next item)
-    and reasons.py (blocked on D-P4-11). 09 §5's hard deadline is the temporal
-    filter, which the three tests above satisfy; the rest is output shape and
-    cannot leak. Visible as skipped so it can't be quietly forgotten.
+
+@pytest.mark.asyncio
+async def test_results_carry_all_three_normalized_scores_and_a_reason(
+    db: asyncpg.Connection,
+) -> None:
+    """07 §6 structural half, on the real corpus: exactly 3 results, all three
+    normalized scores in [0, 1], and a non-empty template reason for each that
+    never says "rejected" (invariants 17, 18). Shape only, never which PR ranks
+    first: tests check correctness, the harness checks quality (07).
     """
+    q = await db.fetchrow(
+        "SELECT id, created_at, title, body, files_changed FROM pull_requests "
+        "WHERE repo_id = $1 AND number = $2",
+        REAL_REPO_ID,
+        STRUCTURE_QUERY_NUMBER,
+    )
+    assert q is not None, "smoke query missing from the local corpus"
+    rows = await db.fetch(
+        "SELECT embedding FROM chunks WHERE pr_id = $1 ORDER BY file_path, hunk_index",
+        q["id"],
+    )
+    embeddings = [r["embedding"].to_numpy().astype(np.float32) for r in rows]
+    tokens = build_document(q["title"], q["body"], q["files_changed"])
+    index = await build_bm25_index(db, REAL_REPO_ID)
+
+    results = await find_similar_prs(
+        db,
+        index,
+        repo_id=REAL_REPO_ID,
+        query_pr_id=q["id"],
+        query_created_at=q["created_at"],
+        query_embeddings=embeddings,
+        query_files=q["files_changed"],
+        query_tokens=tokens,
+    )
+    reasons = await explain(
+        db, index, query_files=q["files_changed"], query_tokens=tokens, results=results
+    )
+
+    assert len(results) == 3
+    assert len(reasons) == 3
+    for r, reason in zip(results, reasons, strict=True):
+        for norm in (r.vector_score_norm, r.file_overlap_score_norm, r.bm25_score_norm):
+            assert 0.0 <= norm <= 1.0
+        assert reason.strip()
+        assert "rejected" not in reason.lower()
