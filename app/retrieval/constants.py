@@ -12,8 +12,13 @@ WEIGHT_VECTOR = 0.60  # tuned on the tune split per D-P6-1, locked 2026-10-12 (D
 WEIGHT_FILE_OVERLAP = 0.30
 WEIGHT_BM25 = 0.10
 
-REASON_HIGH_VECTOR = 0.70  # reason template rules 1 and 3
-REASON_HIGH_BM25 = 0.70  # rule 4
+# Reason thresholds (03 §10) are on the PER-QUERY MIN-MAX NORMALIZED scale
+# [0, 1], compared against ScoredCandidate.*_score_norm: never raw cosine,
+# never raw BM25. 0.70 = the top 30% of this query's range. D-P4-11.
+REASON_VECTOR_NORM_HIGH = 0.70  # rules 1 and 3
+REASON_BM25_NORM_HIGH = 0.70  # rule 4
+REASON_TOP_TERMS = 2  # rule 4: "{top_2_matched_terms}"
+CLOSED_UNMERGED_SUFFIX = " — closed without merging, worth checking why"  # inv. 17
 
 CANDIDATE_TOP_N = 50
 RESULTS_RETURNED = 3
