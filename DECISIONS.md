@@ -1862,3 +1862,20 @@ noise harder on 10 queries). C strict R@3 (weakest labels, D-P5-15).
 Expected: winner's curse — holdout below tune; the gap is reported.
 Output: full grid committed as eval/artifacts/tune_grid.json; the winner
 goes into constants.py with its lock date; then holdout exactly once.
+
+## D-P6-2 — Tune result and weight lock (Day 35)
+eval.tune per D-P6-1, tune split only. Eligible: max 51/66, mean_top_k 34/66.
+Top lenient R@3 0.3576, tied by max 0.6/0.3/0.1 and max 0.7/0.3/0.0; strict
+also tied (0.6944); MRR broke it (0.900 vs 0.850). WINNER: max, v=0.6 f=0.3
+b=0.1 (L1 0.2 from the prior). Prior 0.5/0.3/0.2 ranked 17th (0.3243).
+Gain +0.033 is inside the prior's CI [0.292, 0.361]: expect winner's curse.
+Observation: top 4 all have bm25 <= 0.1; BM25 adds little on tune.
+Aggregation: max wins; VECTOR_AGGREGATION stays "max".
+Lock: constants.py weights -> 0.6/0.3/0.1, dated 2026-10-12. pool.py's
+hybrid_default and tune.py's prior pinned to literal 0.5/0.3/0.2 so pool.json
+and tune_grid.json stay reproducible after the lock.
+Limitation: eligibility limits the search to configs whose tune top-3 is
+judged; 47 of 132 configs could not be evaluated.
+Holdout pre-flight: count unjudged holdout top-3 PRs at the locked weights
+(count only, no grades read, no metrics) before the run. If > 0, those pairs
+are judged blind before the holdout is scored.
