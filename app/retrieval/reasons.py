@@ -19,7 +19,6 @@ from app.retrieval.constants import (
     REASON_TOP_TERMS,
     REASON_VECTOR_NORM_HIGH,
 )
-
 from app.retrieval.signals import Bm25Index, build_document
 
 if TYPE_CHECKING:
