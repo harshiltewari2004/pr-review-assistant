@@ -1879,3 +1879,14 @@ judged; 47 of 132 configs could not be evaluated.
 Holdout pre-flight: count unjudged holdout top-3 PRs at the locked weights
 (count only, no grades read, no metrics) before the run. If > 0, those pairs
 are judged blind before the holdout is scored.
+
+## D-P6-3 — Holdout run protocol (Day 35)
+Exactly one run: python -m eval.score --split holdout --holdout-once, at the
+locked weights 0.6/0.3/0.1 (max). The same run also scores the pre-registered
+baselines vector_only, file_overlap_only, bm25_only, hybrid_prior (0.5/0.3/0.2),
+all written to holdout_scored.json, so the README comparison table (10 §2)
+needs no second run. Headline: locked hybrid lenient Recall@3 with its
+bootstrap CI and mean ceiling; strict and MRR secondary. Pre-flight: 0
+unjudged of 30 at the locked weights. A baseline with unjudged > 0 is
+reported and flagged, never dropped. Nothing is tuned or changed after the
+run (invariant 14); the tune-to-holdout gap is reported as the overfitting.
