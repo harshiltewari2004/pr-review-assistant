@@ -134,6 +134,14 @@ def top_k(c: CandidateSet, weights: Weights, k: int = K) -> list[int]:
 
 
 HOLDOUT_LOCK_PATH = POOL_PATH.parent / "holdout_scored.json"
+# Pre-registered (D-P6-3): scored in the SAME single holdout run as the locked
+# weights, so the comparison table (10 §2) exists without a second run.
+HOLDOUT_BASELINES = {
+    "vector_only": Weights(vector=1.0, file_overlap=0.0, bm25=0.0),
+    "file_overlap_only": Weights(vector=0.0, file_overlap=1.0, bm25=0.0),
+    "bm25_only": Weights(vector=0.0, file_overlap=0.0, bm25=1.0),
+    "hybrid_prior": Weights(vector=0.5, file_overlap=0.3, bm25=0.2),
+}
 METRIC_NAMES = (
     "recall_lenient",
     "recall_strict",
@@ -249,6 +257,19 @@ async def main() -> None:
     print(f"  |relevant| lenient per query: {result['relevant_lenient_sizes']}")
 
     if args.split == "holdout":
+        result["baselines"] = {}
+        for name, bw in HOLDOUT_BASELINES.items():
+            b = score_split(chosen, bw, random.Random(SEED))
+            result["baselines"][name] = {
+                "metrics": b["metrics"],
+                "unjudged_in_top3": b["unjudged_in_top3"],
+            }
+            m = b["metrics"]
+            print(
+                f"  baseline {name:<18} R@3 {_fmt(m['recall_lenient']['mean'])}  "
+                f"strict {_fmt(m['recall_strict']['mean'])}  "
+                f"MRR {_fmt(m['mrr_lenient']['mean'])}  unjudged {b['unjudged_in_top3']}"
+            )
         HOLDOUT_LOCK_PATH.write_text(json.dumps(result, indent=2) + "\n")
 
 
