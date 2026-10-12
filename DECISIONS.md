@@ -1909,3 +1909,18 @@ Prediction: locked ~0.30 held (0.321); prior within a few points missed
 (prior +0.04); order missed (BM25 near the top).
 Deferred: a larger, fresh eval set (new queries, pool, labels) as v1.1 is
 the honest way to separate configs. This holdout is never reused.
+
+## D-P6-5 — v1.1 evaluation expansion, scheduled before Phase 9 (Day 35)
+Why: D-P6-4 showed 10 tune queries were too few (tuning overfit, BM25
+undervalued; no config separable at n=10).
+Plan: ~20 NEW eval queries (none of the current 20), pooled and labeled
+under the D-P5-13..16 protocol (blind display, fresh grader, corrected rule,
+human subset + kappa). Candidate new signal: issue link (shared
+"Resolves #N"). Re-tune on all 20 current queries (old tune + old holdout)
+under a D-P6-1-style protocol pre-registered before tuning. Score the NEW
+holdout exactly once.
+Pre-commitment (made before any v1.1 result exists): the v1.1 holdout
+number becomes the README headline WHETHER HIGHER OR LOWER than 0.321,
+chosen for its larger n, not its value. v1.0's 0.321 stays published as
+the first evaluation. Choosing the higher of the two would be cherry-picking.
+Order: reasons.py -> Phase 7 -> Phase 8 -> v1.1 -> Phase 9.
