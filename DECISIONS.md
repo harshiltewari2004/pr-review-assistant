@@ -1890,3 +1890,22 @@ bootstrap CI and mean ceiling; strict and MRR secondary. Pre-flight: 0
 unjudged of 30 at the locked weights. A baseline with unjudged > 0 is
 reported and flagged, never dropped. Nothing is tuned or changed after the
 run (invariant 14); the tune-to-holdout gap is reported as the overfitting.
+
+## D-P6-4 — Holdout result (Day 35)
+Locked hybrid (max, 0.6/0.3/0.1), holdout, n=10: lenient R@3 0.321
+[0.237, 0.421], mean ceiling 0.501 (64% of achievable); strict 0.542
+[0.333, 0.771] (n=8); MRR@3 0.883 [0.700, 1.000]; unjudged 0.
+Tune -> holdout: lenient 0.358 -> 0.321.
+Baselines (same run): hybrid_prior 0.36/0.48/0.95; bm25_only 0.35/0.42/0.95;
+vector_only 0.27/0.33/0.63; file_overlap_only 0.16/0.10/0.53 (FLAGGED:
+3 unjudged in top-3).
+Finding: tuning overfit. Tune cut BM25 to 0.1; on holdout bm25_only and the
+prior both beat the locked weights on lenient R@3 and MRR; locked leads only
+on strict. n=10: every CI overlaps, so no configuration is shown to beat
+another. Per invariant 14 nothing is re-tuned; the locked weights and this
+number stand. README makes no "improves over keyword search" claim; the
+comparison table is published as measured.
+Prediction: locked ~0.30 held (0.321); prior within a few points missed
+(prior +0.04); order missed (BM25 near the top).
+Deferred: a larger, fresh eval set (new queries, pool, labels) as v1.1 is
+the honest way to separate configs. This holdout is never reused.
