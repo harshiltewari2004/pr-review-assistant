@@ -1924,3 +1924,16 @@ number becomes the README headline WHETHER HIGHER OR LOWER than 0.321,
 chosen for its larger n, not its value. v1.0's 0.321 stays published as
 the first evaluation. Choosing the higher of the two would be cherry-picking.
 Order: reasons.py -> Phase 7 -> Phase 8 -> v1.1 -> Phase 9.
+- D-P4-11 RESOLVED (Day 35): reason thresholds renamed REASON_VECTOR_NORM_HIGH /
+  REASON_BM25_NORM_HIGH and documented as the per-query min-max NORMALIZED
+  scale [0, 1], compared against ScoredCandidate.*_score_norm, never raw.
+  Added REASON_TOP_TERMS and CLOSED_UNMERGED_SUFFIX (invariant 17) as constants.
+
+## D-P4-15 — "their_top_file" approximation in reasons.py (Day 35)
+VectorAggregate carries no per-chunk file, so rule 3's {their_top_file} is
+the candidate file with the deepest shared directory with any query file
+(ties alphabetical). The precise version (file of the best-matching chunk)
+would change the vector SQL behind locked numbers; deferred.
+Observation (#8994): all three top results fire rule 1 with identical text.
+Templates say what is similar, not why it matters, so the Phase 7 bot
+comment MUST show each result's title next to its reason.
