@@ -1842,3 +1842,23 @@ requires --holdout-once, only at DEFAULT_WEIGHTS, writes
 holdout_scored.json, refuses if it exists. build_query_candidates() moved
 into pool.py and shared, so the scorer ranks the same C that was pooled
 (pool.json byte-identical after the move).
+
+## D-P6-1 — Tuning protocol, pre-registered before any tuning run (Day 35)
+Split: TUNE only (10 queries); holdout untouched until weights lock (inv. 14).
+Grid: weights on the 0.1 simplex (66 settings) x vector aggregation in
+{max, mean_top_k} = 132 configs.
+Eligibility: zero unjudged PRs in any tune top-3 (D-P5-9 W3). Ineligible
+configs are reported, never chosen.
+Objective (option A), lexicographic, means rounded to 6 dp:
+  1. lenient Recall@3 (headline, kappa 0.865)
+  2. strict Recall@3 (tie-break only, kappa 0.586)
+  3. MRR@3
+  4. smallest L1 distance to DEFAULT 0.5/0.3/0.2 (move only as far as
+     the evidence forces; guards against fitting noise)
+  5. aggregation max before mean_top_k (simpler, 03 §5)
+  6. grid order
+Rejected: B nDCG@3 (new metric; tune != headline; a finer objective fits
+noise harder on 10 queries). C strict R@3 (weakest labels, D-P5-15).
+Expected: winner's curse — holdout below tune; the gap is reported.
+Output: full grid committed as eval/artifacts/tune_grid.json; the winner
+goes into constants.py with its lock date; then holdout exactly once.
