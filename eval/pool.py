@@ -17,6 +17,7 @@ from pathlib import Path
 
 import numpy as np
 
+from app.retrieval.constants import VECTOR_AGGREGATION
 from app.retrieval.scoring import (
     DEFAULT_WEIGHTS,
     CandidateSet,
@@ -118,7 +119,9 @@ def pool_for_query(candidates: CandidateSet) -> list[int]:
     return sorted(pooled)
 
 
-async def build_query_candidates(conn, index, q) -> CandidateSet:
+async def build_query_candidates(
+    conn, index, q, vector_aggregation: str = VECTOR_AGGREGATION
+) -> CandidateSet:
     """C for one eval query, built exactly as pooled. 03 §4.
 
     Shared with eval/score.py so the scorer ranks the same C the pool was
@@ -140,6 +143,7 @@ async def build_query_candidates(conn, index, q) -> CandidateSet:
         query_embeddings=embeddings,
         query_files=q["files_changed"],
         query_tokens=tokens,
+        vector_aggregation=vector_aggregation,
     )
 
 

@@ -15,6 +15,7 @@ import random
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+from app.retrieval.constants import VECTOR_AGGREGATION
 from app.retrieval.scoring import DEFAULT_WEIGHTS, CandidateSet, Weights, rank_candidates
 from app.retrieval.signals import build_bm25_index
 from eval.pool import POOL_PATH, QUERIES_SQL, REPO_ID, build_query_candidates
@@ -84,7 +85,7 @@ class EvalQuery:
     labels: dict[int, int]
 
 
-async def load_eval_set(conn) -> list[EvalQuery]:
+async def load_eval_set(conn, vector_aggregation: str = VECTOR_AGGREGATION) -> list[EvalQuery]:
     """All 20 eval queries, C built exactly as pooled, plus official labels.
 
     Refuses on corpus fingerprint mismatch (D-P5-9 W2): the labels judge the
@@ -108,7 +109,7 @@ async def load_eval_set(conn) -> list[EvalQuery]:
     for q in await conn.fetch(QUERIES_SQL):
         judged = set(labels.get(q["id"], {}))
         assert judged == pooled[q["id"]], (q["number"], "labels do not match the pool")
-        c = await build_query_candidates(conn, index, q)
+        c = await build_query_candidates(conn, index, q, vector_aggregation)
         out.append(
             EvalQuery(
                 pr_id=q["id"],

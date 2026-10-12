@@ -20,6 +20,7 @@ from app.retrieval.constants import (
     BM25_TOP_K,
     FILE_OVERLAP_TOP_K,
     RESULTS_RETURNED,
+    VECTOR_AGGREGATION,
     VECTOR_TOP_K,
     WEIGHT_BM25,
     WEIGHT_FILE_OVERLAP,
@@ -241,8 +242,12 @@ async def build_backfilled_candidates(
     query_embeddings: list[np.ndarray],
     query_files: Sequence[str],
     query_tokens: list[str],
+    vector_aggregation: str = VECTOR_AGGREGATION,
 ) -> CandidateSet:
     """Nominate, union, backfill. 03 §4 steps 1-6. D-P4-14.
+
+    vector_aggregation defaults to the product constant; only eval/ passes
+    another value, for the D-P6-1 aggregation comparison.
 
     Returns C with all three raw dicts keyed by exactly C.ids, ready for
     rank_candidates(). Split from find_similar_prs() so eval/pool.py can
@@ -260,7 +265,12 @@ async def build_backfilled_candidates(
 
     started = time.perf_counter()
     vector_aggs = await vector_signal_for_pr(
-        conn, query_embeddings, repo_id, query_created_at, query_pr_id
+        conn,
+        query_embeddings,
+        repo_id,
+        query_created_at,
+        query_pr_id,
+        strategy=vector_aggregation,
     )
     timings["vector_ms"] = _ms_since(started)
 
@@ -293,6 +303,7 @@ async def build_backfilled_candidates(
         query_created_at,
         query_pr_id,
         candidate_ids=nominated.ids,
+        strategy=vector_aggregation,
     )
     timings["backfill_ms"] = _ms_since(started)
 
