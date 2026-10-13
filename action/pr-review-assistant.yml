@@ -1,0 +1,71 @@
+name: PR Review Assistant
+
+on:
+  pull_request:
+    types: [opened, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  find-similar:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out the tool
+        uses: actions/checkout@v4
+        with:
+          repository: harshiltewari2004/pr-review-assistant
+          path: tool
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: tool/requirements.txt
+
+      - name: Cache the embedding model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-sentence-transformers-all-MiniLM-L6-v2
+
+      - name: Install (CPU-only torch first, as in the Dockerfile)
+        working-directory: tool
+        run: |
+          pip install torch==2.3.1 --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt
+
+      - name: Fetch the diff
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: gh pr diff "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" > "$RUNNER_TEMP/pr.diff"
+
+      - name: Find similar past PRs
+        id: analyze
+        continue-on-error: true  # invariant 26: never fail someone's PR
+        working-directory: tool
+        env:
+          DATABASE_URL: ${{ secrets.NEON_READONLY_URL }}
+          CORPUS_REPO: processing/p5.js
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          DIFF_PATH: ${{ runner.temp }}/pr.diff
+          COMMENT_PATH: ${{ runner.temp }}/comment.md
+        run: python -m action.entry
+
+      - name: Post the comment
+        if: steps.analyze.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          if [ -s "$RUNNER_TEMP/comment.md" ]; then
+            gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body-file "$RUNNER_TEMP/comment.md"
+          else
+            echo "nothing comparable: no comment"
+          fi

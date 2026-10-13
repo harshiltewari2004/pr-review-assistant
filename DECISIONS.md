@@ -1976,3 +1976,25 @@ Trade-offs: ~1-2 min per PR on the runner (cached installs); no public API
 for live custom queries; the demo page stays static (already the 04 §1 design).
 Also verified: Neon is content-identical to the evaluated corpus
 (id-independent content fingerprint b1ea02d3 on both; ids differ).
+
+## D-P7-4 — Live bot on a demo repo; no upstream backlinks (Day 36)
+Demo repo harshiltewari2004/p5-pr-review-demo: a history-free p5.js snapshot
+(LGPL, license kept) with ONLY our workflow (p5's own 9 workflows removed;
+runner pinned ubuntu-24.04). The author's contribution fork is never touched.
+Secret NEON_READONLY_URL = pooled URL for role pr_bot_reader (SELECT-only +
+default_transaction_read_only; CREATE and DELETE verified to fail).
+Runs end to end in ~1 min (59-65 s). Workflow copy: action/pr-review-assistant.yml.
+Finding 1 (toy diff, demo PR #1): an 11-line helper (4 lines JSDoc) in
+p5.Vector.js retrieved three docs-only Vector PRs, not #8994/#8821. Causes:
+Jaccard rewards single-file PRs (a docs PR scores 1.0, #8994 only 1/3); a
+comment-heavy diff embeds like docs edits; BM25 at 0.1 (D-P6-4). NOT tuned on
+(one anecdote); recorded as v1.1 evidence.
+Finding 2 (etiquette): direct github.com PR links in bot comments created
+"mentioned in" cross-references on upstream p5.js PRs (#6848 confirmed; it
+persists after the comment was deleted). Fix: comment links go through
+redirect.github.com, enforced by a test; replayed PR bodies neutralize
+@mentions and upstream references. Verified: no cross-reference on #8638.
+Live result (demo PR #2, replay of p5.js #9281, opened after the snapshot):
+#8638 Ternary support for p5.strands, #8394 Fix for strands branching,
+#8548 Handle booleans used as temp variables: the same two codegen backends,
+on branching and temporaries, which is the phi-node fix's exact topic.
