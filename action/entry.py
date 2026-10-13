@@ -26,6 +26,11 @@ from app.schemas import AnalyzeResult
 from app.service import CORPUS_COUNT_SQL, REPO_SQL, analyze_diff
 
 TOOL_URL = "https://github.com/harshiltewari2004/pr-review-assistant"
+# Corpus PR links go through redirect.github.com: GitHub does not turn those
+# into "mentioned this" entries on the linked PR's timeline (the reason
+# Dependabot uses it). A demo must never leave traces on upstream PRs. D-P7-4.
+GITHUB_URL = "https://github.com/"
+NO_BACKLINK_URL = "https://redirect.github.com/"
 
 
 def render_comment(results: list[AnalyzeResult], corpus_repo: str, corpus_prs: int) -> str:
@@ -40,7 +45,8 @@ def render_comment(results: list[AnalyzeResult], corpus_repo: str, corpus_prs: i
     for i, r in enumerate(results, start=1):
         title = r.title.replace("|", "\\|")
         reason = r.reason.replace("|", "\\|")
-        lines.append(f"| {i} | [#{r.pr_number} {title}]({r.url}) | {reason} |")
+        url = r.url.replace(GITHUB_URL, NO_BACKLINK_URL, 1)
+        lines.append(f"| {i} | [#{r.pr_number} {title}]({url}) | {reason} |")
     lines += [
         "",
         f"<sub>Hybrid retrieval (code embeddings + file overlap + BM25) over "
