@@ -10,3 +10,5 @@ tests/
 ingest/
 scripts/
 JOURNAL.md
+.cache/
+docs/
