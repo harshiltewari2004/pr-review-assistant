@@ -1998,3 +1998,17 @@ Live result (demo PR #2, replay of p5.js #9281, opened after the snapshot):
 #8638 Ternary support for p5.strands, #8394 Fix for strands branching,
 #8548 Handle booleans used as temp variables: the same two codegen backends,
 on branching and temporaries, which is the phi-node fix's exact topic.
+
+## D-P7-5 — Weekly re-index for the live corpus, scheduled in Phase 9 (Day 36)
+Reopens "no incremental sync" (cut; 02: deferred past Day 50) on new
+evidence: the bot is now live (D-P7-4), and a corpus frozen at 2026-08-15
+makes it visibly stale (recent related PRs never surface; outcomes of PRs
+open at snapshot time go stale, e.g. a later-merged PR still unlabelled).
+Plan: a weekly scheduled Action runs the EXISTING ingest pipeline for PRs
+newer than the highest indexed number, and refreshes outcome for PRs still
+'open' in the corpus. Writes through a dedicated Neon role with INSERT/UPDATE
+only (no DELETE, no DDL). GitHub reads use the built-in token.
+Evaluation stays FROZEN on the local snapshot (fingerprint b04b9a89,
+invariant 13): the sync touches Neon only. README states: evaluation on
+the 2026-08-15 snapshot; the live corpus updates weekly.
+Estimate: 1-1.5 sessions, first item of Phase 9.

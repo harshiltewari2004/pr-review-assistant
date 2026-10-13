@@ -22,7 +22,7 @@ ruff check && ruff format --check . && pytest -q
 
 ## NEXT SESSION: Phase 8 — demo frontend (05_frontend.md, ~4-5 sessions)
 Static page; seeded results; link the live demo repo and PR #2.
-Then v1.1 (D-P6-5), then Phase 9 (README).
+Then v1.1 (D-P6-5), then Phase 9: weekly re-index (D-P7-5), then README.
 
 ## Open
 - v1.1 evidence: Jaccard favours single-file PRs; BM25 undervalued (D-P6-4,
