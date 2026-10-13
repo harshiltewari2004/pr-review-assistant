@@ -1937,3 +1937,23 @@ would change the vector SQL behind locked numbers; deferred.
 Observation (#8994): all three top results fire rule 1 with identical text.
 Templates say what is similar, not why it matters, so the Phase 7 bot
 comment MUST show each result's title next to its reason.
+
+## D-P7-1 — /analyze contract (Day 36)
+Request adds title + body: BM25's document is title + body + file basenames
+(03 §7), so production must score the same document the evaluation did.
+Response score fields are *_norm (invariant 6), not 04 §4's bare names.
+Query chunks and files come from the SAME parse_hunks / files_changed /
+h.content path as indexing. Known PR (already indexed): its own created_at
+and id, so it cannot retrieve itself. New PR: created_at = now, id -1.
+No hunks -> 200 with empty results. Retrieval failure -> 503 + request_id
+(04 §10). similarity_results caching deferred to the /similar session.
+Local smoke: known #8994 reproduces Day 35's top 3 exactly (serving path ==
+evaluation path); as-new #8994 retrieves itself first at 1.000 and the rest
+drop (per-query normalization rescales around the perfect twin).
+
+## D-P7-2 — Service DB pool (Day 36)
+asyncpg pool min 1 / max 4, statement_cache_size=0: Neon's pooled endpoint
+is PgBouncer in transaction mode, which breaks asyncpg's prepared-statement
+cache. Codecs mirror ingest/db.py; app/ never imports ingest/ (04 §3).
+D-P3-2's remaining half (behaviour under instance churn) is measured on
+Cloud Run.
