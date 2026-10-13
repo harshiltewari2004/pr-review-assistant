@@ -25,4 +25,6 @@ COPY . .
 # Bind $PORT when the platform sets one (Cloud Run injects it), else 7860.
 ENV PORT=7860
 EXPOSE 7860
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT}"]
+# exec: uvicorn replaces the shell and becomes PID 1, so it receives Cloud Run's
+# SIGTERM directly and shuts down gracefully instead of being killed.
+CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT}"]
