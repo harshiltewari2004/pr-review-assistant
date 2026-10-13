@@ -1957,3 +1957,22 @@ is PgBouncer in transaction mode, which breaks asyncpg's prepared-statement
 cache. Codecs mirror ingest/db.py; app/ never imports ingest/ (04 §3).
 D-P3-2's remaining half (behaviour under instance churn) is measured on
 Cloud Run.
+
+## D-P7-3 — Compute moves into the GitHub Action; Cloud Run deferred (Day 36)
+Context: Cloud Run needs a billing account even inside Always Free; none is
+available (no credit card). 04 §9's other hosts were disqualified at 512 MB.
+Options: (1) GCP free trial (needs a card); (2) run the pipeline on the
+GitHub Actions runner (free for public repos, ~7 GB RAM); (3) ONNX shrink to
+fit 512 MB hosts (embedding drift would void the exact-match proof).
+Decision: (2). The Action installs the tool, fetches the diff, runs
+app.service.analyze_diff (the SAME function POST /analyze uses), reads Neon
+through a READ-ONLY role, and posts the comment with the built-in token.
+Analyze step continue-on-error (invariant 26). The FastAPI service and the
+Dockerfile stay, verified locally (image 517 MB, 7 s ready under emulation,
+graceful SIGTERM), ready for Cloud Run if billing becomes available.
+PR-number rule: a PR is looked up in the corpus only when opened IN the
+corpus repo; fork PRs are always new (fork #1 is not p5.js #1).
+Trade-offs: ~1-2 min per PR on the runner (cached installs); no public API
+for live custom queries; the demo page stays static (already the 04 §1 design).
+Also verified: Neon is content-identical to the evaluated corpus
+(id-independent content fingerprint b1ea02d3 on both; ids differ).
