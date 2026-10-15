@@ -40,6 +40,7 @@ HOLDOUT_PATH = ROOT / "eval/artifacts/holdout_scored.json"
 POOL_PATH = ROOT / "eval/artifacts/pool.json"
 CACHE_DIR = ROOT / ".cache/seeds"
 OUT_PATH = ROOT / "frontend/seed_results.json"
+OUT_JS_PATH = ROOT / "frontend/seed_results.js"
 RULE = (
     "the 3 most recent processing/p5.js PRs opened after the corpus snapshot, "
     "not authored by a bot, whose diff keeps at least one hunk after chunker exclusions"
@@ -147,6 +148,9 @@ async def main() -> None:
         "queries": queries,
     }
     OUT_PATH.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n")
+    # Loaded with a <script> tag, not fetch(): no network call on load (05 §5),
+    # and the page works even when opened straight from disk.
+    OUT_JS_PATH.write_text("window.SEEDS = " + json.dumps(payload, ensure_ascii=False) + ";\n")
 
     m = payload["metrics"]
     print(

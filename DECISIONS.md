@@ -2038,3 +2038,16 @@ Shown whatever the quality (05 §5: never chosen to hide weak cases).
 seed_results.json records generated_at, rule, weights, aggregation, model,
 corpus fingerprint and indexed_at. Raw diffs cached to .cache/seeds/
 (invariant 19). Regenerate after any weight change or re-index (D-P7-5).
+
+## D-P8-4 — No "% similar"; calibrated per-rank relevance added to v1.1 (Day 37)
+Request: show how similar each result is as a percentage. Rejected for v1:
+final_score is per-query min-max normalized, so it measures strength
+RELATIVE to this PR's other candidates (e.g. #8259 for #8994 fell 0.953 ->
+0.776 when a perfect twin entered the list). Printing it as "% similar" is
+false precision. Now: the page states the bar is relative, not a percentage.
+Pre-registered for v1.1 (D-P6-5): score.py also reports, in the SAME single
+holdout run, the fraction of results at each rank (1, 2, 3) judged relevant;
+the page then shows a measured "relevant N% of the time at this rank".
+Also noted (v1.1 evidence): #9290's top two results match mainly through the
+generated file docs/parameterData.json; exclude generated files from
+chunking in v1.1, not now (it would change the evaluated corpus).
