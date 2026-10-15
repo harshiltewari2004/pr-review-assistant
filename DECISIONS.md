@@ -2051,3 +2051,18 @@ the page then shows a measured "relevant N% of the time at this rank".
 Also noted (v1.1 evidence): #9290's top two results match mainly through the
 generated file docs/parameterData.json; exclude generated files from
 chunking in v1.1, not now (it would change the evaluated corpus).
+
+## D-P8-5 — Demo page live on GitHub Pages (Day 37)
+https://harshiltewari2004.github.io/pr-review-assistant/ (static, frontend/
+only, deployed by .github/workflows/pages.yml on changes to frontend/).
+Seeds load via <script src="seed_results.js">: no fetch, no API, works from
+disk. PR titles rendered with textContent (user-written: XSS); links accepted
+only if they point at github.com. OG tags + preview.png (1200x630, rendered
+from the seeded page). --flag darkened to #C2410C (white text >= 4.5:1).
+Checked at 375 px.
+Deviations from 05, all recorded: no custom-query box (D-P8-2); metric strip
+absolute, not comparative (D-P8-1); hover shows normalized x weight =
+contribution, not raw scores (the API exposes normalized only); fonts limited
+to the used weights via Google Fonts, not self-hosted subsets.
+Phase 8 took 1 session (planned 4-5): the static design removed the API,
+loading, waking and error work.

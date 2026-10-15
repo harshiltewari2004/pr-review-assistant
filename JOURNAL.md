@@ -1283,3 +1283,4 @@ pgvector.Vector, not ndarray (.to_numpy()). First orchestrator run #8994:
 - Day 35 holdout actual: locked 0.321 (ceiling 0.501); prior 0.36 and bm25_only 0.35 beat it on lenient + MRR. Tuning on 10 queries overfit (BM25 undervalued). Followed invariant 14: no re-tune. The surprise is the finding, not a bug.
 - Day 36: first live bot comment. A toy diff gave weak results (docs PRs); a real unseen PR (#9281) gave strong ones. Lesson: demo with real PRs, and never tune on one anecdote.
 - Day 36: links in bot comments created backlinks on upstream PRs. Caught after one run via the timeline API; fixed with redirect.github.com. Check side effects on systems you don't own.
+- Day 37: demo page live. Seeds picked by a pre-registered rule showed one strong, two mixed examples — and exposed generated files (docs/parameterData.json) inflating matches. Honest examples teach more than flattering ones.
