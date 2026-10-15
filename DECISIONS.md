@@ -2012,3 +2012,29 @@ Evaluation stays FROZEN on the local snapshot (fingerprint b04b9a89,
 invariant 13): the sync touches Neon only. README states: evaluation on
 the 2026-08-15 snapshot; the live corpus updates weekly.
 Estimate: 1-1.5 sessions, first item of Phase 9.
+
+## D-P8-1 — Metric strip: honest, measured, generated (Day 37)
+05 §7's "+XX pts Recall@3 over keyword search" was a July placeholder; the
+holdout falsified it (hybrid 0.321 vs bm25_only 0.35, CIs overlapping,
+D-P6-4). Strip: "Top suggestion relevant for 8 of 10 unseen PRs · 345
+judged pairs · processing/p5.js". Numbers are DERIVED by
+scripts/generate_seeds.py from holdout_scored.json and pool.json, never typed.
+Rejected: showing strict R@3, where the hybrid leads (0.54 vs 0.42) — choosing
+a metric after seeing results; strict labels are the weakest (kappa 0.586).
+After v1.1 the strip is regenerated; it turns comparative only if the v1.1
+holdout earns it (D-P6-5).
+
+## D-P8-2 — No custom-query box; "See it live" links the demo repo (Day 37)
+There is no live API (D-P7-3), so 05's URL input cannot work honestly. The
+page is fully static; 05 §6's loading/waking/error states are dropped. The
+live proof is the demo repo: open a PR there and the bot replies in ~1 min.
+
+## D-P8-3 — Seed selection rule, fixed before any result was seen (Day 37)
+Rule: the 3 most recent processing/p5.js PRs opened after the corpus
+snapshot (indexed_at 2026-08-15), not authored by a bot, whose diff keeps at
+least one hunk after the chunker's exclusions. Each runs through
+app.service.analyze_diff as a NEW PR against the local evaluated snapshot.
+Shown whatever the quality (05 §5: never chosen to hide weak cases).
+seed_results.json records generated_at, rule, weights, aggregation, model,
+corpus fingerprint and indexed_at. Raw diffs cached to .cache/seeds/
+(invariant 19). Regenerate after any weight change or re-index (D-P7-5).
