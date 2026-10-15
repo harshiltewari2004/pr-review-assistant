@@ -2066,3 +2066,71 @@ contribution, not raw scores (the API exposes normalized only); fonts limited
 to the used weights via Google Fonts, not self-hosted subsets.
 Phase 8 took 1 session (planned 4-5): the static design removed the API,
 loading, waking and error work.
+
+## D-V11-1 — v1.1 evaluation protocol (pre-registered, Day 37)
+Purpose (D-P6-5): v1.0's 10 tune queries overfit and 10 holdout queries
+could not separate configs. v1.1 doubles both, fixes one principled corpus
+flaw, re-tunes, and scores a NEW holdout exactly once.
+
+1. CORPUS FIX — 03 §2 "generated or vendored paths", missed classes
+   (same policy as D-P2-20). Excluded from chunking:
+   (a) any path ending .min.js; (b) built bundles: lib/p5.js, dist/**;
+   (c) vendored: lib/addons/p5.sound.js; (d) generated docs data:
+   docs/parameterData.json*, docs/reference/data.json,
+   docs/yuidoc-p5-theme/assets/data.json.
+   KEPT on evidence (PR-title audit): lib/addons/p5.dom.js (pre-2019 DOM
+   source, 162 PRs of real feature work), lib/pjs.js (p5's 2014 source).
+   Measured impact: 236 PRs touched, 48 emptied (p5.sound updates, vendored
+   doc fixes, a few 2014 bundle-only edits) -> in_corpus 3,196 -> 3,148
+   (step 4b, no_source_content); 3,992 chunks removed (41,899 -> 37,907).
+   0 eval queries and 0 judged candidates emptied.
+   Applied through the real ingest pipeline from .cache/ (re-parse, drop
+   removed chunks, recompute files_changed/additions/deletions per D-P2-14,
+   step 4b). Remaining hunks are unchanged, so no re-embedding. New
+   fingerprint recorded. v1.0 preserved: ~/backups/prreview_v1_0_b04b9a89.dump.
+   Same change applied to Neon; local vs Neon content check repeated.
+
+2. NEW QUERIES — 20, continuing D-P5-7's seeded order (SEED=28, same 7
+   strata, same allocation, D-P5-6 eligibility frozen), drawn on the v1.0
+   corpus BEFORE the corpus fix. Skipped: EXCLUDED_NUMBERS; every PR in
+   01 §7 anchors; any PR number found in tests/, scripts/, JOURNAL.md,
+   DECISIONS.md, frontend/. A drawn query that loses in_corpus after the
+   fix -> next in line, logged. Splits: v1.1 TUNE = all 20 v1.0 queries;
+   v1.1 HOLDOUT = the 20 new. eval_queries gains a cohort column (migration).
+
+3. POOLS (on the fixed corpus) — per query: v1.0's 5 variants x top 6
+   UNION top 3 of every tuning-grid config UNION top 3 of every holdout
+   baseline. Every config that can be locked or reported is fully judged,
+   so W3 (unjudged = 0) holds by construction. pool_v11.json, new fingerprint.
+
+4. LABELS — the 345 existing grades are reused (a grade judges two PRs'
+   content, which the fix does not change; official = latest round).
+   New pairs: a fresh Claude chat outside the project, same model, blind
+   display, the D-P5-15 corrected rule. Human check: 30 new-holdout pairs
+   (seed 33, spread across queries) labeled blind by the author BEFORE the
+   grader runs; sample committed first. Metric: quadratic weighted kappa
+   (01 §12) primary, plus 3-grade, lenient, strict; bootstrap 95% CIs.
+   QWK < 0.6 -> stop and review before tuning.
+
+5. TUNING — on the v1.1 TUNE set only. Grid: 0.1 simplex (66), aggregation
+   fixed to max (D-P6-2). Objective as D-P6-1: lenient R@3, then strict
+   R@3, then MRR@3 (6 dp), then smallest L1 to the current locked weights
+   0.6/0.3/0.1, then grid order. Assert unjudged = 0 for every config.
+
+6. HOLDOUT — exactly once, at the v1.1 locked weights, lock file
+   holdout_v11_scored.json. The same run reports: baselines (vector, file,
+   bm25 only; v1.0 locked 0.6/0.3/0.1; prior 0.5/0.3/0.2); per-rank
+   relevance at ranks 1-3 (D-P8-4); a paired bootstrap over queries (1,000,
+   seed 32) of lenient R@3 (locked - bm25_only). "Beats keyword search" may
+   be claimed ONLY if that difference's 95% CI lies entirely above 0.
+
+7. HEADLINE — v1.1 holdout lenient R@3 with ceiling and CI, whether higher
+   or lower than v1.0's 0.321 (D-P6-5). README reports v1.0 and v1.1.
+   A written prediction is committed before the holdout run.
+
+8. OUT OF SCOPE — issue-link signal, Jaccard variants, mean_top_k: each
+   extra knob deepens the winner's curse at n=20. Future work.
+
+ORDER: draw queries (v1.0 corpus) -> corpus fix local -> verify -> Neon ->
+pools -> author's 30 -> grader -> kappa -> score.py upgrades -> tune ->
+lock -> prediction -> holdout once -> regenerate seeds, strip, page.
