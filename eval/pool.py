@@ -35,6 +35,7 @@ POOL_PATH = Path(__file__).parent / "artifacts" / "pool.json"  # 04 §3
 QUERIES_SQL = """
 SELECT p.id, p.number, p.created_at, p.title, p.body, p.files_changed, q.split
 FROM eval_queries q JOIN pull_requests p ON p.id = q.pr_id
+WHERE q.cohort = 'v1.0'
 ORDER BY p.id
 """
 

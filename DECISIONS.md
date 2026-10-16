@@ -2134,3 +2134,21 @@ flaw, re-tunes, and scores a NEW holdout exactly once.
 ORDER: draw queries (v1.0 corpus) -> corpus fix local -> verify -> Neon ->
 pools -> author's 30 -> grader -> kappa -> score.py upgrades -> tune ->
 lock -> prediction -> holdout once -> regenerate seeds, strip, page.
+
+## D-V11-2 — v1.1 holdout queries drawn (Day 38)
+Continuation of D-P5-7 (SEED=28) on the v1.0 corpus (fingerprint b04b9a89
+checked in code). Guards passed: v1.0's 20 picks reproduced exactly (RNG
+state identical); the v1.1 picks equal Day 28's printed "next in line" lists.
+Skipped: #4378 (01 §7 anchor) -> math continued to #4951. REPLACED: none.
+v1.1 HOLDOUT (20, split 'holdout', cohort 'v1.1'):
+  fes        #4629 #7326 #7551
+  core       #8261 #6542 #772
+  webgl      #7578 #6162 #7201
+  strands    #8568 #8782
+  image      #4339 #6788 #4104
+  math       #8255 #3860 #4951
+  typography #8178 #7434 #8317
+Migration 003 adds eval_queries.cohort (local + Neon). v1.0 readers
+(label.py, pool.py, hence score.py) filter cohort 'v1.0'; verified
+unchanged (batch 1 170/0; tune lenient 0.358 at 0.6/0.3/0.1).
+scripts/day30_censoring_check.py left unfiltered (finished one-off).

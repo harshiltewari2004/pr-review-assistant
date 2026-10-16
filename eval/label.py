@@ -55,7 +55,7 @@ Without having seen the CANDIDATE, would the QUERY's reviewer review worse?
   s  skip (final, capped at 5%)    q  quit (resumable)
 Reason required for 1 and 2, six words or fewer. Can't write one -> downgrade."""
 
-QUERIES_SQL = "SELECT pr_id, split, subsystem FROM eval_queries"
+QUERIES_SQL = "SELECT pr_id, split, subsystem FROM eval_queries WHERE cohort = 'v1.0'"
 PR_SQL = """
 SELECT id, number, title, body, outcome, files_changed, additions, deletions, author
 FROM pull_requests WHERE id = ANY($1::bigint[])
