@@ -1,4 +1,4 @@
-# Handoff — Day 37 close (v1.1 started)
+# Handoff — Day 38 close (v1.1: queries drawn)
 
 ## State
 - main, pushed, clean tree. Tests: 127 passed. Last tag v0.4-demo-page.
@@ -19,18 +19,21 @@ docker compose up -d
 git status --porcelain
 git log --oneline -3
 ruff check && ruff format --check . && pytest -q
-python -m eval.snapshot   # must still print b04b9a89: NOTHING changed yet
+python -m eval.snapshot   # must still print b04b9a89: corpus not yet changed
 
-## NEXT SESSION (D-V11-1 steps 2, then 1)
-1. Migration 003: eval_queries.cohort ('v1.0' for the existing 20).
-2. select_queries.py: continuation mode on the v1.0 corpus (SEED=28, same
-   strata/allocation/eligibility). Skip EXCLUDED_NUMBERS, 01 §7 anchor PRs,
-   any PR number found in tests/ scripts/ JOURNAL.md DECISIONS.md frontend/.
-   Dry run -> read the 20 -> write cohort 'v1.1'. Commit before step 3.
-3. Corpus fix through the real ingest path from .cache/ (chunking.py
-   exclusion rule + re-parse + step 4b). Golden: 3,148 in corpus,
-   37,907 chunks, 0 queries emptied; remaining chunk content unchanged.
-4. New fingerprint; then Neon; repeat the local-vs-Neon content check.
+## DONE Day 38
+- Migration 003 (cohort) on local + Neon. v1.0 readers filter cohort 'v1.0'.
+- 20 v1.1 holdout queries written (D-V11-2, 5c3c72b); v1.0 draw reproduced.
+
+## NEXT SESSION (D-V11-1 step 1: corpus fix)
+1. chunking.py: GENERATED/VENDORED exclusion rule (D-V11-1 §1) + a test
+   through parse_hunks (fixture with lib/p5.js, *.min.js, parameterData.json
+   blocks next to a real src/ block) + teeth check.
+2. Re-parse all PRs from .cache/ through the real path: drop removed
+   chunks, recompute files_changed/additions/deletions (D-P2-14), step 4b.
+   Golden: in_corpus 3,148; chunks 37,907; 0 eval queries emptied;
+   remaining chunk content + embeddings unchanged.
+3. New fingerprint; apply to Neon; local-vs-Neon content check.
 Then pools -> author's 30 -> grader -> kappa -> tune -> holdout once.
 
 ## Open
