@@ -1284,3 +1284,15 @@ pgvector.Vector, not ndarray (.to_numpy()). First orchestrator run #8994:
 - Day 36: first live bot comment. A toy diff gave weak results (docs PRs); a real unseen PR (#9281) gave strong ones. Lesson: demo with real PRs, and never tune on one anecdote.
 - Day 36: links in bot comments created backlinks on upstream PRs. Caught after one run via the timeline API; fixed with redirect.github.com. Check side effects on systems you don't own.
 - Day 37: demo page live. Seeds picked by a pre-registered rule showed one strong, two mixed examples — and exposed generated files (docs/parameterData.json) inflating matches. Honest examples teach more than flattering ones.
+
+## 2026-10-17 (Day 39) — v1.1 corpus fix, prediction before re-index (local)
+Rule f9012c0 (D-V11-1 §1). Before: in_corpus 3196, chunks 41899,
+no_source_content 470, survivors (in_corpus, not audit RX) 37907|6089492e.
+Predict: requests 0; in_corpus 3148; no_source_content 518;
+prune existing 41899 stale 3992 prs touched 236, no missing keys;
+store_chunks todo 0 written 0; after: chunks 37907, survivors hash identical;
+0 eval queries / 0 judged candidates out of corpus.
+Result: every prediction met (see D-V11-3). Slip: the prune call first
+landed in the --chunks-only branch (the Find target appeared twice). The
+chunks_total golden caught it (41899 vs 37907) and the missing "prune" line
+confirmed it. Lesson: check a pasted line's location, not just its count.

@@ -2152,3 +2152,22 @@ Migration 003 adds eval_queries.cohort (local + Neon). v1.0 readers
 (label.py, pool.py, hence score.py) filter cohort 'v1.0'; verified
 unchanged (batch 1 170/0; tune lenient 0.358 at 0.6/0.3/0.1).
 scripts/day30_censoring_check.py left unfiltered (finished one-off).
+
+## D-V11-3 — step 5a prune_chunks: re-indexing converges (Day 39)
+Context: INSERT_CHUNK is ON CONFLICT DO NOTHING, so re-indexing was
+idempotent but add-only; D-V11-1's narrowed rule left 3,992 stale chunks
+that no step could remove. store_chunks treats any PR with >=1 chunk as done.
+Decision: scripts/index_repo.py step 5a, after write_rows, before
+store_chunks. Expected keys re-derived via parse_hunks from .cache/
+(empty set if not in_corpus); existing minus expected deleted in one
+transaction; expected minus existing must be empty for any already-chunked
+PR (assert), since store_chunks would never fill that gap.
+Rejected: one-off SQL DELETE by regex (a second code path, Day 17 lesson);
+prune in --chunks-only (skips 4b, reads stale in_corpus: an emptied PR
+could stay in_corpus with 0 chunks).
+Trade-off: re-parses every cached diff per run (seconds). A WIDENED rule
+still needs targeted embedding; the assert stops the run, it does not fix it.
+Local result: prune existing 41899 stale 3992 touched 236; in_corpus 3148;
+no_source_content 518; chunks 37907; survivors 37907|6089492e identical;
+0 queries / 0 judged candidates out; 3rd run stale 0.
+Fingerprint b04b9a89 -> d7283c3a (55b45f27 = intermediate, never used).

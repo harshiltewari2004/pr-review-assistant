@@ -197,6 +197,51 @@ async def write_rows(target: str, repo_meta: dict, rows: list[PRRow]) -> int:
     return repo_id
 
 
+async def prune_chunks(target: str, full_name: str, diff_path) -> None:
+    """04 §5 step 5a (D-V11-1 §1): chunks converge on the current exclusion rule.
+
+    ON CONFLICT makes re-indexing idempotent, but it only ever adds: a narrowed
+    rule leaves stale rows behind. Expected keys are re-derived through
+    parse_hunks from .cache/; existing minus expected is deleted. Expected minus
+    existing must be empty for any already-chunked PR, because store_chunks
+    skips a PR with any chunk and would never fill the gap.
+    """
+    async with connect(target) as conn:
+        repo_id = await conn.fetchval("SELECT id FROM repos WHERE full_name = $1", full_name)
+        prs = await conn.fetch(
+            "SELECT id, number, in_corpus FROM pull_requests WHERE repo_id = $1", repo_id
+        )
+        existing: dict[int, set[tuple[str, int]]] = {}
+        for r in await conn.fetch(
+            "SELECT pr_id, file_path, hunk_index FROM chunks WHERE repo_id = $1", repo_id
+        ):
+            existing.setdefault(r["pr_id"], set()).add((r["file_path"], r["hunk_index"]))
+
+        stale: list[tuple[int, str, int]] = []
+        missing: list[tuple[int, str, int]] = []
+        for pr in prs:
+            have = existing.get(pr["id"], set())
+            want: set[tuple[str, int]] = set()
+            if pr["in_corpus"]:
+                hunks = parse_hunks(diff_path(pr["number"]).read_text())
+                want = {(h.file_path, h.hunk_index) for h in hunks}
+            stale += [(pr["id"], f, i) for f, i in have - want]
+            if have:  # an unchunked PR is store_chunks' job, not a mismatch
+                missing += [(pr["number"], f, i) for f, i in want - have]
+
+        assert not missing, f"{len(missing)} expected chunk keys absent, e.g. {missing[:3]}"
+        touched = len({pr_id for pr_id, _, _ in stale})
+        print(
+            f"\nprune  existing {sum(map(len, existing.values()))}  "
+            f"stale {len(stale)}  prs touched {touched}"
+        )
+        async with conn.transaction():
+            await conn.executemany(
+                "DELETE FROM chunks WHERE pr_id = $1 AND file_path = $2 AND hunk_index = $3",
+                stale,
+            )
+
+
 async def store_chunks(target: str, full_name: str, diff_path, limit: int | None) -> None:
     """04 §5 steps 5-6. Commits per PR — see the resumability note above."""
     async with connect(target) as conn:
@@ -337,4 +382,5 @@ if __name__ == "__main__":
     }
     repo_id = asyncio.run(write_rows(args.target, repo_meta, rows))
     print(f"\nwrote {len(rows)} rows to {args.target}, repo_id {repo_id}")
+    asyncio.run(prune_chunks(args.target, repo, diff_path))
     asyncio.run(store_chunks(args.target, repo, diff_path, args.limit))
