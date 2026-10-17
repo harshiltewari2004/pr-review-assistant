@@ -1296,3 +1296,6 @@ Result: every prediction met (see D-V11-3). Slip: the prune call first
 landed in the --chunks-only branch (the Find target appeared twice). The
 chunks_total golden caught it (41899 vs 37907) and the missing "prune" line
 confirmed it. Lesson: check a pasted line's location, not just its count.
+Neon: same run, same numbers (requests 0, 518, 3148, stale 3992 touched 236,
+todo 0); Neon survivors identical. day36_compare_corpora: local == neon,
+content 0f7e8794, prs 4372, chunks 37907. v1.1 corpus fingerprint d7283c3a.
