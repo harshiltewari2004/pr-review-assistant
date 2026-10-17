@@ -28,6 +28,27 @@ TRANSLATION_PAYLOAD = re.compile(r"^translations/[^/]+/translation\.json$")
 # They repeat across every visual-test PR, so file overlap and BM25 both fire
 # at ceiling on content carrying no review semantics. 03 §2, generated paths.
 VISUAL_SCREENSHOTS = re.compile(r"^test/unit/visual/screenshots/")
+
+# D-V11-1 §1: generated/vendored classes D-P2-20 missed (03 §2), found by a
+# file-frequency audit and checked against PR titles. Each pattern mirrors the
+# audit regex the golden counts were measured with. Deliberately NOT excluded:
+# lib/addons/p5.dom.js and lib/pjs.js, whose PRs are real feature work.
+MINIFIED_SUFFIX = ".min.js"
+BUILT_BUNDLES = re.compile(r"^(?:lib/p5\.js$|dist/)")
+VENDORED_P5_SOUND = re.compile(r"^lib/addons/p5\.sound\.js$")
+GENERATED_DOCS_DATA = re.compile(
+    r"^docs/(?:parameterData\.json"
+    r"|reference/data\.json$"
+    r"|yuidoc-p5-theme/assets/data\.json$)"
+)
+
+EXCLUDED_PATH_PATTERNS = (
+    TRANSLATION_PAYLOAD,
+    VISUAL_SCREENSHOTS,
+    BUILT_BUNDLES,
+    VENDORED_P5_SOUND,
+    GENERATED_DOCS_DATA,
+)
 # --- diff structure ---------------------------------------------------------
 
 _FILE_BLOCK = re.compile(r"^diff --git ", re.MULTILINE)
@@ -59,7 +80,9 @@ def is_excluded(path: str) -> bool:
     basename = path.rsplit("/", 1)[-1]
     if basename in EXCLUDED_BASENAMES:
         return True
-    if TRANSLATION_PAYLOAD.match(path) or VISUAL_SCREENSHOTS.match(path):
+    if path.endswith(MINIFIED_SUFFIX):
+        return True
+    if any(rx.match(path) for rx in EXCLUDED_PATH_PATTERNS):
         return True
     dot = basename.rfind(".")
     return dot != -1 and basename[dot:] in EXCLUDED_EXTENSIONS

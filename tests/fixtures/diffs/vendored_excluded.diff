@@ -1,0 +1,62 @@
+diff --git a/src/core/main.js b/src/core/main.js
+index 1111111..2222222 100644
+--- a/src/core/main.js
++++ b/src/core/main.js
+@@ -10,6 +10,7 @@ p5.prototype._initialize = function() {
+   this._setupDone = false;
++  this._pixelDensity = 1;
+   this._userNode = null;
+diff --git a/lib/p5.js b/lib/p5.js
+index 3333333..4444444 100644
+--- a/lib/p5.js
++++ b/lib/p5.js
+@@ -1,3 +1,3 @@
+-/*! p5.js v0.4.1 */
++/*! p5.js v0.4.2 */
+ (function (root, factory) {
+diff --git a/lib/p5.min.js b/lib/p5.min.js
+index 5555555..6666666 100644
+--- a/lib/p5.min.js
++++ b/lib/p5.min.js
+@@ -1 +1 @@
+-/*! p5.js v0.4.1 */!function(a){}
++/*! p5.js v0.4.2 */!function(a){}
+diff --git a/dist/p5.js b/dist/p5.js
+index 7777777..8888888 100644
+--- a/dist/p5.js
++++ b/dist/p5.js
+@@ -1,3 +1,3 @@
+-/*! p5.js v0.5.0 */
++/*! p5.js v0.5.1 */
+ (function (root, factory) {
+diff --git a/lib/addons/p5.sound.js b/lib/addons/p5.sound.js
+index 9999999..aaaaaaa 100644
+--- a/lib/addons/p5.sound.js
++++ b/lib/addons/p5.sound.js
+@@ -1,3 +1,3 @@
+-/*! p5.sound.js v0.3.8 */
++/*! p5.sound.js v0.3.9 */
+ (function (root, factory) {
+diff --git a/docs/parameterData.json b/docs/parameterData.json
+index bbbbbbb..ccccccc 100644
+--- a/docs/parameterData.json
++++ b/docs/parameterData.json
+@@ -1,3 +1,4 @@
+ {
++  "createSelect": {},
+   "createSlider": {}
+diff --git a/lib/addons/p5.dom.js b/lib/addons/p5.dom.js
+index ddddddd..eeeeeee 100644
+--- a/lib/addons/p5.dom.js
++++ b/lib/addons/p5.dom.js
+@@ -200,6 +200,7 @@ p5.prototype.createSelect = function() {
+     var elt = document.createElement('select');
++    elt.multiple = arguments[0] === true;
+     return addElement(elt, this);
+diff --git a/lib/addons/p5.dom.min.js b/lib/addons/p5.dom.min.js
+index fffffff..0000001 100644
+--- a/lib/addons/p5.dom.min.js
++++ b/lib/addons/p5.dom.min.js
+@@ -1 +1 @@
+-!function(a){p5.prototype.createSelect=function(){}}
++!function(a){p5.prototype.createSelect=function(b){}}

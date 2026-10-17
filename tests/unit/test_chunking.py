@@ -126,3 +126,13 @@ def test_hunk_carries_no_token_fields():
 def test_generated_files_excluded_through_parse_hunks():
     hunks = parse_hunks(load("generated_excluded"))
     assert [h.file_path for h in hunks] == ["src/core/main.js"]
+
+
+def test_vendored_and_built_files_excluded_through_parse_hunks():
+    # D-V11-1 §1. p5.dom.js is kept on evidence and sits after five excluded
+    # blocks: its hunk_index must still be 0 (per-file, not cross-file).
+    hunks = parse_hunks(load("vendored_excluded"))
+    assert [(h.file_path, h.hunk_index) for h in hunks] == [
+        ("src/core/main.js", 0),
+        ("lib/addons/p5.dom.js", 0),
+    ]
