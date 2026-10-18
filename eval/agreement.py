@@ -12,6 +12,9 @@ plus the confusion matrix and the disagreeing pairs. Writes
 eval/artifacts/agreement_batch2.json.
 
 Usage: python -m eval.agreement
+       python -m eval.agreement --human eval/artifacts/batch3_author_subset.psv \
+           --llm eval/artifacts/batch3_claude_grades.psv \
+           --out eval/artifacts/agreement_v11.json --gate qwk   # v1.1 (D-V11-1 §4)
 """
 
 from __future__ import annotations
@@ -86,10 +89,17 @@ def bootstrap_ci(
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--llm", type=Path, default=LLM_PATH)
+    parser.add_argument("--human", type=Path, default=HUMAN_PATH)
+    parser.add_argument(
+        "--gate",
+        choices=("three_grade", "qwk"),
+        default="three_grade",
+        help="view the 01 §12 threshold applies to: three_grade (D-P5-14), qwk (D-V11-1)",
+    )
     parser.add_argument("--out", type=Path, default=OUT_PATH)
     args = parser.parse_args()
 
-    human = read_grades(HUMAN_PATH)
+    human = read_grades(args.human)
     llm = read_grades(args.llm)
     missing = set(human) - set(llm)
     assert not missing, f"{len(missing)} subset pairs missing from the LLM grades"
@@ -136,9 +146,9 @@ def main() -> None:
     for d in disagreements:
         print(f"  #{d['query']} <- #{d['candidate']}: author {d['author']}, claude {d['claude']}")
 
-    passed = results["three_grade"]["kappa"] >= KAPPA_THRESHOLD
+    passed = results[args.gate]["kappa"] >= KAPPA_THRESHOLD
     verdict = "PASS" if passed else "FAIL -> stop before Phase 6"
-    print(f"\n01 §12 threshold {KAPPA_THRESHOLD} (three_grade): {verdict}")
+    print(f"\n01 §12 threshold {KAPPA_THRESHOLD} ({args.gate}): {verdict}")
 
     args.out.write_text(
         json.dumps(

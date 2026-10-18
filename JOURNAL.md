@@ -1305,3 +1305,11 @@ Predicted ~800 pool / 450-550 new; actual 730 / 396. Overestimate: the grid
 adds only 37 PRs beyond the five variants. Full W3 eligibility costs ~5% more labels.
 Author's 30 labeled offline in one file (faster than label.py one by one,
 75s median on the first pair); imported 29 + 1 already saved.
+v1.1 agreement prediction (before computing): QWK 0.70-0.85 (v1.0 pre-remedy
+0.774, corrected rule from the start); lenient >= 0.75; strict better than
+v1.0's 0.380 but the weakest view, very wide CI (author's 30 hold 4 grade 2s).
+Author used an updated labeling_aid.md (R0 + downward overrides) the grader
+did not get: expect any disagreement to lean author-lower.
+Actual: QWK 0.834 (in range), lenient 0.734 (just under my 0.75), strict
+0.712 (well above v1.0's 0.380). Predicted author-lower lean did NOT show
+(3 vs 2). three_grade 0.590 despite 25/30 raw: class imbalance (23/30 zeros).

@@ -2212,3 +2212,19 @@ seeing them; the author's grades are official for those 30.
   were pasted into this PROJECT's chat after labeling. The grader is a fresh
   chat OUTSIDE the project, which cannot search project chats, so its
   independence holds; this chat does not grade batch 3.
+
+## D-V11-6 — v1.1 agreement result and label import (Day 40)
+Agreement on the author's 30 (grader: fresh chat outside the project, same
+model, blind, corrected D-P5-15 rule; author: labeling_aid.md, incl. R0 and
+the overrides added this session, which the grader did not get):
+QWK 0.834 [0.576, 0.955] -> PASS (gate pre-registered as QWK, D-V11-1 §4).
+three_grade 0.590 [0.263, 0.861] (under 0.6: D-P5-14's gate would fail);
+lenient 0.734 [0.379, 1.000]; strict 0.712 [0.000, 1.000] (v1.0: 0.380).
+Raw 25/30. All 5 disagreements adjacent (no 0<->2); 3 author-lower,
+2 author-higher: no systematic direction, unlike D-P5-15's 5-of-7 pattern,
+so no instruction fix. Caveats for README: QWK CI lower bound 0.576 < 0.6
+(n=30, pass is the point estimate); three_grade reported alongside;
+strict rests on 4 grade-2s.
+Import: 366 grader grades as round 1, batch 3 (0/1/2: 256/76/34); the
+author's 30 skipped (official). Pool fully judged: label.py --batch 3
+--plan -> 730 pairs, 0 remaining (W3 holds for every scorable config).
