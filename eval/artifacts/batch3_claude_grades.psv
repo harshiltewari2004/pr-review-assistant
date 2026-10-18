@@ -1,0 +1,396 @@
+772|16|0|
+772|95|0|
+772|104|0|
+772|219|0|
+772|472|1|text positioning, separate alignment feature
+772|595|0|
+772|598|0|
+772|650|0|
+772|654|0|
+772|693|1|text alignment bug, details unshown
+772|732|1|text rendering, different concern
+772|747|1|same typography subsystem
+772|770|0|
+772|771|0|
+6542|1961|1|get() image creation, different bug
+6542|2269|0|
+6542|2336|0|
+6542|2379|0|
+6542|2885|0|
+6542|3158|0|
+6542|3828|1|tests cover get/pixels
+6542|3874|0|
+6542|4422|0|
+6542|4439|0|
+6542|4700|0|
+6542|4712|0|
+6542|5076|0|
+6542|5093|0|
+6542|5508|0|
+6542|5648|0|
+6542|5747|0|
+6542|5885|0|
+6542|6148|0|
+6542|6174|0|
+6542|6216|0|
+6542|6447|2|introduced image density query fixes
+8261|412|2|original loading screen implementation
+8261|835|0|
+8261|956|1|preload mechanics, different concern
+8261|994|1|preload callbacks, different concern
+8261|1288|0|
+8261|3228|0|
+8261|3470|0|
+8261|4440|0|
+8261|4726|0|
+8261|5003|0|
+8261|5672|0|
+8261|5816|1|preload lifecycle, no shared decision
+8261|6171|0|
+8261|6355|0|
+8261|6433|1|preload lifecycle hooks
+8261|6604|0|
+8261|6777|0|
+8261|7203|2|2.0 removed preload from core
+8261|7779|1|preload compatibility lifecycle hook
+8261|7785|0|
+8261|7906|0|
+8261|8047|0|
+8261|8098|0|
+8261|8238|0|
+4629|2471|1|param validation, different approach
+4629|3116|1|minified build exclusions
+4629|3429|0|
+4629|3644|0|
+4629|3874|0|
+4629|4199|0|
+4629|4233|2|set up i18n; params next
+4629|4245|0|
+4629|4354|0|
+4629|4488|0|
+4629|4561|1|same param validation code
+4629|4590|1|created validate_params.js split
+4629|4606|1|same validator, different detection
+4629|4613|2|minified exclusion slip, same file
+7326|173|0|
+7326|324|0|
+7326|2033|1|FES, different check
+7326|4643|1|FES sketch-level detection
+7326|4967|0|
+7326|5351|2|1.x redeclaration detection, same feature
+7326|5460|0|
+7326|6301|0|
+7326|6646|0|
+7326|7113|0|
+7326|7203|0|
+7326|7268|1|2.0 FES rewrite sibling
+7326|7291|1|2.0 FES rewrite sibling
+7326|7293|2|created sketch_verifier, same issue
+7551|3127|0|
+7551|4606|1|same validator, different case
+7551|4629|1|same validator file
+7551|4746|0|
+7551|4924|0|
+7551|5460|0|
+7551|5519|2|false warning fixed via docs
+7551|5581|0|
+7551|5846|1|validate_params type check
+7551|6095|1|validate_params type check
+7551|6173|0|
+7551|6326|0|
+7551|6464|1|same validator, message fix
+7551|6473|0|
+7551|7029|0|
+7551|7186|2|validator being replaced by Zod
+7551|7253|0|
+7551|7509|0|
+7551|7528|0|
+7551|7544|0|
+4104|114|0|
+4104|418|1|loadImage loading path, different fix
+4104|432|0|
+4104|433|0|
+4104|435|0|
+4104|436|0|
+4104|634|0|
+4104|682|0|
+4104|685|0|
+4104|1287|0|
+4104|1910|0|
+4104|2052|0|
+4104|2176|0|
+4104|2336|0|
+4104|3086|1|loadImage CORS/headers context
+4104|3740|1|GIF detection in loadImage
+4104|3874|0|
+4104|4069|0|
+4104|4075|0|
+4104|4078|0|
+4339|175|0|
+4339|767|0|
+4339|801|0|
+4339|1267|0|
+4339|1445|0|
+4339|2320|0|
+4339|2651|0|
+4339|2995|0|
+4339|3083|0|
+4339|3582|0|
+4339|3740|1|GIF support, decoding not encoding
+4339|3796|0|
+4339|3824|0|
+4339|3829|0|
+4339|3838|0|
+4339|3922|0|
+4339|4173|0|
+4339|4177|2|changed GIF frame format saveGif reads
+4339|4194|0|
+4339|4199|0|
+4339|4211|0|
+4339|4245|0|
+4339|4259|0|
+4339|4325|0|
+6788|650|1|pixel density in pixel handling
+6788|1228|0|
+6788|1908|0|
+6788|2265|0|
+6788|2282|0|
+6788|2411|0|
+6788|3728|0|
+6788|3874|0|
+6788|4863|0|
+6788|5052|0|
+6788|5076|0|
+6788|5447|0|
+6788|5508|2|mask GIF-frame path, same method
+6788|5648|0|
+6788|5671|0|
+6788|6078|0|
+6788|6173|0|
+6788|6434|0|
+6788|6445|0|
+6788|6447|2|made density variable, missed mask
+6788|6542|2|sibling density-not-updated fix
+6788|6649|1|same forgot-density bug class
+6788|6651|0|
+6788|6777|0|
+3860|388|0|
+3860|1088|0|
+3860|1124|0|
+3860|1287|0|
+3860|1406|0|
+3860|1550|0|
+3860|1738|0|
+3860|1856|1|proposed new Vector method, closed
+3860|2056|0|
+3860|2142|0|
+3860|2165|0|
+3860|2336|0|
+3860|2350|2|div zero/invalid-arg handling convention
+3860|2392|0|
+3860|2447|1|proposed new Vector method, closed
+3860|2471|0|
+3860|2869|0|
+3860|3448|0|
+3860|3711|0|
+4951|1186|0|
+4951|1330|0|
+4951|1519|0|
+4951|1520|0|
+4951|1697|1|randomGaussian state, different bug
+4951|2009|0|
+4951|2336|0|
+4951|2512|0|
+4951|3139|0|
+4951|3815|0|
+4951|3874|0|
+4951|4349|0|
+4951|4660|0|
+4951|4717|0|
+4951|4727|0|
+4951|4751|0|
+4951|4755|0|
+4951|4761|0|
+4951|4822|1|randomGaussian edge case, different
+4951|4836|0|
+8255|1406|0|
+8255|1550|0|
+8255|1732|0|
+8255|1947|0|
+8255|1950|0|
+8255|2446|0|
+8255|2447|0|
+8255|4354|0|
+8255|4378|1|Vector FES, different failure
+8255|4492|0|
+8255|4770|1|original setHeading implementation
+8255|5044|0|
+8255|5469|0|
+8255|5736|2|setHeading angleMode regression risk
+8255|6075|0|
+8255|6340|0|
+8255|6831|0|
+8255|7265|0|
+8255|8142|2|settled 2.x 2D-vector handling
+8255|8230|2|abandoned attempt, same issue
+8255|8240|2|identical earlier attempt, closed
+8568|7757|2|same Graphics-prototype missing-method bug
+8568|8163|1|strands_api augmentation, different feature
+8568|8179|0|
+8568|8211|1|strands temporary global interception
+8568|8220|0|
+8568|8251|1|strands_api, different bug
+8568|8252|0|
+8568|8254|1|strands_api, different bug
+8568|8286|1|Graphics WebGL crash, different cause
+8568|8301|2|cleanup must run on error
+8568|8384|1|strands hooks, different feature
+8568|8417|0|
+8568|8523|1|modify() context in instance mode
+8568|8531|0|
+8568|8538|0|
+8568|8558|0|
+8782|8009|1|strands architecture refactor
+8782|8179|0|
+8782|8208|1|transpiler, different feature
+8782|8359|1|transpiler, different feature
+8782|8397|1|transpiler control-flow copying
+8782|8576|1|transpiler pass, different feature
+8782|8709|1|transpiler callback handling
+8782|8725|1|pre-transpile check, different feature
+8782|8728|2|same refactor series, #8694
+8782|8741|2|same refactor series, #8694
+8782|8754|2|same refactor series, #8694
+8782|8755|2|documents pipeline being restructured
+8782|8759|1|transpiler rewrite rules, closed
+7434|732|0|
+7434|6301|0|
+7434|6306|0|
+7434|6783|0|
+7434|6923|0|
+7434|6967|1|textToPoints, different fix
+7434|7029|0|
+7434|7113|0|
+7434|7356|1|2.0 type rewrite, textToPoints
+7434|7373|0|
+7434|7417|1|typography in WebGL
+7434|7426|0|
+7434|7427|1|textToPoints sibling APIs, tests
+7434|7428|1|textToPoints perf rewrite
+7434|7429|0|
+8178|2336|0|
+8178|3874|0|
+8178|6777|0|
+8178|7429|0|
+8178|7434|1|textToPoints, different change
+8178|7595|0|
+8178|7723|1|textToPoints sampling, different bug
+8178|7724|1|textToPoints, different feature
+8178|7780|0|
+8178|7882|0|
+8178|8005|0|
+8178|8038|0|
+8178|8083|1|textToContours, different bug
+8178|8084|0|
+8178|8089|0|
+8178|8091|0|
+8178|8114|0|
+8317|4712|0|
+8317|6967|2|textToPoints misalignment, prior fix
+8317|7440|1|textToPoints on buffers
+8317|7481|2|WebGL custom alignment, prior fixes
+8317|7555|1|textCore restructuring
+8317|7595|0|
+8317|7606|0|
+8317|7625|0|
+8317|7657|1|text metrics in textCore
+8317|7658|0|
+8317|7683|0|
+8317|7724|1|font state for textToPoints
+8317|7792|0|
+8317|7882|0|
+8317|8063|0|
+8317|8089|0|
+8317|8091|0|
+8317|8178|1|textToPoints, different bug
+8317|8193|0|
+8317|8197|0|
+8317|8270|0|
+8317|8291|0|
+8317|8305|0|
+6162|2547|1|render buffer pipeline, closed
+6162|3769|1|render buffer model, different concern
+6162|4147|1|RenderBuffer unification, different concern
+6162|4366|0|
+6162|5768|0|
+6162|5802|2|designed cap/join line geometry
+6162|5915|2|line color attribute must survive
+6162|5928|2|line buffer stride failure mode
+6162|5938|1|vertex color attributes, fill side
+6162|5970|2|unused attribute state failure
+6162|5981|1|line.vert depth, different concern
+6162|6035|2|WebGL1 fallback must still work
+6162|6109|0|
+7201|1391|0|
+7201|2547|0|
+7201|3085|1|original WebGL curve implementation
+7201|3152|0|
+7201|3249|0|
+7201|3254|0|
+7201|3329|0|
+7201|3343|0|
+7201|3634|0|
+7201|3680|0|
+7201|3874|0|
+7201|4237|0|
+7201|5789|0|
+7201|5795|0|
+7201|5915|0|
+7201|5920|2|color interpolation depends on loop start
+7201|5938|0|
+7201|5978|0|
+7201|6263|0|
+7201|6488|0|
+7201|6606|1|vertex refactor for curves, closed
+7201|6817|2|abandoned attempt, same issue
+7201|7177|0|
+7578|3835|0|
+7578|5555|0|
+7578|5824|0|
+7578|5886|0|
+7578|5906|0|
+7578|5914|0|
+7578|6072|0|
+7578|6306|2|clip relies on stencil toggling
+7578|6376|2|stencil state tracking across pop
+7578|6990|2|stencil leaks into framebuffers
+7578|7373|0|
+7578|7405|0|
+7578|7470|0|
+7578|7472|0|
+7578|7568|0|
+1518|772|1|rectMode handling in renderer
+8357|1577|1|window dimension references
+8357|7497|1|param_validator, different fix
+4824|418|0|
+4824|435|0|
+4824|4488|0|
+4824|4751|0|
+8047|418|0|
+8047|435|0|
+8047|436|0|
+8047|5106|2|loadImage error routing, prior fix
+7978|134|1|CPU noise, original implementation
+7978|146|0|
+7978|194|0|
+6699|6497|0|
+7572|772|0|
+6171|418|0|
+6171|435|0|
+6171|436|0|
+8676|7637|1|Vector docs, behavior change affects
+6302|5447|0|
+4366|2511|2|settled _doFill/_doStroke as source
+4366|2547|0|
+4366|4147|1|immediate mode restructuring
+4366|4237|1|unwanted stroke, different site
