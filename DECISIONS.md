@@ -2190,3 +2190,19 @@ Variant drift on v1.0 queries confirmed against pool.json: dropped PRs match
 unexplained new pairs exactly (#1518, #6171, #7572). 484/630/632 drop from both
 #6171 and #8047, likely shared generated-file overlap removed by D-V11-1
 (hypothesis; verifying needs the v1.0 dump).
+
+## D-V11-5 — v1.1 labeling mechanics (Day 40)
+Storage: every pair new to v1.1 is round 1, batch 3 (round 1 = first
+judgment of a pair; round 2 = re-grades, D-P5-15; batches 1-2 were v1.0).
+label.py --batch 3 reads pool_v11.json over all 40 queries; the existing
+round-1 done filter leaves exactly the 396 new pairs. Batches 1-2 unchanged
+(batch 2 --plan still 175 pairs, 0 remaining). No skips in batch 3: a
+skipped pair stays unjudged and could sit in a scored top-3 (W3).
+Human subset (D-V11-1 §4): 30 pairs from the v1.1 holdout's never-judged
+pairs, seed 33: one per query (20) + a second from 10 seeded queries, so
+every holdout query gets a human check; never-judged, so the author judges
+rather than remembers. scripts/day40_kappa_sample.py ->
+eval/artifacts/kappa_subset_v11.json, committed BEFORE any batch-3
+judgment; the script refuses if batch 3 has judgments. The author labels
+via label.py --batch 3 --pairs; the grader then grades all 396 without
+seeing them; the author's grades are official for those 30.

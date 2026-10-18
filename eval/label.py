@@ -5,6 +5,7 @@ Usage:
     python -m eval.label --batch 1          # label (resumable: q to quit)
     python -m eval.label --batch 2 --pairs eval/artifacts/kappa_subset_batch2.json
                                             # label only a subset (D-P5-14)
+    python -m eval.label --batch 3          # v1.1: every new pair, pool_v11.json (D-V11-5)
 
 Blind: candidates shuffled per query; no score, rank, variant, or author is
 shown, and the query's own outcome is hidden (future information). Round 1
@@ -28,11 +29,13 @@ from ingest.db import connect
 
 ARTIFACTS = Path(__file__).parent / "artifacts"
 POOL_PATH = ARTIFACTS / "pool.json"
+POOL_V11_PATH = ARTIFACTS / "pool_v11.json"  # D-V11-4
 SKIPS_PATH = ARTIFACTS / "skips.jsonl"
 
 LABELER_LOGIN = "harshiltewari2004"  # D-P5-10
 PR_URL = "https://github.com/processing/p5.js/pull"
 ROUND = 1
+V11_BATCH = 3  # D-V11-5: every pair new to v1.1, over all 40 queries
 MAX_REASON_WORDS = 6  # 01 §10
 SKIP_CAP = 0.05  # 01 §10
 TIME_BOX_S = 45  # 01 §10
@@ -56,6 +59,7 @@ Without having seen the CANDIDATE, would the QUERY's reviewer review worse?
 Reason required for 1 and 2, six words or fewer. Can't write one -> downgrade."""
 
 QUERIES_SQL = "SELECT pr_id, split, subsystem FROM eval_queries WHERE cohort = 'v1.0'"
+QUERIES_V11_SQL = "SELECT pr_id, split, subsystem, cohort FROM eval_queries"
 PR_SQL = """
 SELECT id, number, title, body, outcome, files_changed, additions, deletions, author
 FROM pull_requests WHERE id = ANY($1::bigint[])
@@ -82,6 +86,15 @@ def batch_query_ids(rows, batch: int) -> list[int]:
         )
         chosen += [r["pr_id"] for r in ordered[batch - 1 :: 2]]
     return chosen
+
+
+def v11_query_ids(rows) -> list[int]:
+    """D-V11-5 batch 3: all 40 queries, v1.1 first, then (split, subsystem, pr_id)."""
+    ordered = sorted(
+        rows,
+        key=lambda r: (r["cohort"] != "v1.1", r["split"], str(r["subsystem"]), r["pr_id"]),
+    )
+    return [r["pr_id"] for r in ordered]
 
 
 def load_skips() -> set[tuple[int, int]]:
@@ -162,25 +175,31 @@ def _skip_batches():
 
 async def main() -> None:
     parser = argparse.ArgumentParser(description="Blind labeling CLI (01 §10)")
-    parser.add_argument("--batch", type=int, choices=(1, 2), required=True)
+    parser.add_argument("--batch", type=int, choices=(1, 2, V11_BATCH), required=True)
     parser.add_argument("--plan", action="store_true", help="show batch, write nothing")
     parser.add_argument(
         "--pairs", type=Path, help="restrict to these [query_pr_id, candidate_pr_id] pairs"
     )
     args = parser.parse_args()
 
+    v11 = args.batch == V11_BATCH
+    pool_path = POOL_V11_PATH if v11 else POOL_PATH
     pool = {
         e["query_pr_id"]: e["candidate_pr_ids"]
-        for e in json.loads(POOL_PATH.read_text())["queries"]
+        for e in json.loads(pool_path.read_text())["queries"]
     }
 
     async with connect("local") as conn:
-        qrows = await conn.fetch(QUERIES_SQL)
-        assert len(qrows) == 20, f"expected 20 eval queries, got {len(qrows)}"
+        qrows = await conn.fetch(QUERIES_V11_SQL if v11 else QUERIES_SQL)
+        expected = 40 if v11 else 20
+        assert len(qrows) == expected, f"expected {expected} eval queries, got {len(qrows)}"
         meta = {r["pr_id"]: r for r in qrows}
-        batch_ids = batch_query_ids(qrows, args.batch)
-        assert len(batch_ids) == 10, batch_ids
-        assert sum(meta[q]["split"] == "tune" for q in batch_ids) == 5, "D-P5-11: 5 tune"
+        if v11:
+            batch_ids = v11_query_ids(qrows)
+        else:
+            batch_ids = batch_query_ids(qrows, args.batch)
+            assert len(batch_ids) == 10, batch_ids
+            assert sum(meta[q]["split"] == "tune" for q in batch_ids) == 5, "D-P5-11: 5 tune"
 
         all_ids = set(batch_ids) | {c for q in batch_ids for c in pool[q]}
         prs = {r["id"]: r for r in await conn.fetch(PR_SQL, list(all_ids))}
@@ -200,7 +219,7 @@ async def main() -> None:
             for q in batch_ids:
                 m = meta[q]
                 print(
-                    f"#{prs[q]['number']:<5} {m['split']:<7} {m['subsystem']:<10} "
+                    f"#{prs[q]['number']:<5} {m['split']:<7} {m['subsystem'] or '-':<10} "
                     f"pool={len(pool[q])}"
                 )
             remaining = sum(1 for p in pairs if p not in done and p not in skipped)
@@ -214,7 +233,7 @@ async def main() -> None:
                 continue
             random.shuffle(todo)
             print("\n" + "=" * 78)
-            print(f"QUERY {qi}/10\n" + render(prs[q], "QUERY", show_outcome=False))
+            print(f"QUERY {qi}/{len(batch_ids)}\n" + render(prs[q], "QUERY", show_outcome=False))
 
             for ci, c in enumerate(todo, 1):
                 print("\n" + "-" * 78)
