@@ -1303,3 +1303,5 @@ content 0f7e8794, prs 4372, chunks 37907. v1.1 corpus fingerprint d7283c3a.
 ## 2026-10-18 (Day 40) — v1.1 pool
 Predicted ~800 pool / 450-550 new; actual 730 / 396. Overestimate: the grid
 adds only 37 PRs beyond the five variants. Full W3 eligibility costs ~5% more labels.
+Author's 30 labeled offline in one file (faster than label.py one by one,
+75s median on the first pair); imported 29 + 1 already saved.

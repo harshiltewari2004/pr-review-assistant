@@ -1,0 +1,30 @@
+772|693|0|
+6542|3158|0|
+8261|5672|0|
+8261|8047|0|
+4629|4245|0|
+7326|6646|0|
+7326|7293|2|same issue, earlier verifier PR
+7551|7253|0|
+4104|682|0|
+4339|3083|0|
+6788|6542|1|image pixel density handling
+3860|1550|0|
+3860|2142|0|
+4951|4761|0|
+8255|1550|0|
+8255|4492|0|
+8568|8179|0|
+8568|8558|0|
+8782|8397|2|could reintroduce inputs branch-copy bug
+7434|6967|1|textToPoints alignment, 1.x
+7434|7426|1|p5.Font loading, same module
+8178|7429|0|
+8178|8089|0|
+8317|8270|0|
+6162|5802|2|cap/join line pipeline must hold
+6162|5938|0|
+7201|5978|0|
+7201|6488|0|
+7578|5886|0|
+7578|6306|2|clip() stencil design set here

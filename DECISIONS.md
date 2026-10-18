@@ -2206,3 +2206,9 @@ eval/artifacts/kappa_subset_v11.json, committed BEFORE any batch-3
 judgment; the script refuses if batch 3 has judgments. The author labels
 via label.py --batch 3 --pairs; the grader then grades all 396 without
 seeing them; the author's grades are official for those 30.
+- D-V11-5 note (Day 40): the author's 30 were graded offline in a .psv
+  (eval/artifacts/batch3_author_subset.psv; 1 pair entered via label.py,
+  29 via scripts/day40_import_author.py), stored round 1, batch 3. The grades
+  were pasted into this PROJECT's chat after labeling. The grader is a fresh
+  chat OUTSIDE the project, which cannot search project chats, so its
+  independence holds; this chat does not grade batch 3.
