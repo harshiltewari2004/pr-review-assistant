@@ -2171,3 +2171,22 @@ Local result: prune existing 41899 stale 3992 touched 236; in_corpus 3148;
 no_source_content 518; chunks 37907; survivors 37907|6089492e identical;
 0 queries / 0 judged candidates out; 3rd run stale 0.
 Fingerprint b04b9a89 -> d7283c3a (55b45f27 = intermediate, never used).
+
+## D-V11-4 — v1.1 pool implementation (Day 40)
+eval/pool_v11.py, a NEW module: score imports pool (cycle), and pool.py built
+a published v1.0 artifact on a corpus that no longer exists, so it stays frozen.
+Per query, all 40: pool_for_query (D-P5-8, unchanged) UNION score.top_k(c, w)
+for every w in tune.weight_grid() + HOLDOUT_BASELINES + V10_LOCKED (pinned
+0.6/0.3/0.1: DEFAULT_WEIGHTS moves at the v1.1 lock). Dedupe -> 66 configs
+(every baseline is a grid point). The scorer's own top_k, not variant_picks:
+the variants' evidence filter disagrees with the scorer on file-only, so only
+the scorer's function makes W3 hold by construction (test_pool_v11).
+Guards: fingerprint == corpus_snapshot.json; 10/10/20 queries; pooled PRs
+in_corpus; no self-pool; temporal assert.
+Result (d7283c3a): pool 730 (min 12, median 19, max 25), byte-identical on
+re-run. Grid added 37 PRs beyond the variants (~5%): all 66 configs eligible,
+vs 85/132 in v1.0. New pairs 396: v1.1 holdout 371, v1.0 holdout 15, v1.0 tune 10.
+Variant drift on v1.0 queries confirmed against pool.json: dropped PRs match
+unexplained new pairs exactly (#1518, #6171, #7572). 484/630/632 drop from both
+#6171 and #8047, likely shared generated-file overlap removed by D-V11-1
+(hypothesis; verifying needs the v1.0 dump).

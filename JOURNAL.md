@@ -1299,3 +1299,7 @@ confirmed it. Lesson: check a pasted line's location, not just its count.
 Neon: same run, same numbers (requests 0, 518, 3148, stale 3992 touched 236,
 todo 0); Neon survivors identical. day36_compare_corpora: local == neon,
 content 0f7e8794, prs 4372, chunks 37907. v1.1 corpus fingerprint d7283c3a.
+
+## 2026-10-18 (Day 40) — v1.1 pool
+Predicted ~800 pool / 450-550 new; actual 730 / 396. Overestimate: the grid
+adds only 37 PRs beyond the five variants. Full W3 eligibility costs ~5% more labels.
