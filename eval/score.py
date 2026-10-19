@@ -14,6 +14,7 @@ import json
 import random
 from collections.abc import Sequence
 from dataclasses import dataclass
+from pathlib import Path
 
 from app.retrieval.constants import VECTOR_AGGREGATION
 from app.retrieval.scoring import DEFAULT_WEIGHTS, CandidateSet, Weights, rank_candidates
@@ -85,13 +86,16 @@ class EvalQuery:
     labels: dict[int, int]
 
 
-async def load_eval_set(conn, vector_aggregation: str = VECTOR_AGGREGATION) -> list[EvalQuery]:
-    """All 20 eval queries, C built exactly as pooled, plus official labels.
+async def load_eval_set(
+    conn, vector_aggregation: str = VECTOR_AGGREGATION, protocol: str = "v1.0"
+) -> list[EvalQuery]:
+    """All eval queries of one protocol, C built exactly as pooled, plus official labels.
 
     Refuses on corpus fingerprint mismatch (D-P5-9 W2): the labels judge the
     pool, the pool came from one corpus, and a changed corpus makes them stale.
     """
-    pool = json.loads(POOL_PATH.read_text())
+    proto = PROTOCOLS[protocol]
+    pool = json.loads(proto.pool_path.read_text())
     live = await corpus_fingerprint(conn, REPO_ID)
     if live != pool["corpus_fingerprint"]:
         raise SystemExit(
@@ -106,20 +110,27 @@ async def load_eval_set(conn, vector_aggregation: str = VECTOR_AGGREGATION) -> l
     pooled = {e["query_pr_id"]: set(e["candidate_pr_ids"]) for e in pool["queries"]}
     index = await build_bm25_index(conn, REPO_ID)
     out = []
-    for q in await conn.fetch(QUERIES_SQL):
-        judged = set(labels.get(q["id"], {}))
-        assert judged == pooled[q["id"]], (q["number"], "labels do not match the pool")
+    for q in await conn.fetch(proto.queries_sql):
+        judged = labels.get(q["id"], {})
+        unlabeled = pooled[q["id"]] - set(judged)
+        assert not unlabeled, (q["number"], f"{len(unlabeled)} pooled PRs unlabeled (W3)")
+        # D-V11-7: relevance is pool-relative; labels outside this pool are not used.
+        pool_labels = {cid: judged[cid] for cid in pooled[q["id"]]}
+        if proto.tune_cohort is None:
+            split = q["split"]
+        else:
+            split = "tune" if q["cohort"] == proto.tune_cohort else "holdout"
         c = await build_query_candidates(conn, index, q, vector_aggregation)
         out.append(
             EvalQuery(
                 pr_id=q["id"],
                 number=q["number"],
-                split=q["split"],
+                split=split,
                 candidates=c,
-                labels=labels[q["id"]],
+                labels=pool_labels,
             )
         )
-    assert len(out) == 20, len(out)
+    assert len(out) == proto.n_queries, len(out)
     return out
 
 
@@ -141,6 +152,51 @@ HOLDOUT_BASELINES = {
     "file_overlap_only": Weights(vector=0.0, file_overlap=1.0, bm25=0.0),
     "bm25_only": Weights(vector=0.0, file_overlap=0.0, bm25=1.0),
     "hybrid_prior": Weights(vector=0.5, file_overlap=0.3, bm25=0.2),
+}
+# D-P6-2's lock, pinned: DEFAULT_WEIGHTS moves when v1.1 locks, and this
+# baseline must keep meaning "what v1.0 shipped" (D-V11-1 §6).
+V10_LOCKED = Weights(vector=0.6, file_overlap=0.3, bm25=0.1)
+POOL_V11_PATH = POOL_PATH.parent / "pool_v11.json"
+QUERIES_V11_SQL = """
+SELECT p.id, p.number, p.created_at, p.title, p.body, p.files_changed, q.split, q.cohort
+FROM eval_queries q JOIN pull_requests p ON p.id = q.pr_id
+ORDER BY q.cohort, q.split, p.id
+"""
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class Protocol:
+    """What differs between evaluation versions (D-V11-1). tune_cohort None: split from DB."""
+
+    name: str
+    pool_path: Path
+    queries_sql: str
+    n_queries: int
+    holdout_lock_path: Path
+    baselines: dict[str, Weights]
+    tune_cohort: str | None
+
+
+PROTOCOLS = {
+    "v1.0": Protocol(
+        name="v1.0",
+        pool_path=POOL_PATH,
+        queries_sql=QUERIES_SQL,
+        n_queries=20,
+        holdout_lock_path=HOLDOUT_LOCK_PATH,
+        baselines=HOLDOUT_BASELINES,
+        tune_cohort=None,
+    ),
+    # D-V11-1 §2: tune = all 20 v1.0 queries; holdout = the 20 new ones.
+    "v1.1": Protocol(
+        name="v1.1",
+        pool_path=POOL_V11_PATH,
+        queries_sql=QUERIES_V11_SQL,
+        n_queries=40,
+        holdout_lock_path=POOL_PATH.parent / "holdout_v11_scored.json",
+        baselines=HOLDOUT_BASELINES | {"v1.0_locked": V10_LOCKED},
+        tune_cohort="v1.0",
+    ),
 }
 METRIC_NAMES = (
     "recall_lenient",
@@ -213,30 +269,37 @@ def _fmt(value: float | None) -> str:
 
 async def main() -> None:
     parser = argparse.ArgumentParser(description="Offline scorer (01 §11, §14)")
+    parser.add_argument("--protocol", choices=tuple(PROTOCOLS), default="v1.0")
     parser.add_argument("--split", choices=("tune", "holdout"), default="tune")
     parser.add_argument("--weights", type=parse_weights, default=DEFAULT_WEIGHTS)
     parser.add_argument("--holdout-once", action="store_true", help="invariant 14")
     args = parser.parse_args()
+    proto = PROTOCOLS[args.protocol]
 
     if args.split == "holdout":
         if not args.holdout_once:
             raise SystemExit("holdout needs --holdout-once: it is scored exactly once (inv. 14)")
         if args.weights != DEFAULT_WEIGHTS:
             raise SystemExit("holdout is scored only at the locked DEFAULT_WEIGHTS (inv. 14)")
-        if HOLDOUT_LOCK_PATH.exists():
-            raise SystemExit(f"holdout already scored: {HOLDOUT_LOCK_PATH.name} exists (inv. 14)")
+        lock = proto.holdout_lock_path
+        if lock.exists():
+            raise SystemExit(f"holdout already scored: {lock.name} exists (inv. 14)")
 
     async with connect("local") as conn:
-        queries = await load_eval_set(conn)
+        queries = await load_eval_set(conn, protocol=proto.name)
     chosen = [q for q in queries if q.split == args.split]
-    assert len(chosen) == 10, len(chosen)
+    assert len(chosen) == proto.n_queries // 2, len(chosen)
 
     result = score_split(chosen, args.weights, random.Random(SEED))
     w = args.weights
+    result["protocol"] = proto.name
     result["split"] = args.split
     result["weights"] = {"vector": w.vector, "file_overlap": w.file_overlap, "bm25": w.bm25}
 
-    print(f"split {args.split}  weights v={w.vector} f={w.file_overlap} b={w.bm25}")
+    print(
+        f"protocol {proto.name}  split {args.split}  "
+        f"weights v={w.vector} f={w.file_overlap} b={w.bm25}"
+    )
     for p in result["per_query"]:
         print(
             f"  #{p['query']:<5} rel {p['relevant_lenient']:>2}/{p['relevant_strict']:<2} "
@@ -258,7 +321,7 @@ async def main() -> None:
 
     if args.split == "holdout":
         result["baselines"] = {}
-        for name, bw in HOLDOUT_BASELINES.items():
+        for name, bw in proto.baselines.items():
             b = score_split(chosen, bw, random.Random(SEED))
             result["baselines"][name] = {
                 "metrics": b["metrics"],
@@ -270,7 +333,7 @@ async def main() -> None:
                 f"strict {_fmt(m['recall_strict']['mean'])}  "
                 f"MRR {_fmt(m['mrr_lenient']['mean'])}  unjudged {b['unjudged_in_top3']}"
             )
-        HOLDOUT_LOCK_PATH.write_text(json.dumps(result, indent=2) + "\n")
+        proto.holdout_lock_path.write_text(json.dumps(result, indent=2) + "\n")
 
 
 if __name__ == "__main__":

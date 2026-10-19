@@ -34,23 +34,14 @@ from eval.pool import (
     build_query_candidates,
     pool_for_query,
 )
-from eval.score import HOLDOUT_BASELINES, K, top_k
+from eval.score import HOLDOUT_BASELINES, POOL_V11_PATH, QUERIES_V11_SQL, V10_LOCKED, K, top_k
 from eval.snapshot import corpus_fingerprint
 from eval.tune import weight_grid
 from ingest.db import connect
 
-POOL_V11_PATH = POOL_PATH.parent / "pool_v11.json"
 SNAPSHOT_PATH = POOL_PATH.parent / "corpus_snapshot.json"
-# D-P6-2's lock, pinned: DEFAULT_WEIGHTS moves when v1.1 locks, and this
-# baseline must keep meaning "what v1.0 shipped" (D-V11-1 §6).
-V10_LOCKED = Weights(vector=0.6, file_overlap=0.3, bm25=0.1)
 EXPECTED_QUERIES = {("v1.0", "holdout"): 10, ("v1.0", "tune"): 10, ("v1.1", "holdout"): 20}
 
-QUERIES_SQL = """
-SELECT p.id, p.number, p.created_at, p.title, p.body, p.files_changed, q.split, q.cohort
-FROM eval_queries q JOIN pull_requests p ON p.id = q.pr_id
-ORDER BY q.cohort, q.split, p.id
-"""
 JUDGED_SQL = "SELECT DISTINCT query_pr_id, candidate_pr_id FROM judgments"
 POOLED_SQL = """
 SELECT id, created_at FROM pull_requests
@@ -85,7 +76,7 @@ async def main() -> None:
         fingerprint = await corpus_fingerprint(conn, REPO_ID)
         assert fingerprint == snapshot["corpus_fingerprint"], "DB is not the snapshotted corpus"
         index = await build_bm25_index(conn, REPO_ID)
-        queries = await conn.fetch(QUERIES_SQL)
+        queries = await conn.fetch(QUERIES_V11_SQL)
         counts: dict[tuple[str, str], int] = {}
         for q in queries:
             counts[(q["cohort"], q["split"])] = counts.get((q["cohort"], q["split"]), 0) + 1
