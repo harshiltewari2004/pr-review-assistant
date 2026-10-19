@@ -1322,3 +1322,15 @@ minus bm25_only -0.001 [-0.072, +0.083]. Prediction for eval.tune v1.1:
 of 0.6/0.3/0.1; several configs tied at the top.
 Actual: 66/66, winner 0.5/0.1/0.4 at 0.3670 (in range); L1 0.6 (predicted
 <= 0.4) and no tie (predicted several). Weight moved from file overlap to BM25.
+
+## v1.1 HOLDOUT PREDICTION (committed before the single run, D-V11-1 §7)
+Locked max 0.5/0.1/0.4 on the 20 v1.1 holdout queries:
+- lenient R@3: 0.28-0.36 (point 0.32). Tune was 0.367 as best-of-66, so
+  winner's curse pulls it down; v1.0's holdout was 0.321.
+- ceiling (lenient): 0.40-0.55; R@3 / ceiling 60-80%.
+- rank 1 relevant (lenient): 70-85%.
+- locked - bm25_only: CI includes 0 -> "beats keyword search" NOT claimable
+  (on tune it was +0.042 [-0.016, +0.102]).
+- vs v1.0_locked baseline: within +/- 0.05.
+- unjudged in top-3: 0 for the locked weights and every baseline
+  (pool contains every config's top 3, D-V11-4).
