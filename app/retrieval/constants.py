@@ -8,9 +8,9 @@ with the date.
 EMBEDDING_DIM = 384
 MAX_MODEL_TOKENS = 256  # all-MiniLM-L6-v2 truncates silently past this
 
-WEIGHT_VECTOR = 0.60  # tuned on the tune split per D-P6-1, locked 2026-10-12 (D-P6-2)
-WEIGHT_FILE_OVERLAP = 0.30
-WEIGHT_BM25 = 0.10
+WEIGHT_VECTOR = 0.50  # v1.1: tuned on 20 queries per D-V11-1 §5, locked 2026-10-19 (D-V11-8)
+WEIGHT_FILE_OVERLAP = 0.10
+WEIGHT_BM25 = 0.40
 
 # Reason thresholds (03 §10) are on the PER-QUERY MIN-MAX NORMALIZED scale
 # [0, 1], compared against ScoredCandidate.*_score_norm: never raw cosine,
