@@ -1334,3 +1334,10 @@ Locked max 0.5/0.1/0.4 on the 20 v1.1 holdout queries:
 - vs v1.0_locked baseline: within +/- 0.05.
 - unjudged in top-3: 0 for the locked weights and every baseline
   (pool contains every config's top 3, D-V11-4).
+v1.1 HOLDOUT ACTUAL vs prediction (4ed6b10): R@3 0.430 (pred 0.28-0.36, X);
+ceiling 0.661 (pred 0.40-0.55, X); ratio ~65% (pred 60-80%, ok); rank 1 100%
+(pred 70-85%, X); beats bm25_only +0.165 [+0.067, +0.284] (pred not
+claimable, X); vs v1.0_locked +0.09 (pred +/-0.05, X); unjudged 0 (ok).
+Lesson: absolute recall across query sets with different relevant-set sizes
+is not comparable; normalize by the ceiling. My predictions assumed the
+holdout's label calibration matched tune's; it did not.

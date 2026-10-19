@@ -2255,3 +2255,23 @@ inflate file overlap) and twice the tune queries; cause not claimed.
 Lock: constants.py weights -> 0.5/0.1/0.4, dated 2026-10-19. Frozen paths
 unaffected: pool.py and tune.py pin the v1.0 prior; pool_v11 and score.py pin
 V10_LOCKED.
+
+## D-V11-9 — v1.1 holdout result, scored once (Day 41)
+eval/artifacts/holdout_v11_scored.json: single run, locked max 0.5/0.1/0.4,
+20 v1.1 holdout queries; unjudged 0 for the locked weights and all 5 baselines.
+HEADLINE: lenient R@3 0.430 [0.351, 0.518], ceiling 0.661 [0.546, 0.781]
+(~65% of achievable). Strict 0.611 [0.478, 0.753] (n=15). MRR@3 1.000: the
+rank-1 result is lenient-relevant on 20/20. Per rank lenient 100/60/45%,
+strict 55/40/5%.
+Locked - bm25_only (paired, 1,000 rounds, seed 32): +0.165 [+0.067, +0.284],
+CI entirely above 0 -> "beats keyword search" claimable under D-V11-1 §6.
+Baselines R@3: vector 0.33, file 0.16, bm25 0.27, prior 0.35, v1.0_locked 0.34.
+README caveats: (1) on tune the same comparison was +0.042 [-0.016, +0.102],
+not significant; n=20 each. (2) Absolute R@3 is NOT comparable to tune or
+v1.0: holdout relevant sets are smaller (median 5.5 vs 7), so ceilings are
+higher; ceiling-normalized the holdout (~65%) is below tune (~81%): the
+winner's curse shows there. Tune and holdout labels come from different
+grading runs (v1.0 batches + round 2 vs batch 3; batch-3 grader 70% zeros vs
+55%), the likely cause. (3) The paired comparison uses identical labels for
+both systems, so (2) does not bias it. (4) Lenient = grade >= 1, a low bar;
+strict comparison was not pre-registered and is not claimed.
