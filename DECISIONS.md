@@ -2240,3 +2240,18 @@ consistent with D-V11-4's generated-file-noise hypothesis.
 Decision: A. load_eval_set asserts every pooled pair is labeled (W3) and
 ignores labels outside the protocol's pool. v1.0 is unaffected: at the v1.0
 lock judged == pooled held exactly (asserted then).
+
+## D-V11-8 — v1.1 tune result and weight lock (Day 41)
+eval.tune --protocol v1.1 per D-V11-1 §5: 20 tune queries (all v1.0 queries),
+max only, 66/66 configs judged (asserted; pool guarantee, D-V11-4).
+WINNER: max, v=0.5 f=0.1 b=0.4: lenient R@3 0.3670, strict 0.6176, MRR 0.9250,
+L1 0.6 from the v1.0 lock. Unique top (no tie). v1.0 lock 0.6/0.3/0.1 ranks
+20th (0.3238). Gain +0.043 is best-of-66 on the same queries: expect winner's
+curse on the holdout.
+Shape: 9 of the top 10 have file_overlap <= 0.2; 8 of 10 have bm25 >= 0.3: a
+consistent region, not an isolated point. Reverses v1.0 (top 4 had bm25 <=
+0.1). Two changes are confounded: the corpus fix (generated files no longer
+inflate file overlap) and twice the tune queries; cause not claimed.
+Lock: constants.py weights -> 0.5/0.1/0.4, dated 2026-10-19. Frozen paths
+unaffected: pool.py and tune.py pin the v1.0 prior; pool_v11 and score.py pin
+V10_LOCKED.

@@ -1313,3 +1313,12 @@ did not get: expect any disagreement to lean author-lower.
 Actual: QWK 0.834 (in range), lenient 0.734 (just under my 0.75), strict
 0.712 (well above v1.0's 0.380). Predicted author-lower lean did NOT show
 (3 vs 2). three_grade 0.590 despite 25/30 raw: class imbalance (23/30 zeros).
+
+## 2026-10-19 (Day 41) — v1.1 tune
+Rehearsal at v1.0's 0.6/0.3/0.1 on the 20 tune queries: lenient 0.324
+[0.263, 0.392], ceiling 0.454; rank 1/2/3 relevant 80/80/60% lenient;
+minus bm25_only -0.001 [-0.072, +0.083]. Prediction for eval.tune v1.1:
+66/66 judged (by construction); winner lenient 0.33-0.37, within L1 <= 0.4
+of 0.6/0.3/0.1; several configs tied at the top.
+Actual: 66/66, winner 0.5/0.1/0.4 at 0.3670 (in range); L1 0.6 (predicted
+<= 0.4) and no tie (predicted several). Weight moved from file overlap to BM25.
