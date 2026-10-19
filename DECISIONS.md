@@ -2228,3 +2228,15 @@ strict rests on 4 grade-2s.
 Import: 366 grader grades as round 1, batch 3 (0/1/2: 256/76/34); the
 author's 30 skipped (official). Pool fully judged: label.py --batch 3
 --plan -> 730 pairs, 0 remaining (W3 holds for every scorable config).
+
+## D-V11-7 — v1.1 relevance is pool-relative (Day 41)
+Context: 11 official labels lie outside pool_v11: v1.0 pool members that
+dropped out after the corpus fix (variant drift, D-V11-4).
+Options: A labels for pooled pairs only (one definition of "relevant" for
+all 40 queries); B every label (TREC-style qrels).
+Measured BEFORE deciding: all 11 are grade 0, so A and B give identical
+numbers. Also: the fix removed no relevant candidate from any v1.0 pool,
+consistent with D-V11-4's generated-file-noise hypothesis.
+Decision: A. load_eval_set asserts every pooled pair is labeled (W3) and
+ignores labels outside the protocol's pool. v1.0 is unaffected: at the v1.0
+lock judged == pooled held exactly (asserted then).
