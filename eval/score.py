@@ -68,6 +68,49 @@ def bootstrap_ci(
     return means[int(0.025 * rounds)], means[int(0.975 * rounds) - 1]
 
 
+def paired_bootstrap_diff(
+    a: Sequence[float | None],
+    b: Sequence[float | None],
+    rng: random.Random,
+    rounds: int = BOOTSTRAP_ROUNDS,
+) -> dict:
+    """Mean per-query a - b with a percentile 95% CI. D-V11-1 §6.
+
+    Paired: each resample draws QUERIES once and both systems keep their own
+    score for each drawn query, so per-query difficulty cancels. That is the
+    bootstrap of the per-query differences. Queries unscorable in either
+    system (None) are excluded.
+    """
+    diffs = [x - y for x, y in zip(a, b, strict=True) if x is not None and y is not None]
+    lo, hi = bootstrap_ci(diffs, rng, rounds)
+    return {
+        "mean": round(sum(diffs) / len(diffs), 4),
+        "ci95": [round(lo, 4), round(hi, 4)],
+        "n": len(diffs),
+    }
+
+
+def per_rank_rates(rank_grades: Sequence[Sequence[int]], k: int = K) -> list[dict]:
+    """Share of queries whose rank-r result is lenient / strict relevant, r = 1..k. D-P8-4.
+
+    rank_grades: each query's official grades for its top k, best first (an
+    unjudged result counts 0, as in score_split). The demo page shows these as
+    a measured "relevant N% of the time at this rank".
+    """
+    n = len(rank_grades)
+    rates = []
+    for r in range(k):
+        at_r = [g[r] for g in rank_grades if len(g) > r]
+        rates.append(
+            {
+                "rank": r + 1,
+                "lenient": round(sum(x >= LENIENT_MIN_GRADE for x in at_r) / n, 4),
+                "strict": round(sum(x >= STRICT_MIN_GRADE for x in at_r) / n, 4),
+            }
+        )
+    return rates
+
+
 OFFICIAL_LABELS_SQL = """
 SELECT DISTINCT ON (query_pr_id, candidate_pr_id) query_pr_id, candidate_pr_id, grade
 FROM judgments
@@ -245,7 +288,12 @@ def score_split(queries: list[EvalQuery], weights: Weights, rng: random.Random) 
         for name, value in row.items():
             columns[name].append(value)
         per_query.append(
-            {"query": q.number, "relevant_lenient": len(lenient), "relevant_strict": len(strict)}
+            {
+                "query": q.number,
+                "relevant_lenient": len(lenient),
+                "relevant_strict": len(strict),
+                "rank_grades": [q.labels.get(c, 0) for c in ranked],  # D-P8-4
+            }
             | row
         )
     return {
@@ -253,6 +301,7 @@ def score_split(queries: list[EvalQuery], weights: Weights, rng: random.Random) 
         "unjudged_in_top3": unjudged,
         "metrics": {name: summarize(values, rng) for name, values in columns.items()},
         "relevant_lenient_sizes": sorted(p["relevant_lenient"] for p in per_query),
+        "per_rank": per_rank_rates([p["rank_grades"] for p in per_query]),
         "per_query": per_query,
     }
 
@@ -318,6 +367,25 @@ async def main() -> None:
         )
     print(f"  unjudged in top-3: {result['unjudged_in_top3']} (D-P5-9 W3: must be 0)")
     print(f"  |relevant| lenient per query: {result['relevant_lenient_sizes']}")
+    for r in result["per_rank"]:
+        print(f"  rank {r['rank']}: relevant {r['lenient']:.0%} lenient, {r['strict']:.0%} strict")
+
+    # D-V11-1 §6: computed on every run, so the holdout run executes code already
+    # rehearsed on tune. "Beats keyword search" only if the CI is entirely above 0.
+    bm25 = score_split(chosen, HOLDOUT_BASELINES["bm25_only"], random.Random(SEED))
+    diff = paired_bootstrap_diff(
+        [p["recall_lenient"] for p in result["per_query"]],
+        [p["recall_lenient"] for p in bm25["per_query"]],
+        random.Random(SEED),
+    )
+    diff["beats_bm25_only"] = diff["ci95"][0] > 0
+    result["lenient_minus_bm25_only"] = diff
+    lo, hi = diff["ci95"]
+    verdict = "beats keyword search" if diff["beats_bm25_only"] else "NOT shown to beat it"
+    print(
+        f"  lenient R@3 - bm25_only: {diff['mean']:+.3f}  "
+        f"95% CI [{lo:+.3f}, {hi:+.3f}]  n={diff['n']}  -> {verdict}"
+    )
 
     if args.split == "holdout":
         result["baselines"] = {}
