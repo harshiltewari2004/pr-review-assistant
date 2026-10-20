@@ -7,3 +7,8 @@ __pycache__/
 .DS_Store
 .cache/
 logs/
+
+# Private notes, kept locally only
+DECISIONS.md
+JOURNAL.md
+HANDOFF.md
