@@ -194,7 +194,7 @@
   const strip = $("strip");
   const vk = m.vs_keyword;
   const signed = (x) => (x >= 0 ? "+" : "") + x.toFixed(2);
-  const gain = vk.beats
+  const gain = vk && vk.beats
     ? `Recall@3 ${signed(vk.recall_gain)} vs keyword-only search (95% CI ${signed(vk.ci95[0])} to ${signed(vk.ci95[1])}) · `
     : "";
   strip.textContent = `Top suggestion judged related for ${m.top_result_relevant} of ${m.holdout_queries} held-out PRs · ${gain}${m.judged_pairs} judged pairs · ${S.corpus.repo} · `;
@@ -209,9 +209,11 @@
     const badge = el("span", "badge" + (r.outcome === "closed_unmerged" ? " closed" : ""),
                      OUTCOME[r.outcome] || r.outcome);
     head.append(badge);
-    const calib = el("span", "calib", `related ${m.relevant_at_rank_pct[i]}% of the time at rank ${i + 1}`);
-    calib.title = `Measured on ${m.holdout_queries} held-out PRs; related = grade 1 or 2 (D-P8-4)`;
-    head.append(calib);
+    if (m.relevant_at_rank_pct) {
+      const calib = el("span", "calib", `related ${m.relevant_at_rank_pct[i]}% of the time at rank ${i + 1}`);
+      calib.title = `Measured on ${m.holdout_queries} held-out PRs; related = grade 1 or 2 (D-P8-4)`;
+      head.append(calib);
+    }
 
     const h4 = el("h4");
     h4.append(link(r.url, r.title));
