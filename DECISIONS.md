@@ -516,8 +516,7 @@ PREDICTION for the post-implementation run, registered before writing code:
 47 groups / 51 duplicate_resubmission / in_corpus 3,685.
 
 ### D-P2-15 — RESOLVED (2026-08-05): the list cache is frozen by manifest
-Mechanism: [FILL FROM THE sed — the short-final-page rule in
-_read_cached_page]. Page 44 holds 72 of 100 items, so every run re-fetched it
+Mechanism: _read_cached_page treats a cached page holding fewer than 100 items as an incomplete tail and always re-fetches it (D-P2-6) [filled Day 42]. Page 44 holds 72 of 100 items, so every run re-fetched it
 and picked up PRs opened since. Correct behaviour for an interrupted fetch,
 wrong for a completed corpus.
 
@@ -628,7 +627,9 @@ Consequences:
  Prediction 47/51/3,685 met exactly on all three. Nine groups discarded, 18 PRs returned to corpus, 9 exclusions removed. Note the handoff's list of ten pairs was wrong: 8497/8498 never formed a group — the  (main) suffix breaks normalized exact match. It is a real dual-branch port sitting in corpus as two merged near-identical PRs, i.e. the first concrete instance of D-P5-3's hazard, and evidence that D-P2-16 catches the grouped ports only.
 
 ### D-P2-18 — OPEN. 
-07 §4's duplicate-triple invariant is factually wrong. The doc states the #8947/#8946/#8945 triple "leaves exactly one PR in corpus, and it is the merged one." Measured: none of the three is merged. #8947 survives via pick_keeper's highest-number fallback, not the merged branch. The doc names this as the worked example of the merged rule and it doesn't exercise it. Amend 07 §4 in the doc-revision batch; find a real merged-branch example. Note tests/unit/test_corpus_filter.py's fixture reuses those three numbers with fabricated merge state — it does test the merged branch, but on invented data under real PR numbers, which is its own small trap.### D-P2-14 — RESOLVED, 2026-08-07 (Day 14)
+07 §4's duplicate-triple invariant is factually wrong. The doc states the #8947/#8946/#8945 triple "leaves exactly one PR in corpus, and it is the merged one." Measured: none of the three is merged. #8947 survives via pick_keeper's highest-number fallback, not the merged branch. The doc names this as the worked example of the merged rule and it doesn't exercise it. Amend 07 §4 in the doc-revision batch; find a real merged-branch example. Note tests/unit/test_corpus_filter.py's fixture reuses those three numbers with fabricated merge state — it does test the merged branch, but on invented data under real PR numbers, which is its own small trap.
+
+### D-P2-14 — RESOLVED, 2026-08-07 (Day 14)
 **files_changed, additions, deletions all derive from parse_hunks() output.**
 
 GitHub's PR list endpoint returns none of these fields. The alternative to
@@ -2291,3 +2292,31 @@ corpus_snapshot's indexed_at, which D-V11-3's re-index moved to 2026-10-17.
 Footer shows the snapshot date and the re-index date separately.
 Seeds: #9309 (strong), #9307 (strong), #9308 (two noise PRs, then #787 JSCS:
 weak). Shown as generated.
+
+## D-M-4 — Ledger corrections (Day 42)
+The append-only rule holds: no earlier entry is reworded. In place, layout
+only: the D-P2-14 (2026-08-07) heading was glued to D-P2-18's last line
+(newline restored); D-P2-15 RESOLVED's unfilled "[FILL FROM THE sed ...]"
+placeholder filled from D-P2-6, marked "[filled Day 42]". Corrections:
+- Number collision D-P3-3: (a) Neon region move, 2026-08-13; (b) mean-of-top-3
+  over query chunks, 2026-08-20. D-P4-10's "D-P3-3's Day-34 comparison" means
+  (b). Cite (b) as D-P3-4 from here on.
+- Number collision D-P6-1: (a) exact score ties, 2026-08-17 (EXTENDED
+  2026-08-22); (b) tuning protocol, Day 35. Every later citation (tune.py,
+  D-V11-1 §5) means (b). (a) is RESOLVED by the (-score, pr_id) tie-break in
+  its EXTENDED entry; cite it as D-P6-0.
+- Duplicates: D-P5-1 CONFIRMED (2026-07-28) and D-P2-15 OPEN (2026-08-02)
+  each appear twice; same decision, the later text governs. D-P5-1's
+  stratified re-test was later replaced (D-P5-13/14).
+- D-P2-24 CLOSED: worst-case vector work is 920 ms over 14 query chunks at
+  VECTOR_TOP_K=50, not ~630 ms (JOURNAL, 2026-08-20). Decision unchanged.
+- D-P5-4 has no resolution entry. D-P5-11 hid the QUERY's outcome; the
+  CANDIDATE's outcome is still shown at snapshot time, so a candidate merged
+  after the query date displays as merged. Status: open; README limitation.
+- D-P5-9 W3 is closed for v1.1 by construction (D-V11-4); 66/66 configs judged
+  (D-V11-8); unjudged 0 in the holdout run (D-V11-9).
+- D-P7-5: the evaluated snapshot is now d7283c3a (D-V11-3), not b04b9a89.
+  The weekly re-index itself is not built.
+- D-V11-6 compares v1.1 strict kappa 0.712 with v1.0's 0.380. The v1.0 figure
+  of record is 0.586 (after D-P5-15/16); 0.380 was pre-remedy and overstates
+  the gain.

@@ -1261,7 +1261,8 @@ pgvector.Vector, not ndarray (.to_numpy()). First orchestrator run #8994:
 
 - Day 30: #7978 file_overlap contributed 0 — no past PR touches strands_api.js or the new noise3D shader. Verified by SQL before trusting it. The raw > 0 rule fired exactly once in 20 queries.
 - Day 30: censoring check 0/120 — nomination depth 50 vs pool depth 6 absorbed all censoring.
-- Day 30: pool = 345 (not ~300). Variant disagreement drives pool size.- Day 30: teeth check on pool evidence rule: norm-based filter passed 6/7 tests. Raw 0 and norm 0 agree in obvious cases; only a test built for the subtle case catches it.
+- Day 30: pool = 345 (not ~300). Variant disagreement drives pool size.
+- Day 30: teeth check on pool evidence rule: norm-based filter passed 6/7 tests. Raw 0 and norm 0 agree in obvious cases; only a test built for the subtle case catches it.
 - Day 30: pool.json landed in eval/, but 04 §3 says eval/artifacts/. Should have checked the folder layout before choosing a path.
 - Day 31: schema drift — D-P5-1 (Jul 28) added judgments.self_authored to 02 §7, but 001_init.sql was never updated. A decision that changes a spec needs a migration in the same breath.
 - Day 31: self-authored pairs in the pool: 0/345. The D-P1-2 familiarity cost never reaches the labels.
@@ -1341,3 +1342,14 @@ claimable, X); vs v1.0_locked +0.09 (pred +/-0.05, X); unjudged 0 (ok).
 Lesson: absolute recall across query sets with different relevant-set sizes
 is not comparable; normalize by the ceiling. My predictions assumed the
 holdout's label calibration matched tune's; it did not.
+
+## 2026-10-20 (Day 42) — ledger corrections
+Entries are not rewritten; corrections live here. One layout repair in
+place: two Day-30 bullets were glued on one line.
+- Day 17 (2026-08-10): the D-P2-20 prediction template ("predict ___") was
+  never filled in this file, so the later "mean 8 — hit, zero-hunk 3/50 —
+  hit" lines have no in-file pre-registration. Weaker evidence than they read.
+- Three entries are labelled "Day 21" (2026-08-15, 2026-08-17, 2026-08-20).
+  The dates are authoritative; those day numbers are not.
+- Day 40: "strict 0.712 (well above v1.0's 0.380)". v1.0's strict kappa of
+  record is 0.586 (after D-P5-15); 0.380 was pre-remedy.
