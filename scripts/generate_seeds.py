@@ -6,7 +6,7 @@ a bot, whose diff keeps at least one hunk after the chunker's exclusions.
 Each runs through app.service.analyze_diff (the live bot's pipeline) as a NEW
 PR, against the local evaluated snapshot. Whatever comes out is shown.
 
-Strip numbers are derived from holdout_scored.json and pool.json, never typed
+Strip numbers are derived from holdout_v11_scored.json and pool_v11.json, never typed
 (10 §8: every figure traces to the harness). Raw diffs cached to .cache/seeds/
 (invariant 19).
 
@@ -36,8 +36,11 @@ SCAN_LIMIT = 100  # newest PRs scanned to find SEED_COUNT that qualify
 API = "https://api.github.com"
 ROOT = Path(__file__).resolve().parent.parent
 SNAPSHOT_PATH = ROOT / "eval/artifacts/corpus_snapshot.json"
-HOLDOUT_PATH = ROOT / "eval/artifacts/holdout_scored.json"
-POOL_PATH = ROOT / "eval/artifacts/pool.json"
+HOLDOUT_PATH = ROOT / "eval/artifacts/holdout_v11_scored.json"  # D-V11-10
+POOL_PATH = ROOT / "eval/artifacts/pool_v11.json"
+# D-P8-3's cutoff, pinned: the rule names this date, and corpus_snapshot's
+# indexed_at moved to 2026-10-17 when D-V11-3 re-ran the index (content unchanged).
+SNAPSHOT_CUTOFF = datetime.fromisoformat("2026-08-15T07:29:33.633256+00:00")
 CACHE_DIR = ROOT / ".cache/seeds"
 OUT_PATH = ROOT / "frontend/seed_results.json"
 OUT_JS_PATH = ROOT / "frontend/seed_results.js"
@@ -88,21 +91,31 @@ def pick_seeds(snapshot_at: datetime) -> list[tuple[dict, str]]:
 
 
 def strip_metrics() -> dict:
-    """D-P8-1 numbers, derived from the harness artifacts."""
+    """D-P8-1 numbers, derived from the harness artifacts. D-P8-4, D-V11-10."""
     holdout = json.loads(HOLDOUT_PATH.read_text())
+    w = DEFAULT_WEIGHTS
+    locked = {"vector": w.vector, "file_overlap": w.file_overlap, "bm25": w.bm25}
+    assert holdout["weights"] == locked, "holdout scored at other weights than the page uses"
+    vs = holdout["lenient_minus_bm25_only"]
     rr = [p["mrr_lenient"] for p in holdout["per_query"]]
     pool = json.loads(POOL_PATH.read_text())
     return {
         "top_result_relevant": sum(1 for v in rr if v == 1.0),
         "holdout_queries": len(rr),
         "judged_pairs": sum(len(q["candidate_pr_ids"]) for q in pool["queries"]),
-        "source": "eval/artifacts/holdout_scored.json, eval/artifacts/pool.json",
+        "relevant_at_rank_pct": [round(100 * r["lenient"]) for r in holdout["per_rank"]],
+        "vs_keyword": {
+            "recall_gain": vs["mean"],
+            "ci95": vs["ci95"],
+            "beats": vs["beats_bm25_only"],
+        },
+        "source": "eval/artifacts/holdout_v11_scored.json, eval/artifacts/pool_v11.json",
     }
 
 
 async def main() -> None:
     snapshot = json.loads(SNAPSHOT_PATH.read_text())
-    seeds = pick_seeds(datetime.fromisoformat(snapshot["indexed_at"]))
+    seeds = pick_seeds(SNAPSHOT_CUTOFF)
 
     async with connect("local") as conn:
         repo_id = await conn.fetchval(REPO_SQL, REPO)
@@ -135,6 +148,7 @@ async def main() -> None:
     payload = {
         "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "rule": RULE,
+        "seed_cutoff": SNAPSHOT_CUTOFF.isoformat(),
         "weights": {"vector": w.vector, "file_overlap": w.file_overlap, "bm25": w.bm25},
         "aggregation": VECTOR_AGGREGATION,
         "model": EMBEDDING_MODEL,
@@ -157,6 +171,9 @@ async def main() -> None:
         f"strip: top result relevant {m['top_result_relevant']}/{m['holdout_queries']}, "
         f"{m['judged_pairs']} judged pairs"
     )
+    vk = m["vs_keyword"]
+    print(f"strip: relevant at rank 1/2/3: {m['relevant_at_rank_pct']} %")
+    print(f"strip: vs keyword-only {vk['recall_gain']:+.3f} CI {vk['ci95']} beats={vk['beats']}")
     for q in queries:
         print(f"\n#{q['number']}  {q['title']}")
         for r in q["results"]:

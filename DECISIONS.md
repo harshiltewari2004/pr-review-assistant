@@ -2275,3 +2275,19 @@ grading runs (v1.0 batches + round 2 vs batch 3; batch-3 grader 70% zeros vs
 55%), the likely cause. (3) The paired comparison uses identical labels for
 both systems, so (2) does not bias it. (4) Lenient = grade >= 1, a low bar;
 strict comparison was not pre-registered and is not claimed.
+
+## D-V11-10 — Demo page at v1.1 (Day 42)
+Seeds regenerated at the locked 0.5/0.1/0.4 (D-P8-3: after any weight change
+or re-index). Strip and per-rank from holdout_v11_scored.json / pool_v11.json.
+Supersedes D-P8-1's absolute-only strip: the keyword comparison is shown
+because D-V11-1 §6's pre-registered criterion is met, and the page renders it
+only if beats_bm25_only is true, always with its CI and n.
+Wording: "judged related" (lenient = grade >= 1), not "relevant".
+Per-rank (D-P8-4) on each card: related 100/60/45% at ranks 1/2/3, measured on
+20 held-out PRs (tooltip). Guard: generate_seeds refuses if the holdout was
+scored at other weights than DEFAULT_WEIGHTS.
+Fix: D-P8-3's cutoff pinned to 2026-08-15; the code had read
+corpus_snapshot's indexed_at, which D-V11-3's re-index moved to 2026-10-17.
+Footer shows the snapshot date and the re-index date separately.
+Seeds: #9309 (strong), #9307 (strong), #9308 (two noise PRs, then #787 JSCS:
+weak). Shown as generated.

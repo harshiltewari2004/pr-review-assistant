@@ -92,6 +92,7 @@
   .seg.vec { background: var(--signal-vec); }
   .seg.file { background: var(--signal-file); }
   .seg.bm25 { background: var(--signal-bm25); }
+  .calib { margin-left: auto; font-size: 0.8em; opacity: 0.75; }
   .seg + .seg { box-shadow: -1px 0 0 #fff; }
   .seg[data-detail]:hover::after, .seg[data-detail]:focus-visible::after {
     content: attr(data-detail); position: absolute; left: 0; bottom: calc(100% + 8px);
@@ -191,7 +192,12 @@
 
   const m = S.metrics;
   const strip = $("strip");
-  strip.textContent = `Top suggestion relevant for ${m.top_result_relevant} of ${m.holdout_queries} unseen PRs · ${m.judged_pairs} judged pairs · ${S.corpus.repo} · `;
+  const vk = m.vs_keyword;
+  const signed = (x) => (x >= 0 ? "+" : "") + x.toFixed(2);
+  const gain = vk.beats
+    ? `Recall@3 ${signed(vk.recall_gain)} vs keyword-only search (95% CI ${signed(vk.ci95[0])} to ${signed(vk.ci95[1])}) · `
+    : "";
+  strip.textContent = `Top suggestion judged related for ${m.top_result_relevant} of ${m.holdout_queries} held-out PRs · ${gain}${m.judged_pairs} judged pairs · ${S.corpus.repo} · `;
   strip.append(link(REPO_URL, "how it's measured"));
 
   function resultCard(r, i) {
@@ -203,6 +209,9 @@
     const badge = el("span", "badge" + (r.outcome === "closed_unmerged" ? " closed" : ""),
                      OUTCOME[r.outcome] || r.outcome);
     head.append(badge);
+    const calib = el("span", "calib", `related ${m.relevant_at_rank_pct[i]}% of the time at rank ${i + 1}`);
+    calib.title = `Measured on ${m.holdout_queries} held-out PRs; related = grade 1 or 2 (D-P8-4)`;
+    head.append(calib);
 
     const h4 = el("h4");
     h4.append(link(r.url, r.title));
@@ -277,8 +286,8 @@
   const footer = $("provenance");
   footer.append(
     el("p", "", `Examples generated ${fmtDate(S.generated_at)} by the live bot's pipeline, picked by a fixed rule: ${S.rule}.`),
-    el("p", "", `Weights: vector ${w.vector} · file overlap ${w.file_overlap} · terminology ${w.bm25} (locked on the tune split). Model: ${S.model}.`),
-    el("p", "", `Corpus: ${S.corpus.in_corpus_prs.toLocaleString("en")} ${S.corpus.repo} PRs indexed ${fmtDate(S.corpus.indexed_at)} · fingerprint ${S.corpus.fingerprint.slice(0, 8)}.`),
+    el("p", "", `Weights: vector ${w.vector} · file overlap ${w.file_overlap} · terminology ${w.bm25} (v1.1: tuned on 20 PRs, scored once on 20 held-out PRs). Model: ${S.model}.`),
+    el("p", "", `Corpus: ${S.corpus.in_corpus_prs.toLocaleString("en")} ${S.corpus.repo} PRs, snapshot ${fmtDate(S.seed_cutoff)}, re-indexed ${fmtDate(S.corpus.indexed_at)} · fingerprint ${S.corpus.fingerprint.slice(0, 8)}.`),
   );
   const src = el("p");
   src.append(link(REPO_URL, "Source, evaluation and decision log on GitHub"));

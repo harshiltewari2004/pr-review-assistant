@@ -1,146 +1,160 @@
 {
-  "generated_at": "2026-10-15T12:29:53+00:00",
+  "generated_at": "2026-10-20T09:36:26+00:00",
   "rule": "the 3 most recent processing/p5.js PRs opened after the corpus snapshot, not authored by a bot, whose diff keeps at least one hunk after chunker exclusions",
+  "seed_cutoff": "2026-08-15T07:29:33.633256+00:00",
   "weights": {
-    "vector": 0.6,
-    "file_overlap": 0.3,
-    "bm25": 0.1
+    "vector": 0.5,
+    "file_overlap": 0.1,
+    "bm25": 0.4
   },
   "aggregation": "max",
   "model": "sentence-transformers/all-MiniLM-L6-v2",
   "corpus": {
     "repo": "processing/p5.js",
-    "in_corpus_prs": 3196,
-    "indexed_at": "2026-08-15T07:29:33.633256+00:00",
-    "fingerprint": "b04b9a8915cfba8657a050cb958eb8d59c20b3b78eccdcaf51307ebe15c43f05"
+    "in_corpus_prs": 3148,
+    "indexed_at": "2026-10-17T12:07:42.824276+00:00",
+    "fingerprint": "d7283c3a81f4fdc922736827c47822db73afe1bc4c23a406745f7ec50c14de29"
   },
   "metrics": {
-    "top_result_relevant": 8,
-    "holdout_queries": 10,
-    "judged_pairs": 345,
-    "source": "eval/artifacts/holdout_scored.json, eval/artifacts/pool.json"
+    "top_result_relevant": 20,
+    "holdout_queries": 20,
+    "judged_pairs": 730,
+    "relevant_at_rank_pct": [
+      100,
+      60,
+      45
+    ],
+    "vs_keyword": {
+      "recall_gain": 0.1649,
+      "ci95": [
+        0.0673,
+        0.2839
+      ],
+      "beats": true
+    },
+    "source": "eval/artifacts/holdout_v11_scored.json, eval/artifacts/pool_v11.json"
   },
   "queries": [
     {
-      "number": 9290,
-      "title": "Fix textureWrap() dropping the y mode when passed a modes object",
-      "url": "https://github.com/processing/p5.js/pull/9290",
-      "created_at": "2026-10-14T19:41:11Z",
+      "number": 9309,
+      "title": "Add stateful helpers for p5.strands addons",
+      "url": "https://github.com/processing/p5.js/pull/9309",
+      "created_at": "2026-10-19T06:44:31Z",
       "results": [
         {
-          "pr_number": 8328,
-          "title": "Resolves #8278",
-          "url": "https://github.com/processing/p5.js/pull/8328",
+          "pr_number": 8120,
+          "title": "Branching and looping for p5.strands",
+          "url": "https://github.com/processing/p5.js/pull/8120",
           "outcome": "merged",
-          "final_score": 0.7547,
+          "final_score": 0.9088,
           "vector_score_norm": 1.0,
-          "file_overlap_score_norm": 0.2778,
-          "bm25_score_norm": 0.7136,
-          "reason": "Both modify docs/parameterData.json with a similar change pattern"
+          "file_overlap_score_norm": 0.7333,
+          "bm25_score_norm": 0.8386,
+          "reason": "Both modify src/strands/strands_api.js with a similar change pattern"
         },
         {
-          "pr_number": 7801,
-          "title": "Fix FES check for image() not accepting some valid types",
-          "url": "https://github.com/processing/p5.js/pull/7801",
+          "pr_number": 8923,
+          "title": "Support strands shader variable names including double underscores",
+          "url": "https://github.com/processing/p5.js/pull/8923",
           "outcome": "merged",
-          "final_score": 0.6871,
-          "vector_score_norm": 0.5411,
+          "final_score": 0.8963,
+          "vector_score_norm": 0.8491,
           "file_overlap_score_norm": 1.0,
-          "bm25_score_norm": 0.6242,
-          "reason": "Also changes docs/parameterData.json"
+          "bm25_score_norm": 0.9295,
+          "reason": "Both modify src/strands/p5.strands.js with a similar change pattern"
         },
         {
-          "pr_number": 3047,
-          "title": "Global texture wrap",
-          "url": "https://github.com/processing/p5.js/pull/3047",
+          "pr_number": 8568,
+          "title": "Fix filter() crash on createGraphics(WEBGL) by mirroring strands API …",
+          "url": "https://github.com/processing/p5.js/pull/8568",
+          "outcome": "merged",
+          "final_score": 0.8451,
+          "vector_score_norm": 0.8997,
+          "file_overlap_score_norm": 0.55,
+          "bm25_score_norm": 0.8507,
+          "reason": "Both modify src/strands/p5.strands.js with a similar change pattern"
+        }
+      ]
+    },
+    {
+      "number": 9308,
+      "title": "Add unit tests for noiseDetail()",
+      "url": "https://github.com/processing/p5.js/pull/9308",
+      "created_at": "2026-10-18T20:11:51Z",
+      "results": [
+        {
+          "pr_number": 248,
+          "title": "noiseSeed(), randomSeed(), randomGaussian()",
+          "url": "https://github.com/processing/p5.js/pull/248",
+          "outcome": "merged",
+          "final_score": 0.7206,
+          "vector_score_norm": 0.9189,
+          "file_overlap_score_norm": 1.0,
+          "bm25_score_norm": 0.4029,
+          "reason": "Both modify test/unit/math/noise.js with a similar change pattern"
+        },
+        {
+          "pr_number": 8162,
+          "title": "Add methods to retrieve noise parameters for WebGL shaders",
+          "url": "https://github.com/processing/p5.js/pull/8162",
           "outcome": "closed_unmerged",
-          "final_score": 0.6693,
-          "vector_score_norm": 0.6383,
-          "file_overlap_score_norm": 0.625,
-          "bm25_score_norm": 0.988,
-          "reason": "Also changes src/webgl/material.js — closed without merging, worth checking why"
-        }
-      ]
-    },
-    {
-      "number": 9289,
-      "title": "chore: use all-contributors-image action for contributors.png",
-      "url": "https://github.com/processing/p5.js/pull/9289",
-      "created_at": "2026-10-14T12:51:47Z",
-      "results": [
-        {
-          "pr_number": 8557,
-          "title": "Updated readme and contributors for 2.0 branch (with attribution for image)",
-          "url": "https://github.com/processing/p5.js/pull/8557",
-          "outcome": "merged",
-          "final_score": 0.962,
-          "vector_score_norm": 0.9367,
-          "file_overlap_score_norm": 1.0,
+          "final_score": 0.7057,
+          "vector_score_norm": 0.6114,
+          "file_overlap_score_norm": 0.0,
           "bm25_score_norm": 1.0,
-          "reason": "Both modify .github/workflows/contributors-png.yml with a similar change pattern"
+          "reason": "Shares terminology: _getnoiseampfalloff, _getnoiseoctaves — closed without merging, worth checking why"
         },
         {
-          "pr_number": 8466,
-          "title": "feat: generate contributors PNG for README",
-          "url": "https://github.com/processing/p5.js/pull/8466",
+          "pr_number": 787,
+          "title": "Add JSCS to support style guide compliance",
+          "url": "https://github.com/processing/p5.js/pull/787",
           "outcome": "merged",
-          "final_score": 0.9598,
-          "vector_score_norm": 0.9367,
-          "file_overlap_score_norm": 1.0,
-          "bm25_score_norm": 0.9779,
-          "reason": "Both modify .github/workflows/contributors-png.yml with a similar change pattern"
-        },
-        {
-          "pr_number": 8852,
-          "title": "[1.x] Update CI node version to 22",
-          "url": "https://github.com/processing/p5.js/pull/8852",
-          "outcome": "merged",
-          "final_score": 0.7621,
+          "final_score": 0.6487,
           "vector_score_norm": 1.0,
-          "file_overlap_score_norm": 0.3333,
-          "bm25_score_norm": 0.6214,
-          "reason": "Both modify .github/workflows/contributors-png.yml with a similar change pattern"
+          "file_overlap_score_norm": 0.1154,
+          "bm25_score_norm": 0.343,
+          "reason": "Both modify test/unit/math/noise.js with a similar change pattern"
         }
       ]
     },
     {
-      "number": 9288,
-      "title": "feat(webgl): add SEGMENTED mode for true flat shading",
-      "url": "https://github.com/processing/p5.js/pull/9288",
-      "created_at": "2026-10-14T08:38:06Z",
+      "number": 9307,
+      "title": "Faster validator",
+      "url": "https://github.com/processing/p5.js/pull/9307",
+      "created_at": "2026-10-17T20:55:51Z",
       "results": [
         {
-          "pr_number": 6553,
-          "title": "Update computeNormals() to support smooth shading for buildGeometry() outputs",
-          "url": "https://github.com/processing/p5.js/pull/6553",
+          "pr_number": 7872,
+          "title": "Update zod 3 to zod 4 support in p5.js dev-2.0",
+          "url": "https://github.com/processing/p5.js/pull/7872",
           "outcome": "merged",
-          "final_score": 0.9434,
-          "vector_score_norm": 0.9091,
-          "file_overlap_score_norm": 1.0,
-          "bm25_score_norm": 0.9798,
-          "reason": "Both modify src/core/constants.js with a similar change pattern"
+          "final_score": 0.8646,
+          "vector_score_norm": 0.9528,
+          "file_overlap_score_norm": 0.0,
+          "bm25_score_norm": 0.9705,
+          "reason": "Similar change pattern in src/core/friendly_errors/param_validator.js"
         },
         {
-          "pr_number": 6809,
-          "title": "Solves issue #6787",
-          "url": "https://github.com/processing/p5.js/pull/6809",
+          "pr_number": 7291,
+          "title": "Final changes for parameter validation",
+          "url": "https://github.com/processing/p5.js/pull/7291",
           "outcome": "merged",
-          "final_score": 0.8006,
-          "vector_score_norm": 0.7826,
-          "file_overlap_score_norm": 1.0,
-          "bm25_score_norm": 0.3104,
-          "reason": "Both modify src/webgl/p5.Geometry.js with a similar change pattern"
+          "final_score": 0.8333,
+          "vector_score_norm": 0.9054,
+          "file_overlap_score_norm": 0.0,
+          "bm25_score_norm": 0.9515,
+          "reason": "Similar change pattern in src/core/friendly_errors/param_validator.js"
         },
         {
-          "pr_number": 7045,
-          "title": "Update p5.Geometry references",
-          "url": "https://github.com/processing/p5.js/pull/7045",
-          "outcome": "merged",
-          "final_score": 0.7774,
-          "vector_score_norm": 1.0,
-          "file_overlap_score_norm": 0.5,
-          "bm25_score_norm": 0.274,
-          "reason": "Both modify src/webgl/p5.Geometry.js with a similar change pattern"
+          "pr_number": 8061,
+          "title": "2.0 Modular build [WIP]",
+          "url": "https://github.com/processing/p5.js/pull/8061",
+          "outcome": "closed_unmerged",
+          "final_score": 0.7977,
+          "vector_score_norm": 0.7481,
+          "file_overlap_score_norm": 1.0,
+          "bm25_score_norm": 0.8092,
+          "reason": "Both modify src/friendly_errors/param_validator.js with a similar change pattern — closed without merging, worth checking why"
         }
       ]
     }
